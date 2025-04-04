@@ -5,6 +5,14 @@
       ## ##          ##    ##     ## ##        
 ##    ## ##          ##    ##     ## ##        
  ######  ########    ##     #######  ##           
+ 
+
+##########
+# Packages
+##########
+
+# To install all dependencies, for _the whole_ project uncomment and run the snippet below
+# renv::restore()
 
 library(tidyverse)
 library(broom)
