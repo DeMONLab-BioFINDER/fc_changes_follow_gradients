@@ -13,6 +13,7 @@
 
 # To install all dependencies, for _the whole_ project uncomment and run the snippet below
 # renv::restore()
+# However, you only need the python dependencies if you want to extract timeseries from images
 
 library(tidyverse)
 library(broom)
@@ -34,14 +35,13 @@ dir.create(figure_path, showWarnings = FALSE)
 table_path <- "paper/tables"
 dir.create(table_path, showWarnings = FALSE)
 from_start <- FALSE
+create_brain_permutations <- FALSE
 extract_timeseries <- FALSE
+
 
 ts_dir <- "data/bf_src_data/timeseries"
 connectome_dir <- "data/bf_src_data/connectomes"
 clean_dir <- "data/processed_and_cleaned"
-
-
-
 
 
 ##############
@@ -73,7 +73,7 @@ gradient_cols <- data.frame(gradient1 = c("#3F596D", "#D38A4E"),
                             gradient3 = c("#8A6081", "#738518"))
 
 
-if (from_start) {
+if (create_brain_permutations) {
   # Create the brain permutations to use for spintest, long compute time
   
   # File containing an array of functions to facillitate calculations
@@ -98,14 +98,21 @@ if (from_start) {
 ##       ##     ## ##     ## ##     ##    ##     ## ##     ##    ##    ##     ## 
 ########  #######  ##     ## ########     ########  ##     ##    ##    ##     ##
 
-##################
+###########################################
 # Images
-##################
+# -------
+# This should only be run if you have
+# nifti images that you are extracting
+# the timeseries from. In this repo
+# we start the analysis with the timeseries
+# already extracted.
+###########################################
+
+
 if (extract_timeseries){
   
   require(reticulate)
   nilearn <- import("nilearn", convert = FALSE)
-  np <- import("numpy", convert = FALSE)
   
   schaefer <- nilearn$datasets$fetch_atlas_schaefer_2018(n_rois = 1000L, data_dir = "data/atlas_data/")
   atlas_file <- schaefer$maps
@@ -139,85 +146,55 @@ close(pb)
 
 
 
-##################
+###########################################
 # Subject data
-##################
+# ------------
+# Here we're loading the subject data.
+# The data that gets loaded is synthetic
+# and has been generated from the original.
+###########################################
 
-sub_data <- read_csv('data/bf_src_data/data_bf.csv', show_col_types = FALSE)
-cog_data <- read_csv("data/bf_src_data/cognitive_BF2.csv") |> 
-  dplyr::select(uid, sid, Visit, mmse_score, mPACC_v1, mPACC_v2, mPACC_v3)
+sub_data <- read_csv('data/bf_src_data/biofinder_df_synthetic.csv', show_col_types = FALSE)
 
 
-biofinder_df_ <- sub_data
-temp <- biofinder_df_ |> inner_join(sub_data |> select(uid, csv_rsqa__index, rsqa__fd_max, rsqa__MeanFD))  |> 
-  select(sid, csv_rsqa__index, rsqa__fd_max, rsqa__MeanFD) |> drop_na() 
-
-biofinder_df_ <- biofinder_df_ |> 
-  inner_join(temp)
-rm(temp)
-
-biofinder_df__ <- biofinder_df_ |> 
-  left_join(cog_data) |>
+# This is the base subject data we will be working with
+biofinder_df__ <- sub_data |> 
   mutate(
-    fmri_date = as.Date(str_split_i(csv_rsqa__index, "_", 5), format = "%Y%m%d"),
+    fmri_date = as.Date(str_extract(csv_rsqa__index, "(?<=__).*"), format = "%Y%m%d"),
     image_file = csv_rsqa__index,
-    tau_file = csv_btnic_sr_mr_fs__index,
     abnorm_ab = Abnormal_CSF_Ab42_Ab40_Ratio,
     sex = gender_baseline_variable,
     education = education_level_years_baseline_variable,
     diagnosis = diagnosis_baseline_variable,
     ab_ratio = CSF_Ab42_Ab40_ratio_imputed_Elecsys_2020_2022,
     apoe4 = grepl("4", as.character(apoe_genotype_baseline_variable)),
-    ptau217 = CSF_ptau217_pgml_Lilly_2019,
-    ptau181 = CSF_ptau181_pgml_Lilly_2019,
-    alpha_syn = CSF_SynucleinAlpha_RTQuIC_2022,
     cho12 = tnic_cho_com_I_II,
     cho34 = tnic_cho_com_III_IV,
     cho56 = tnic_cho_com_V_VI,
-    ento_tau_mean = (tnic_sr_mr_fs_ctx_lh_entorhinal + tnic_sr_mr_fs_ctx_rh_entorhinal)/2,
-    hippo_tau_mean = (tnic_sr_mr_fs_Left_Hippocampus + tnic_sr_mr_fs_Right_Hippocampus)/2,
-    inftemp_tau_mean = (tnic_sr_mr_fs_ctx_rh_inferiortemporal + tnic_sr_mr_fs_ctx_lh_inferiortemporal)/2,
-    precuneus_tau_mean = (tnic_sr_mr_fs_ctx_lh_precuneus + tnic_sr_mr_fs_ctx_rh_precuneus)/2,
-    postcing_tau_mean = (tnic_sr_mr_fs_ctx_lh_posteriorcingulate + tnic_sr_mr_fs_ctx_rh_posteriorcingulate)/2,
     motion_filter = (rsqa__fd_max < 3 & rsqa__MeanFD < 0.3)
   ) |> 
   mutate(fmri_bl = fmri_date == min(fmri_date),
          has_longitudinal = n()>1, .by = "sid") |> 
-  select(sid, 
-         uid,
-         Visit, 
+  select(sid,  
          fmri_bl,
          fmri_date,
          image_file,
-         tau_file,
          has_longitudinal,
          age,
          education,
          diagnosis, 
          mPACC_v1, 
-         mPACC_v2, 
-         mPACC_v3,
-         mmse_score,
          apoe4,
          ab_ratio,
          abnorm_ab,
-         ptau217,
-         ptau181,
-         alpha_syn,
          sex, 
          rsqa__MeanFD,
          rsqa__fd_max,
          motion_filter,
          cho12,
          cho34,
-         cho56,
-         ento_tau_mean,
-         hippo_tau_mean,
-         inftemp_tau_mean,
-         precuneus_tau_mean,
-         postcing_tau_mean
+         cho56
   ) |> 
-  arrange(sid, Visit) |> 
   group_by(sid) |> 
   filter(
     (any(abnorm_ab == 1, na.rm = TRUE) | !all(diagnosis == "MCI" & abnorm_ab == 0, na.rm = TRUE)) &
@@ -229,6 +206,7 @@ biofinder_df__ <- biofinder_df_ |>
   ungroup() 
 
 
+# This is to get a dataframe with all subjects before filtering on motion
 biof_motion_unfilt <- biofinder_df__ |> group_by(sid) |> 
   fill(sex, .direction = "downup") |>
   arrange(fmri_date) |>
@@ -247,7 +225,7 @@ biof_motion_unfilt <- biofinder_df__ |> group_by(sid) |>
 biofinder_df__ <- biofinder_df__ |> filter(motion_filter)
 
 patvars <- biofinder_df__ |> filter(fmri_bl) |> 
-  dplyr::select(uid,
+  dplyr::select(sid,
                 ab_ratio,
                 cho12,
                 cho34,
@@ -255,26 +233,26 @@ patvars <- biofinder_df__ |> filter(fmri_bl) |>
   ) |>  drop_na()
 
 withr::with_seed(123132, {
-  space <- reduce_dimensionality(as.matrix(patvars |> select(-uid)), "euclidean")
+  space <- reduce_dimensionality(as.matrix(patvars |> select(-sid)), "euclidean")
   trajectory <- infer_trajectory(space)
 })
 traject <- trajectory$time
 #biofinder_df__ |> left_join(patvars |> mutate(pathology_ad = traject) |> select(uid, pathology_ad)) |> ggplot(aes(pathology_ad, fill = diagnosis)) +geom_density(alpha = 0.5)
-biofinder_df__ <- biofinder_df__ |> left_join(patvars |> mutate(pathology_ad = traject) |> select(uid, pathology_ad)) 
+biofinder_df__ <- biofinder_df__ |> left_join(patvars |> mutate(pathology_ad = traject) |> select(sid, pathology_ad)) 
 
 patvars_tau <- biofinder_df__ |> 
-  dplyr::select(uid,
+  dplyr::select(image_file,
                 cho12,
                 cho34,
                 cho56
   ) |>  drop_na()
 withr::with_seed(123, {
-  space <- reduce_dimensionality(as.matrix(patvars_tau |> select(-uid)), "euclidean")
+  space <- reduce_dimensionality(as.matrix(patvars_tau |> select(-image_file)), "euclidean")
   trajectory <- infer_trajectory(space)
 })
 traject <- trajectory$time
 #biofinder_df__ |> left_join(patvars_tau |> mutate(tau_path = traject) |> select(uid, tau_path)) |> ggplot(aes(tau_path, fill = diagnosis)) +geom_density(alpha = 0.5)
-biofinder_df <- biofinder_df__ |> left_join(patvars_tau |> mutate(tau_pathology = traject) |> select(uid, tau_pathology)) |> 
+biofinder_df <- biofinder_df__ |> left_join(patvars_tau |> mutate(tau_pathology = traject) |> select(image_file, tau_pathology)) |> 
   group_by(sid) |> 
   fill(sex, .direction = "downup") |>
   arrange(fmri_date) |>
@@ -289,7 +267,7 @@ biofinder_df <- biofinder_df__ |> left_join(patvars_tau |> mutate(tau_pathology 
     age = if_else(is.na(age), age_estimated, age)
   ) |>
   ungroup()
-rm(biofinder_df__, space, trajectory, patvars_tau, patvars, cog_data, biofinder_df_)
+rm(biofinder_df__, space, trajectory, patvars_tau, patvars)
 
 
 ########  ########  ########          ######     ###    ##        ######  
@@ -308,7 +286,10 @@ rm(biofinder_df__, space, trajectory, patvars_tau, patvars, cog_data, biofinder_
 if (from_start) {
   
   ts_files <- list.files(ts_dir, pattern = "\\.rds$", full.names = TRUE)
-  ts_list <- lapply(ts_files, readRDS)
+  # The below is much faster if using the .rds fileformat
+  print("Reading timeseries")
+  ts_list <- pblapply(ts_files, read_rds)
+
   names(ts_list) <- tools::file_path_sans_ext(basename(ts_files))
   
   # Take only the timeseries from subjects of interest
@@ -317,9 +298,13 @@ if (from_start) {
   dir.create(connectome_dir, showWarnings = FALSE)
   already_proc_conn <- list.files(connectome_dir) |> str_remove_all(".rds")
   proc_conn <- names(timeseries)[!(names(timeseries) %in% already_proc_conn)]
+  
+  print("Writing connectomes")
   pb = txtProgressBar(min = 0, 
-                      max = ifelse(length(proc_conn) != 0, length(proc_conn), 1),
-                      initial = 0)
+                      max = ifelse(length(proc_conn) != 0, 
+                                   length(proc_conn), 1),
+                      initial = 0,
+                      style = 3)
   i = 0
   for (img_file in proc_conn){
     tryCatch(
@@ -333,7 +318,7 @@ if (from_start) {
       },
       error = function(cond) {
         print(cond)
-        p  },
+      },
       warning = function(cond) {
         print(cond)
       })
@@ -343,11 +328,15 @@ if (from_start) {
   close(pb)
 }
 
+# These are all subjects who successfully got calculated connectomes
 success_vec <- list.files(connectome_dir) |> str_remove_all(".rds")
+
+# Filter the data on that
 biofinder_df <- biofinder_df |> filter(image_file %in% success_vec)
 biof_motion_unfilt <- biof_motion_unfilt |> filter(image_file %in% success_vec)
 
 
+print("Writing clean data")
 dir.create(clean_dir, showWarnings = FALSE)
 write_rds(biofinder_df, file.path(clean_dir, "biofinder_df.rds"))
 write_rds(biof_motion_unfilt, file.path(clean_dir, "biofinder_motion_unfiltered.rds"))
@@ -356,6 +345,7 @@ biofinder_df <- biofinder_df |> filter(motion_filter)
 
 if (from_start) {
   
+  print("Reading connectomes")
   con_cube_bf <- array(dim = c(length(rois), length(rois), length(success_vec)), 
                        dimnames = list(rois, rois, success_vec))
   pb = txtProgressBar(min = 0, max = length(success_vec), style = 3)
@@ -420,6 +410,16 @@ if (from_start) {
   # images have been accessed from https://neurovault.org/collections/1598/
   nifti_images <- list.files(gradient_dir, pattern = "\\.nii.gz$")
   
+  require(reticulate)
+  nilearn <- import("nilearn", convert = FALSE)
+  schaefer <- nilearn$datasets$fetch_atlas_schaefer_2018(n_rois = 1000L, data_dir = "data/atlas_data/")
+  atlas_file <- schaefer$maps
+  masker <- nilearn$maskers$NiftiLabelsMasker(
+    labels_img = atlas_file,
+    smoothing_fwhm = as.integer(6),
+    standardize = FALSE,
+    verbose = 0L
+  )
   
   marg_gradients <- matrix(ncol = length(nifti_images), nrow = length(rois))
   colnames(marg_gradients) <- c("gradient1", "gradient2", "gradient3", "gradient4", "gradient5")
@@ -460,12 +460,14 @@ if (from_start) {
   
   # This is max millimiter (of journals) in inches
   img_width = 180 / 25.4
+  
   # Scale image to balance figure elements and fontsize, but need "shrink" image after
   # so the fontsize chosen should be large enough to shrink it by the scaling factor
   scaling_factor <-  3
   magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
   p_name <- "gradient_param_comparison_bf.png"
   
+  print("Writing supplementary figure 9")
   ggsave(file.path(figure_path, p_name), comp_plot , #patch_plots[["biofinder"]], 
          width = img_width*scaling_factor, height = img_width*scaling_factor*0.675, bg ="white")
   img <- magick::image_read(file.path(figure_path, p_name))
@@ -488,6 +490,7 @@ if (from_start) {
     filter(!(method == "pca" & affinity)) |> 
     mutate(sim_method = ifelse(!affinity, NA, sim_method))
   
+  print("Calculating gradients over various parameters")
   gradient_data <- c()
   varexp_df <- c()
   for (i in 1:nrow(params)) {
@@ -511,53 +514,37 @@ if (from_start) {
 
 
 
-########  ######## ########  ##       ####  ######     ###    ######## ####  #######  ##    ## 
-##     ## ##       ##     ## ##        ##  ##    ##   ## ##      ##     ##  ##     ## ###   ## 
-##     ## ##       ##     ## ##        ##  ##        ##   ##     ##     ##  ##     ## ####  ## 
-########  ######   ########  ##        ##  ##       ##     ##    ##     ##  ##     ## ## ## ## 
-##   ##   ##       ##        ##        ##  ##       #########    ##     ##  ##     ## ##  #### 
-##    ##  ##       ##        ##        ##  ##    ## ##     ##    ##     ##  ##     ## ##   ### 
-##     ## ######## ##        ######## ####  ######  ##     ##    ##    ####  #######  ##    ## 
+# ########  ######## ########  ##       ####  ######     ###    ######## ####  #######  ##    ## 
+# ##     ## ##       ##     ## ##        ##  ##    ##   ## ##      ##     ##  ##     ## ###   ## 
+# ##     ## ##       ##     ## ##        ##  ##        ##   ##     ##     ##  ##     ## ####  ## 
+# ########  ######   ########  ##        ##  ##       ##     ##    ##     ##  ##     ## ## ## ## 
+# ##   ##   ##       ##        ##        ##  ##       #########    ##     ##  ##     ## ##  #### 
+# ##    ##  ##       ##        ##        ##  ##    ## ##     ##    ##     ##  ##     ## ##   ### 
+# ##     ## ######## ##        ######## ####  ######  ##     ##    ##    ####  #######  ##    ## 
 
+ts_dir <- "data/adni_src_data/timeseries"
+connectome_dir <- "data/adni_src_data/connectomes"
+adni_df <- read_csv("data/adni_src_data/adni_df_synthetic.csv")
+adni_df_ <- adni_df |> select(id_ses, DX, age, sex, amyloid_status,
+                              APOE4_alleles, file_func, EXAMDATE_func, 
+                              ABETA42, ABETA40, contains("braak")) 
+rm(adni_df)
 
-df_full <- readxl::read_xlsx("data/adni_src_data/ADNI_selected_Jake_full.xlsx")
-df_selected <- readxl::read_xlsx("data/adni_src_data/ADNI_selected_Jake.xlsx")
-adni_df_ <- df_full |> select(any_of(colnames(df_selected)), age, sex, APOE4_alleles, CSF_AlphaSyn_seeding,
-                               contains("braak"),
-                               contains("entorhinal"), 
-                               contains("inferiortemporal"), contains("precuneus")
-) 
-
-rm(df_full, df_selected)
-
-id_ses <- c()
-for (i in adni_df_$file_func) {
-  id_ses <- c(id_ses, str_split_1(str_split_i(i, "/", 10), "_")[1:2] |> paste0(collapse = "_") )
-}
 
 adni_df__ <- adni_df_ |> 
-  mutate(id_ses = id_ses,
-         EXAMDATE_func = as.Date(EXAMDATE_func)
+  mutate(EXAMDATE_func = as.Date(EXAMDATE_func)
   ) |> 
   relocate(id_ses) |> 
-  mutate(fmri_bl = EXAMDATE_func == min(EXAMDATE_func), .by = ID) |> 
+  mutate(fmri_bl = EXAMDATE_func == min(EXAMDATE_func), .by = id_ses) |> 
   mutate(
     apoe4 = APOE4_alleles > 0,
+    abnorm_ab = ifelse(amyloid_status == "Ab.neg", 0, 1),
     diagnosis = DX,
     fmri_date = EXAMDATE_func,
-    asyn_pos = CSF_AlphaSyn_seeding == "positive",
-    abnorm_ab = ifelse(amyloid_status == "Ab.neg", 0, 1),
     braak1 = tau.SUVR.DK.braak1,
     braak34 = tau.SUVR.DK.braak34,
     braak56 = tau.SUVR.DK.braak56,
-    prec_amy = centiloid.amyloid.SUVR.DK.lprecuneus + centiloid.amyloid.SUVR.DK.rprecuneus,
-    ento_amy = centiloid.amyloid.SUVR.DK.lentorhinal + centiloid.amyloid.SUVR.DK.rentorhinal,
-    inftemp_amy = centiloid.amyloid.SUVR.DK.linferiortemporal + centiloid.amyloid.SUVR.DK.rinferiortemporal,
-    ento_tau_mean = (tau.SUVR.DK.lentorhinal + tau.SUVR.DK.rentorhinal)/2,
-    inftemp_tau_mean = (tau.SUVR.DK.linferiortemporal + tau.SUVR.DK.rinferiortemporal)/2,
-    precuneus_tau_mean = (tau.SUVR.DK.lprecuneus + tau.SUVR.DK.rprecuneus)/2,
     ab_ratio = ABETA42/ABETA40,
-    has_ab_csf = !is.na(ab_ratio),
     sex = ifelse(sex == "male", 0, 1)
   ) 
 
@@ -577,58 +564,37 @@ traject <- trajectory$time
 
 adni_df___ <- adni_df__ |> left_join(patvars |> mutate(pathology_ad = traject) |> select(id_ses, pathology_ad))
 
-patvars_tau <- adni_df__ |> 
-  dplyr::select(id_ses,
-                braak1,
-                braak34,
-                braak56
-  )  |>  drop_na()
 
-withr::with_seed(12345, {
-  space <- reduce_dimensionality(as.matrix(patvars_tau |> select(-id_ses)), "euclidean")
-  trajectory <- infer_trajectory(space)
-})
-traject <- trajectory$time
-adni_df____ <- adni_df___ |> left_join(patvars_tau |> mutate(tau_pathology = traject) |> select(id_ses, tau_pathology)) 
-
-
-rm(adni_df_, adni_df__, adni_df___)
+rm(adni_df_, adni_df__)
 
 ############
 # Timeseries
 ############
 
-fd_files <- list.files("data/adni_src_data/timeseries", pattern = "displacement\\.xlsx")
+fd_files <- list.files(ts_dir, pattern = "displacement\\.csv")
 
 adni_fd <- list()
 for (file in fd_files) {
-  sub_and_ses <- paste0(str_split_i(file, "_", 1), "_", str_split_i(file, "_", 2))
-  adni_fd[sub_and_ses] <- read_xlsx(paste0("data/adni_src_data/timeseries/", file))
+  sub_and_ses <- tools::file_path_sans_ext(file) |> str_remove_all("_framewise_displacement")
+  adni_fd[[sub_and_ses]] <- read_csv(file.path(ts_dir, file), show_col_types = FALSE)
 }
 
-rsqa <- lapply(adni_fd, function(x) c(rsqa__MeanFD = mean(x), rsqa__MaxFD = max(x)))
+rsqa <- lapply(adni_fd, function(x) c(rsqa__MeanFD = mean(x$displacement), rsqa__MaxFD = max(x$displacement)))
 rsqa_fd <- do.call(rbind, rsqa) |> as_tibble(rownames = NA) |> rownames_to_column("id_ses")
 
 
 if (from_start) {
-  ts_dir <- "data/adni_src_data/timeseries"
-  timeseries_files <- list.files(ts_dir, pattern = "timeseries\\.xlsx", full.names = TRUE)
   
-  sub_and_ses <- lapply(timeseries_files, function(file) {
-    file |>  
-      str_remove(paste0(ts_dir, "/")) |> 
-      str_remove("_task.*")
-    }
-  ) |> unlist()
+  timeseries_files <- list.files(ts_dir, pattern = "timeseries\\.csv")
   
   adni_timeseries <- pblapply(timeseries_files, function(file) {
-    read_xlsx(file, progress = FALSE) |> 
-      column_to_rownames("ROI") |> 
-      t() |> 
+    read_csv(file.path(ts_dir, file), progress = FALSE, show_col_types = FALSE) |> 
       as.matrix()
   })
-  names(adni_timeseries) <- sub_and_ses
   
+  names(adni_timeseries) <- timeseries_files |> tools::file_path_sans_ext() |>  str_remove_all("_timeseries")
+  
+  # This is to scrub timeseries
   set_false_window <- function(log_vec) {
     result <- log_vec
     for (i in seq_along(log_vec)) {
@@ -646,12 +612,15 @@ if (from_start) {
   for(file in names(adni_timeseries)) {
     
     fd <- c(0, adni_fd[[file]])
+    # Setting the same threshold as originally done by Franzmeier
     fd_filt <- set_false_window(fd<0.5)
     scrubbed_time_series[[file]] <- adni_timeseries[[file]][fd_filt, ]
     
   }
   frame_length <- sapply(scrubbed_time_series, nrow)
-  timeseries <- scrubbed_time_series[frame_length>100]
+  # Uncomment this line if running with real data
+  # timeseries <- scrubbed_time_series[frame_length>100]
+   timeseries <- scrubbed_time_series
 }
 
 
@@ -659,12 +628,13 @@ if (from_start) {
 # Connectomes
 ##############
 if (from_start) {
-  connectome_dir <- "data/adni_src_data/connectomes"
+ 
   dir.create(connectome_dir, showWarnings = FALSE)
-  already_proc_conn <- list.files(connectome_dir) |> str_remove_all(".rds")
+  already_proc_conn <- list.files(connectome_dir) |> tools::file_path_sans_ext()
   proc_conn <- names(timeseries)[!(names(timeseries) %in% already_proc_conn)]
   
-  pb = txtProgressBar(min = 0, max = length(proc_conn), style = 3)
+  print("Writing connectomes ADNI")
+  pb = txtProgressBar(min = 0, max = ifelse(length(proc_conn) == 0, 1, length(proc_conn)), style = 3)
   i = 0
   for (img_file in proc_conn){
     tryCatch(
@@ -689,8 +659,8 @@ if (from_start) {
 }
 
 
-success_vec <- list.files("data/adni_src_data/connectomes") |> str_remove_all(".rds")
-adni_df <- adni_df____ |> filter(id_ses %in% success_vec) |> 
+success_vec <- list.files(connectome_dir) |> tools::file_path_sans_ext()
+adni_df <- adni_df___ |> filter(file_func %in% success_vec) |> 
   inner_join(rsqa_fd) 
 
 adni_df_unfilt <- adni_df |> mutate(motion_filter = (rsqa__MeanFD<0.3 & rsqa__MaxFD<3))
@@ -701,6 +671,7 @@ write_rds(adni_df, file.path(clean_dir, "adni_df.rds"))
 write_rds(adni_df_unfilt, file.path(clean_dir,"adni_motion_unfilt.rds"))
 
 if (from_start) {
+  print("Reading connectomes")
   con_cube_adni <- array(dim = c(length(rois), 
                                  length(rois), 
                                  length(success_vec)), 
@@ -731,17 +702,21 @@ if (from_start) {
 source("src/util.R")
 
 if (from_start) {
+  print("Calculating FC derivatives")
+  # Calculate connectivity strenght
   adni_fc <- fc_strength(con_cube_adni, 
                          roi_names = rois, 
                          threshold = 0, 
                          replace = 0)
   
+  # Calculate connectivity affinity
   adni_affinity <- get_affinity(con_cube_adni, 
                                 similarity_method = "cosine",
                                 roi_names = rois, 
                                 threshold = 0.75, 
                                 atlas = yeo_msk)
   
+  # Calculate affinity using different method
   adni_affinity_no_thresh <- get_affinity(con_cube_adni, 
                                           similarity_method = "correlation", 
                                           roi_names = rois, 
@@ -763,7 +738,7 @@ source("src/util_gradients.R")
 
 if (from_start) {
   # Create connectome from young healthy individuals
-  yh_filt <- adni_df |> filter(fmri_bl, abnorm_ab==0, !apoe4, DX == "CN") |> pull(id_ses)
+  yh_filt <- adni_df |> filter(fmri_bl, abnorm_ab==0, !apoe4, DX == "CN") |> pull(file_func)
   healthy_young_connectomes <- con_cube_adni[, , yh_filt]
   average_connectome_adni <- apply(healthy_young_connectomes, c(1, 2), mean)
   rm(healthy_young_connectomes)
@@ -820,11 +795,12 @@ grad_df <- readRDS(file.path(clean_dir, "grad_df.rds"))
 # Methods plot 
 ########################
 
-# Source the methods_figure.R scrip to generate all plots for the methods figure.
+# Source the methods_figure.R script to generate all plots for the methods figure.
 # However, the figures have then been manually put together in inkscape so I will leave this
 # out of the main pipeline 
 
-# source("src/methods_figure.R")
+# There seems to be a bug when setting up the layout for gradient 3
+source("src/methods_figure.R")
 
 ########################
 # Main figures
@@ -843,7 +819,7 @@ magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
 # FIGURE 1
 ################
 
-###### I AM HERE
+
 
 
 fig_one <- figure_one(subject_data = biofinder_df,

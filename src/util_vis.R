@@ -1,16 +1,16 @@
 plot_gradient_relationships <- function(subject_data,
                                         gradient_data,
+                                        list_of_parcel_data, 
                                         atlas_geometry = readRDS("data/atlas_data/Schaefer2018_1000Parcels_geometry.rds"),
                                         vect = FALSE,
                                         base_size_ = 11,
-                                        gradients = 1:3,
+                                        gradients = c(1, 3),
                                         gradient_colors = NULL,
                                         empty_row_height = 0,
                                         padding = 0,
                                         r2_size = rel(4.6),
                                         spintest = TRUE,
                                         perms = readRDS("data/atlas_data/permutations_1000_hungarian.rds"),
-                                        list_of_parcel_data, 
                                         id_var = "image_file",
                                         mod_formula = formula(paste0("FC ~ age")),
                                         covariates = c("sex", "rsqa__MeanFD"),
@@ -25,7 +25,7 @@ plot_gradient_relationships <- function(subject_data,
                                         plot_spacing = 0.3,
                                         show_networks = FALSE,
                                         network_geometry = NULL,
-                                        cache_runs = TRUE,
+                                        cache_runs = FALSE,
                                         longitudinal = FALSE,
                                         logistic_fit = FALSE,
                                         scale_fc = FALSE,
@@ -185,7 +185,6 @@ plot_gradient_relationships <- function(subject_data,
           legend.box.background = element_rect(fill = "transparent", colour = NA),
           plot.title = element_text(color = "black", hjust = 0.5)
         ) +
-        #guides(color = guide_legend(override.aes = list(size = 1))) +
         scale_fill_gradient2(
           low = muted("blue"),
           mid = "white",
@@ -222,7 +221,6 @@ plot_gradient_relationships <- function(subject_data,
       
       if (include_gradient_plots) {
         gradient_plots[[paste0(stud,"_", grad)]] <- gradient_data %>% filter(study==stud) %>% 
-          #mutate(segregation = ifelse(segregation<0, 0, segregation)) %>% 
           inner_join(atlas_geometry, by = "region") %>%
           ggplot() +
           geom_sf(aes(
@@ -240,7 +238,6 @@ plot_gradient_relationships <- function(subject_data,
                 legend.box.background = element_rect(fill = "transparent", colour = NA),
                 plot.title = element_text(color = "black", hjust = 0.5)
           ) +
-          #guides(color = guide_legend(override.aes = list(size = 1))) +
           scale_fill_gradient2(
             low = gradient_colors[[grad]][1],
             mid = "white",
@@ -249,7 +246,6 @@ plot_gradient_relationships <- function(subject_data,
         i = i +1
       } else {
         gradient_plots[[paste0(stud,"_", grad)]] <- gradient_data %>% filter(study==stud) %>% 
-          #mutate(segregation = ifelse(segregation<0, 0, segregation)) %>% 
           inner_join(atlas_geometry, by = "region") %>%
           ggplot() +
           geom_sf(aes(
@@ -267,7 +263,6 @@ plot_gradient_relationships <- function(subject_data,
                 legend.box.background = element_rect(fill = "transparent", colour = NA),
                 plot.title = element_text(color = NA, hjust = 0.5)
           ) +
-          #guides(color = guide_legend(override.aes = list(size = 1))) +
           scale_fill_gradient2(
             low = gradient_colors[[grad]][1],
             mid = "white",
@@ -1197,7 +1192,7 @@ figure_one <- function(subject_data,
                                          vect = TRUE,
                                          r2_size = rel(r2_sizing1),
                                          covariates = c("sex", "rsqa__MeanFD"),
-                                         id_var = "id_ses",
+                                         id_var = "file_func",
                                          filter_criteria = quo(),
                                          show_networks = FALSE,
                                          tag_prefix = "",

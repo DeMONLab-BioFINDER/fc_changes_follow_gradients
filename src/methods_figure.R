@@ -11,7 +11,7 @@ zero_out_mat <- function(mat, thresh) {
 }
 
 
-figure_path <- "paper/figures/conceptual_plot"
+figure_path_concept <- "paper/figures/conceptual_plot"
 pastel_colors <- colorRampPalette(brewer.pal(9, "Pastel1"))(1000)
 
 average_connectome <- readRDS("data/atlas_data/average_connectome_normalyoung.rds")
@@ -21,7 +21,7 @@ subject_connectome <- readRDS(list.files("data/bf_src_data/connectomes", full.na
 subject_connectome[subject_connectome<0] <- 0
 
 
-png(file.path(figure_path, "subject_connectome.png"), width = 800, height = 800)
+png(file.path(figure_path_concept, "subject_connectome.png"), width = 800, height = 800)
 par(bg=NA, mar = c(0, 0, 0, 0))
 heatmap(subject_connectome, Rowv = NA, Colv = "Rowv",
         symm = TRUE, ColSideColors = pastel_colors,
@@ -37,7 +37,7 @@ zeroed_mat <- zero_out_mat(subject_connectome, 0.85)
 affinity <- proxy::simil(zeroed_mat, method = "cosine", by_rows = FALSE) %>% proxy::as.matrix()
 diag(affinity) <- 1
 
-png(file.path(figure_path, "subject_affinity.png"), width = 800, height = 800)
+png(file.path(figure_path_concept, "subject_affinity.png"), width = 800, height = 800)
 par(bg=NA, mar = c(0, 0, 0, 0))
 heatmap(affinity, Rowv = NA, Colv = "Rowv",
         symm = TRUE, ColSideColors = pastel_colors,
@@ -49,7 +49,7 @@ heatmap(affinity, Rowv = NA, Colv = "Rowv",
 )
 dev.off()
 
-png(file.path(figure_path, "subject_col_ave.png"), width = 800, height = 800)
+png(file.path(figure_path_concept, "subject_col_ave.png"), width = 800, height = 800)
 par(bg=NA, mar = c(0, 0, 0, 0))
 heatmap(base::as.matrix(rbind(colMeans(affinity),colMeans(affinity))), Rowv = NA, Colv = NA,
         symm = FALSE, ColSideColors = pastel_colors,
@@ -62,13 +62,13 @@ heatmap(base::as.matrix(rbind(colMeans(affinity),colMeans(affinity))), Rowv = NA
 )
 dev.off()
 p_name <- "subject_col_ave.png"
-img <- image_read(file.path(figure_path, p_name))
+img <- image_read(file.path(figure_path_concept, p_name))
 trimmed_img <- image_trim(img)
 cropped_img <- image_crop(trimmed_img, geometry = "100%x10%")
-image_write(cropped_img, path = file.path(figure_path, p_name))
+image_write(cropped_img, path = file.path(figure_path_concept, p_name))
 
 
-png(file.path(figure_path, "average_connectome.png"), width = 800, height = 800)
+png(file.path(figure_path_concept, "average_connectome.png"), width = 800, height = 800)
 par(bg=NA, mar = c(0, 0, 0, 0))
 heatmap(average_connectome, Rowv = NA, Colv = "Rowv",
         symm = TRUE, ColSideColors = pastel_colors,
@@ -88,7 +88,7 @@ g_list <- list(g1 = g1, g2 = g2, g3 = g3)
 
 for (g in names(g_list)) {
   p_name <- paste0(g, ".png")
-  png(file.path(figure_path, p_name), width = 800, height = 800)
+  png(file.path(figure_path_concept, p_name), width = 800, height = 800)
   par(bg=NA, mar = c(0, 0, 0, 0))
   heatmap(base::as.matrix(rbind(g_list[[g]], g_list[[g]])), Rowv = NA, Colv = NA,
           symm = FALSE, ColSideColors = pastel_colors,
@@ -100,10 +100,10 @@ for (g in names(g_list)) {
           margins = c(0, 0)
   )
   dev.off()
-  img <- image_read(file.path(figure_path, p_name))
+  img <- image_read(file.path(figure_path_concept, p_name))
   trimmed_img <- image_trim(img)
   cropped_img <- image_crop(trimmed_img, geometry = "100%x10%")
-  image_write(cropped_img, path = file.path(figure_path, p_name))
+  image_write(cropped_img, path = file.path(figure_path_concept, p_name))
 }
 
 atlas_geometry = readRDS("data/atlas_data/Schaefer2018_1000Parcels_geometry.rds")
@@ -122,14 +122,14 @@ pastel_brain <- atlas_geometry %>%
   scale_fill_identity()
 
 p_name <- "pastel_brain.png"
-ggsave(file.path(figure_path, p_name), pastel_brain, width = 180, height = 180, units = "mm", dpi = 600, device = "png")
+ggsave(file.path(figure_path_concept, p_name), pastel_brain, width = 180, height = 180, units = "mm", dpi = 600, device = "png")
 
 
 fits <- nodal_regression_fits(biofinder_df %>% 
                                 filter(fmri_bl) %>%
                                 mutate(motion = rsqa__MeanFD) %>% 
                                 mutate(diagnosis = ifelse(diagnosis %in% c("Normal", "SCD"), "CN/SCD", diagnosis)) %>% 
-                                mutate(diagnosis=factor(diagnosis, levels = c("CN/SCD", "MCI", "AD"))), inter_sub_sim_matrix = fc_measures_bf$affinity, 
+                                mutate(diagnosis=factor(diagnosis, levels = c("CN/SCD", "MCI", "AD"))), fc_matrix = fc_measures_bf$affinity, 
                               roi_names = rois,
                               dep_var = "Nodal_Affinity",
                               model_formula = formula("Nodal_Affinity ~ age + diagnosis + sex + motion"))
@@ -180,13 +180,14 @@ p_dx[[6]] <- p_dx[[6]] + ggtitle("AD vs. CN")
 img_width <- 180/25.4/2
 
 p_name <- "figure_dx.png"
-ggsave(file.path(figure_path, p_name), p_dx, width = img_width*3, height = img_width*0.9*3, units = "in", dpi = 600, device = "png")
-img <- magick::image_read(file.path(figure_path, p_name))
+ggsave(file.path(figure_path_concept, p_name), p_dx, width = img_width*3, height = img_width*0.9*3, units = "in", dpi = 600, device = "png")
+img <- magick::image_read(file.path(figure_path_concept, p_name))
 img_resized <- magick::image_resize(img, "33%x33%")
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+magick::image_write(img_resized, file.path(figure_path_concept, p_name), density = 300)
 
 
 #### legend stuff
+scale_factor <- 5
 
 get_net_legend <- function(){
   scale_factor <- 5
@@ -219,4 +220,4 @@ x <- get_net_legend()
 
 p_name <- "net_legend.png"
 img_width <- 45
-ggsave(file.path(figure_path, p_name), x, width = img_width*scale_factor+75, height = img_width*0.1*scale_factor, units = "mm", dpi = 300, device = "png")
+ggsave(file.path(figure_path_concept, p_name), x, width = img_width*scale_factor+75, height = img_width*0.1*scale_factor, units = "mm", dpi = 300, device = "png")

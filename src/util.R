@@ -35,7 +35,7 @@ fc_strength <- function(connectomes, atlas = yeo_msk, roi_names, threshold = 0, 
   network_diff_counts <- rowSums(network_diff_mat)
   
   
-  pb = txtProgressBar(min = 0, max = length(sub_ids), initial = 0) 
+  pb = txtProgressBar(min = 0, max = length(sub_ids), initial = 0, style = 3) 
   for (sub in 1:dim(connectomes)[3]){
     
     conn <- connectomes[, , sub]
@@ -114,7 +114,7 @@ get_affinity <- function(con_cube, similarity_method="correlation",
   diag(network_diff_mat) <- FALSE 
   
   
-  pb = txtProgressBar(min = 0, max = n_sub, initial = 0) 
+  pb = txtProgressBar(min = 0, max = n_sub, initial = 0, style = 3) 
   for(i in 1:n_sub) {
     connectome <- con_cube[, , i]
     L <- matrix(connectome[!diag(nrow(connectome))], nrow = nrow(connectome)-1) # mask it
@@ -157,7 +157,7 @@ get_affinity <- function(con_cube, similarity_method="correlation",
 
 
 nodal_regression_fits <- function(subject_data,
-                                  inter_sub_sim_matrix, 
+                                  fc_matrix, 
                                   roi_names,
                                   logistic = FALSE,
                                   scale_fc = FALSE,
@@ -173,7 +173,7 @@ nodal_regression_fits <- function(subject_data,
     bio_filtered <- subject_data %>% 
       drop_na(all_of(all.vars(model_formula)))
     X <- model.matrix(model_formula, data = bio_filtered)
-    Y <- as.data.frame(inter_sub_sim_matrix[bio_filtered[[id_var]], ])
+    Y <- as.data.frame(fc_matrix[bio_filtered[[id_var]], ])
     
     similarity_fits <- list()
     for (roi in roi_names) {
@@ -186,7 +186,7 @@ nodal_regression_fits <- function(subject_data,
     
   } else {
     
-    inter_sub_long <- as.data.frame(inter_sub_sim_matrix) %>% rownames_to_column(id_var) %>%
+    inter_sub_long <- as.data.frame(fc_matrix) %>% rownames_to_column(id_var) %>%
       inner_join(subject_data, by = id_var) %>%
       pivot_longer(starts_with('7Networks'), names_to = 'region', values_to = dep_var)
     similarity_fits <- list()
@@ -316,7 +316,7 @@ get_nodal_ests <- function(fit_list, roi_names = rois, vectorised = TRUE, mc = F
 
 
 nodal_lmm_ests <- function(subject_data,
-                           inter_sub_sim_matrix, 
+                           fc_matrix, 
                            roi_names,
                            mc = TRUE,
                            id_var = "image_file",
@@ -341,7 +341,7 @@ nodal_lmm_ests <- function(subject_data,
       
       chunk_list <- lapply(chunk, function(roi) {
         
-        roi_fc <- inter_sub_sim_matrix[, roi] %>% 
+        roi_fc <- fc_matrix[, roi] %>% 
           enframe(id_var, "FC")
         
         reg_df <- subject_data %>% 
@@ -376,7 +376,7 @@ nodal_lmm_ests <- function(subject_data,
     pb = txtProgressBar(min = 0, max = length(rois), initial = 0)
     i=0
     for(roi in rois)  {
-      roi_fc <- inter_sub_sim_matrix[, roi] %>% enframe(id_var, "FC")
+      roi_fc <- fc_matrix[, roi] %>% enframe(id_var, "FC")
       
       reg_df <- longitudinal_subject_data %>% inner_join(roi_fc, by = id_var)
       
@@ -586,7 +586,7 @@ write_gradient_supp_table <- function(params){
                      list_of_parcel_data = list(nodal_affinity = fc_measures_adni$affinity),
                      mod_formula = formula(paste0(" ~ age + pathology_ad + sex + rsqa__MeanFD")),
                      covariates = c("sex", "rsqa__MeanFD"),
-                     id_var = "id_ses")
+                     id_var = "file_func")
   
   
   health <- calc_ests(biofinder_df %>% filter(fmri_bl, diagnosis=="Normal" | diagnosis=="SCD", abnorm_ab==0, !apoe4),
