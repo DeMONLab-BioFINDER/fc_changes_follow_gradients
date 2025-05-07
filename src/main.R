@@ -34,13 +34,27 @@ figure_path <- "paper/figures"
 dir.create(figure_path, showWarnings = FALSE)
 table_path <- "paper/tables"
 dir.create(table_path, showWarnings = FALSE)
+
 from_start <- FALSE
 create_brain_permutations <- FALSE
 extract_timeseries <- FALSE
+real_data <- TRUE
 
 
-ts_dir <- "data/bf_src_data/timeseries"
-connectome_dir <- "data/bf_src_data/connectomes"
+data_dir <- ifelse(real_data, "data/bf_src_data",  "data/bf_src_data_synthetic")
+dir.create(data_dir, showWarnings = FALSE)
+
+ts_dir <- file.path(data_dir, "timeseries")
+connectome_dir <- file.path(data_dir, "connectomes")
+df_file <- file.path(data_dir, "biofinder_df.csv")
+
+data_dir_adni <- ifelse(real_data, "data/adni_src_data",  "data/adni_src_data_synthetic")
+dir.create(data_dir_adni, showWarnings = FALSE)
+
+ts_dir_adni <- file.path(data_dir_adni, "timeseries")
+connectome_dir_adni <- file.path(data_dir_adni, "connectomes")
+df_file_adni <- file.path(data_dir_adni, "adni_df.csv")
+
 clean_dir <- "data/processed_and_cleaned"
 
 
@@ -127,7 +141,7 @@ if (extract_timeseries){
   dir.create(ts_dir, showWarnings = FALSE)
   
   # images should be in subject/session named folders with only the nifti image within
-  img_dir <- "data/bf_src_data/images"
+  img_dir <- file.path(data_dir, "images")
   nifti_images <- list.files(img_dir, recursive = TRUE)
   
   i <- 0
@@ -154,8 +168,7 @@ close(pb)
 # and has been generated from the original.
 ###########################################
 
-sub_data <- read_csv('data/bf_src_data/biofinder_df_synthetic.csv', show_col_types = FALSE)
-
+sub_data <- read_csv(df_file, show_col_types = FALSE)
 
 # This is the base subject data we will be working with
 biofinder_df__ <- sub_data |> 
@@ -199,11 +212,15 @@ biofinder_df__ <- sub_data |>
   filter(
     (any(abnorm_ab == 1, na.rm = TRUE) | !all(diagnosis == "MCI" & abnorm_ab == 0, na.rm = TRUE)) &
       any(diagnosis %in% c("AD", "MCI", "SCD", "Normal") | is.na(diagnosis), na.rm = TRUE)
-  ) |> 
+  ) |>
   filter(any(diagnosis != "MSA", na.rm = TRUE)) |> 
   filter(any(diagnosis != "PD", na.rm = TRUE)) |> 
   filter(any(diagnosis != "PPA_NOS", na.rm = TRUE)) |> 
-  ungroup() 
+  arrange(sid, fmri_date) |> 
+  fill(diagnosis, .direction = "down") |> 
+  ungroup() |> 
+  filter(!(diagnosis %in% c("MCI", "AD") & abnorm_ab == 0) | is.na(diagnosis) | is.na(abnorm_ab))
+  
 
 
 # This is to get a dataframe with all subjects before filtering on motion
@@ -232,12 +249,12 @@ patvars <- biofinder_df__ |> filter(fmri_bl) |>
                 cho56
   ) |>  drop_na()
 
-withr::with_seed(123132, {
-  space <- reduce_dimensionality(as.matrix(patvars |> select(-sid)), "euclidean")
+withr::with_seed(12345, {
+  space <- reduce_dimensionality(base::as.matrix(patvars |> select(-sid)), "euclidean")
   trajectory <- infer_trajectory(space)
 })
 traject <- trajectory$time
-#biofinder_df__ |> left_join(patvars |> mutate(pathology_ad = traject) |> select(uid, pathology_ad)) |> ggplot(aes(pathology_ad, fill = diagnosis)) +geom_density(alpha = 0.5)
+#biofinder_df__ |> left_join(patvars |> mutate(pathology_ad = traject) |> select(sid, pathology_ad)) |> ggplot(aes(pathology_ad, fill = diagnosis)) +geom_density(alpha = 0.5)
 biofinder_df__ <- biofinder_df__ |> left_join(patvars |> mutate(pathology_ad = traject) |> select(sid, pathology_ad)) 
 
 patvars_tau <- biofinder_df__ |> 
@@ -246,12 +263,12 @@ patvars_tau <- biofinder_df__ |>
                 cho34,
                 cho56
   ) |>  drop_na()
-withr::with_seed(123, {
-  space <- reduce_dimensionality(as.matrix(patvars_tau |> select(-image_file)), "euclidean")
+withr::with_seed(123456, {
+  space <- reduce_dimensionality(base::as.matrix(patvars_tau |> select(-image_file)), "euclidean")
   trajectory <- infer_trajectory(space)
 })
 traject <- trajectory$time
-#biofinder_df__ |> left_join(patvars_tau |> mutate(tau_path = traject) |> select(uid, tau_path)) |> ggplot(aes(tau_path, fill = diagnosis)) +geom_density(alpha = 0.5)
+#biofinder_df__ |> left_join(patvars_tau |> mutate(tau_path = traject) |> select(image_file, tau_path)) |> ggplot(aes(tau_path, fill = diagnosis)) +geom_density(alpha = 0.5)
 biofinder_df <- biofinder_df__ |> left_join(patvars_tau |> mutate(tau_pathology = traject) |> select(image_file, tau_pathology)) |> 
   group_by(sid) |> 
   fill(sex, .direction = "downup") |>
@@ -277,6 +294,11 @@ rm(biofinder_df__, space, trajectory, patvars_tau, patvars)
 ##        ##   ##   ##               ##       ######### ##       ##       
 ##        ##    ##  ##               ##    ## ##     ## ##       ##    ## 
 ##        ##     ## ########          ######  ##     ## ########  ######  
+
+#########################################################
+## Here we do some pre-calculations to get the 
+## derivatives which we use to model later on
+#########################################################
 
 #########################################################
 ## Extract connectomes
@@ -341,7 +363,6 @@ dir.create(clean_dir, showWarnings = FALSE)
 write_rds(biofinder_df, file.path(clean_dir, "biofinder_df.rds"))
 write_rds(biof_motion_unfilt, file.path(clean_dir, "biofinder_motion_unfiltered.rds"))
 
-biofinder_df <- biofinder_df |> filter(motion_filter)
 
 if (from_start) {
   
@@ -522,20 +543,29 @@ if (from_start) {
 # ##    ##  ##       ##        ##        ##  ##    ## ##     ##    ##     ##  ##     ## ##   ### 
 # ##     ## ######## ##        ######## ####  ######  ##     ##    ##    ####  #######  ##    ## 
 
-ts_dir <- "data/adni_src_data/timeseries"
-connectome_dir <- "data/adni_src_data/connectomes"
-adni_df <- read_csv("data/adni_src_data/adni_df_synthetic.csv")
-adni_df_ <- adni_df |> select(id_ses, DX, age, sex, amyloid_status,
-                              APOE4_alleles, file_func, EXAMDATE_func, 
+
+adni_df <- read_csv(df_file_adni, show_col_types = FALSE)
+adni_df_ <- adni_df |> select(ID, file_func, DX, age, sex, amyloid_status,
+                              education_yrs,
+                              APOE4_alleles, EXAMDATE_func, 
                               ABETA42, ABETA40, contains("braak")) 
+# This is just a workaround for ID handling, 
+# which differs slightly from the synthetic 
+if (real_data) {
+  id_ses <- c()
+  for (i in adni_df_$file_func) {
+    id_ses <- c(id_ses, str_split_1(str_split_i(i, "/", 10), "_")[1:2] %>% paste0(collapse = "_") )
+  }
+  adni_df_ <- adni_df_ |> mutate(file_func = id_ses)
+}
+
 rm(adni_df)
 
-
 adni_df__ <- adni_df_ |> 
-  mutate(EXAMDATE_func = as.Date(EXAMDATE_func)
-  ) |> 
+  mutate(EXAMDATE_func = as.Date(EXAMDATE_func),
+         id_ses = file_func) |> 
   relocate(id_ses) |> 
-  mutate(fmri_bl = EXAMDATE_func == min(EXAMDATE_func), .by = id_ses) |> 
+  mutate(fmri_bl = EXAMDATE_func == min(EXAMDATE_func), .by = ID) |> 
   mutate(
     apoe4 = APOE4_alleles > 0,
     abnorm_ab = ifelse(amyloid_status == "Ab.neg", 0, 1),
@@ -557,7 +587,7 @@ patvars <- adni_df__ |>
   ) |>  drop_na()
 
 withr::with_seed(123456, {
-  space <- reduce_dimensionality(as.matrix(patvars |> select(-id_ses)), "euclidean")
+  space <- reduce_dimensionality(base::as.matrix(patvars |> select(-id_ses)), "euclidean")
   trajectory <- infer_trajectory(space)
 })
 traject <- trajectory$time
@@ -571,24 +601,25 @@ rm(adni_df_, adni_df__)
 # Timeseries
 ############
 
-fd_files <- list.files(ts_dir, pattern = "displacement\\.csv")
+fd_files <- list.files(ts_dir_adni, pattern = "displacement\\.csv")
 
 adni_fd <- list()
 for (file in fd_files) {
-  sub_and_ses <- tools::file_path_sans_ext(file) |> str_remove_all("_framewise_displacement")
-  adni_fd[[sub_and_ses]] <- read_csv(file.path(ts_dir, file), show_col_types = FALSE)
+  sub_and_ses <- tools::file_path_sans_ext(file) |> str_remove_all("_framewise_displacement") |> 
+    str_remove_all("_task-rest_bold_st_mcflirt_bp_det_24HMP8Phys_4mmFWHM")
+  adni_fd[[sub_and_ses]] <- read_csv(file.path(ts_dir_adni, file), show_col_types = FALSE)
 }
 
-rsqa <- lapply(adni_fd, function(x) c(rsqa__MeanFD = mean(x$displacement), rsqa__MaxFD = max(x$displacement)))
+rsqa <- lapply(adni_fd, function(x) c(rsqa__MeanFD = x |> pull(1) |> mean(), rsqa__MaxFD = x |> pull(1) |> max()))
 rsqa_fd <- do.call(rbind, rsqa) |> as_tibble(rownames = NA) |> rownames_to_column("id_ses")
 
 
 if (from_start) {
   
-  timeseries_files <- list.files(ts_dir, pattern = "timeseries\\.csv")
+  timeseries_files <- list.files(ts_dir_adni, pattern = "timeseries\\.csv")
   
   adni_timeseries <- pblapply(timeseries_files, function(file) {
-    read_csv(file.path(ts_dir, file), progress = FALSE, show_col_types = FALSE) |> 
+    read_csv(file.path(ts_dir_adni, file), progress = FALSE, show_col_types = FALSE) |> 
       as.matrix()
   })
   
@@ -629,8 +660,8 @@ if (from_start) {
 ##############
 if (from_start) {
  
-  dir.create(connectome_dir, showWarnings = FALSE)
-  already_proc_conn <- list.files(connectome_dir) |> tools::file_path_sans_ext()
+  dir.create(connectome_dir_adni, showWarnings = FALSE)
+  already_proc_conn <- list.files(connectome_dir_adni) |> tools::file_path_sans_ext()
   proc_conn <- names(timeseries)[!(names(timeseries) %in% already_proc_conn)]
   
   print("Writing connectomes ADNI")
@@ -644,7 +675,7 @@ if (from_start) {
         colnames(ts) <- rois
         connectome <- cor(ts)
         if (sum(is.na(connectome)) > 0) stop("There are zero variance timeseries")
-        write_rds(connectome, file.path(connectome_dir, paste0(img_file, ".rds")))
+        write_rds(connectome, file.path(connectome_dir_adni, paste0(img_file, ".rds")))
       },
       error = function(cond) {
         print(cond)
@@ -659,8 +690,8 @@ if (from_start) {
 }
 
 
-success_vec <- list.files(connectome_dir) |> tools::file_path_sans_ext()
-adni_df <- adni_df___ |> filter(file_func %in% success_vec) |> 
+success_vec <- list.files(connectome_dir_adni) |> tools::file_path_sans_ext()
+adni_df <- adni_df___ |> filter(id_ses %in% success_vec) |> 
   inner_join(rsqa_fd) 
 
 adni_df_unfilt <- adni_df |> mutate(motion_filter = (rsqa__MeanFD<0.3 & rsqa__MaxFD<3))
@@ -681,7 +712,7 @@ if (from_start) {
   for (img_file in success_vec){
     tryCatch(
       {
-        con_cube_adni[, , img_file] <- read_rds(file.path(connectome_dir, paste0(img_file, ".rds")))
+        con_cube_adni[, , img_file] <- read_rds(file.path(connectome_dir_adni, paste0(img_file, ".rds")))
       },
       error = function(cond) {
         print(cond)
@@ -796,10 +827,8 @@ grad_df <- readRDS(file.path(clean_dir, "grad_df.rds"))
 ########################
 
 # Source the methods_figure.R script to generate all plots for the methods figure.
-# However, the figures have then been manually put together in inkscape so I will leave this
-# out of the main pipeline 
+# However, the figures have then been manually put together in inkscape 
 
-# There seems to be a bug when setting up the layout for gradient 3
 source("src/methods_figure.R")
 
 ########################
@@ -820,27 +849,26 @@ magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
 ################
 
 
-
-
 fig_one <- figure_one(subject_data = biofinder_df,
-                          measures_list =list(nodal_affinity = fc_measures_bf$affinity), 
-                          measures_list_replication = list(nodal_affinity = fc_measures_adni$affinity),
-                          gradients_df = grad_df |> filter(study == "biofinder"),
-                          gradients_df_replication = grad_df |> filter(study == "adni"),
-                          selected_gradients = c(1, 3), 
-                          empt_row_height = -0.1,
-                          b_size = 21,
-                          draw_size = 21,
-                          plot_title_size = 0.9,
-                          axes_title_size = 0.9,
-                          r2_sizing1 = 5.75,
-                          boxed = FALSE,
-                          split = TRUE)
+                      subject_data_replication = adni_df |> filter(fmri_bl),
+                      measures_list =list(nodal_affinity = fc_measures_bf$affinity), 
+                      measures_list_replication = list(nodal_affinity = fc_measures_adni$affinity),
+                      gradients_df = grad_df |> filter(study == "biofinder"),
+                      gradients_df_replication = grad_df |> filter(study == "adni"),
+                      selected_gradients = c(1, 3), 
+                      empt_row_height = -0.1,
+                      b_size = 21,
+                      draw_size = 21,
+                      plot_title_size = 0.9,
+                      axes_title_size = 0.9,
+                      r2_sizing1 = 6,
+                      boxed = FALSE,
+                      split = TRUE)
 
 
 p_name <- "figure1.png"
 ggsave(file.path(figure_path, p_name), fig_one[[1]],
-       width = img_width*scaling_factor, height = img_width*0.45*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
+       width = img_width*scaling_factor, height = img_width*0.5*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
 img <- magick::image_read(file.path(figure_path, p_name))
 img_resized <- magick::image_resize(img, magick_geom_scaling)
 magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
@@ -862,12 +890,12 @@ gam_preds_affinity <- gam_pred_nodes(biofinder_df |> filter(fmri_bl),
 
 nonlin_p <- plot_gams_v1(gam_predictions = gam_preds_affinity, 
                          grad_df = grad_df |> filter(study == "biofinder"),
-                         biofinder_data = biofinder_df, scale_fac = 3)
+                         biofinder_data = biofinder_df |> filter(fmri_bl), scale_fac = 3)
 
 p_name <- "figure2.png"
 img_width <- 90/25.4
 scale_factor = 3
-magick_geom_scaling <- paste0(100/scale_factor, "%x", 100/scale_factor, "%")
+magick_geom_scaling <- paste0(100*0.66, "%x", 100*0.66, "%")
 ggsave(file.path(figure_path, p_name), nonlin_p, 
        width = img_width*scale_factor, 
        height = img_width*scale_factor*1.3, 
@@ -910,7 +938,9 @@ biofinder_df |>
 # Very case specific function for creating figure 3
 longitudindal_figs <- longitudinal_and_window_analysis(long_df = long_bf_, 
                                                        b_size = 18,
-                                                       run_windowing = ifelse(from_start, TRUE, FALSE) )
+                                                       run_windowing = FALSE
+                                                         #ifelse(from_start, TRUE, FALSE) 
+                                                       )
 
 img_width = 180 / 25.4
 scaling_factor <- 2
@@ -940,7 +970,8 @@ img_width = 180 / 25.4
 scaling_factor <-  3
 magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
 
-fig2 <- figure_one(subject_data = biofinder_df,
+fig4 <- figure_one(subject_data = biofinder_df,
+                   subject_data_replication = adni_df |> filter(fmri_bl),
                    measures_list =list(nodal_affinity = fc_measures_bf$affinity), 
                    measures_list_replication = list(nodal_affinity = fc_measures_adni$affinity),
                    gradients_df = grad_df |> filter(study == "biofinder"),
@@ -957,7 +988,7 @@ fig2 <- figure_one(subject_data = biofinder_df,
                    split = TRUE)
 
 p_name <- "figure4.png"
-ggsave(file.path(figure_path, p_name), fig2[[2]], 
+ggsave(file.path(figure_path, p_name), fig4[[2]], 
        width = img_width*scaling_factor, height = img_width*0.4*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
 img <- magick::image_read(file.path(figure_path, p_name))
 img_resized <- magick::image_resize(img, magick_geom_scaling)
@@ -972,6 +1003,33 @@ magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
 ##    ## ##     ## ##        ##        ##       ##       ##     ## ##       ##   ###    ##    ##     ## ##    ##     ##    
  ######   #######  ##        ##        ######## ######## ##     ## ######## ##    ##    ##    ##     ## ##     ##    ##    
 
+########################################################
+# Supplementary figure with gradient 2
+########################################################
+
+fig_one <- figure_one(subject_data = biofinder_df,
+                      subject_data_replication = adni_df |> filter(fmri_bl),
+                      measures_list =list(nodal_affinity = fc_measures_bf$affinity), 
+                      measures_list_replication = list(nodal_affinity = fc_measures_adni$affinity),
+                      gradients_df = grad_df |> filter(study == "biofinder"),
+                      gradients_df_replication = grad_df |> filter(study == "adni"),
+                      selected_gradients = c(2), 
+                      empt_row_height = -0.1,
+                      b_size = 21,
+                      draw_size = 21,
+                      plot_title_size = 0.9,
+                      axes_title_size = 0.9,
+                      r2_sizing1 = 6,
+                      boxed = FALSE,
+                      split = TRUE)
+
+
+p_name <- "supplementary_gradient2.png"
+ggsave(file.path(figure_path, p_name), fig_one[[1]],
+       width = img_width*scaling_factor, height = img_width*0.35*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
+img <- magick::image_read(file.path(figure_path, p_name))
+img_resized <- magick::image_resize(img, magick_geom_scaling)
+magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
 
 ########################################################
 # Supplementary figure within network affinity
@@ -983,6 +1041,7 @@ magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
 
 
 within_supp <- figure_one(subject_data = biofinder_df,
+                          subject_data_replication = adni_df |> filter(fmri_bl),
                           measures_list =list(within_network_affinity = fc_measures_bf$affinity_within), 
                           measures_list_replication = list(within_network_affinity = fc_measures_adni$affinity_within),
                           gradients_df = grad_df |> filter(study == "biofinder"),
@@ -1012,6 +1071,7 @@ magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
 ########################################################
 
 between_supp <- figure_one(subject_data = biofinder_df,
+                           subject_data_replication = adni_df |> filter(fmri_bl),
                            measures_list =list(between_network_affinity = fc_measures_bf$affinity_between), 
                            measures_list_replication = list(between_network_affinity = fc_measures_adni$affinity_between),
                            gradients_df = grad_df |> filter(study == "biofinder"),
@@ -1042,6 +1102,7 @@ magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
 
 
 strength_supp <- figure_one(subject_data = biofinder_df,
+                            subject_data_replication = adni_df |> filter(fmri_bl),
                             measures_list =list(nodal_strength = fc_measures_bf$strength), 
                             measures_list_replication = list(nodal_strength = fc_measures_adni$strength),
                             gradients_df = grad_df |> filter(study == "biofinder"),
@@ -1070,6 +1131,7 @@ magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
 ########################################################
 
 aff_no_thresh <- figure_one(subject_data = biofinder_df,
+                            subject_data_replication = adni_df |> filter(fmri_bl),
                             measures_list =list(nodal_affinity = bf_aff_nothres$affinity), 
                             measures_list_replication = list(nodal_affinity = adni_affinity_no_thresh$affinity),
                             gradients_df = grad_df |> filter(study == "biofinder"),
@@ -1108,7 +1170,7 @@ clinical_cog_int <-  plot_gradient_relationships(biofinder_df |> filter(fmri_bl,
                                                  logistic_fit = FALSE,
                                                  covariates = c("sex", "rsqa__MeanFD"),
                                                  filter_criteria = quo(),
-                                                 r2_size = 3.8,
+                                                 r2_size = 5,
                                                  show_networks = FALSE,
                                                  tag_prefix = "",
                                                  tag_sep = "",
@@ -1130,7 +1192,7 @@ p_clinical_cog <-
                                           )
   ) &
   theme(plot.tag = element_blank(),
-        #text = element_text(size = text_size)
+        text = element_text(size = 16)
   )
 
 plt_idx <- 4:6
@@ -1139,9 +1201,124 @@ p_clinical_cog[[plt_idx[2]]] <- p_clinical_cog[[plt_idx[2]]] + labs(title = "-mP
 p_clinical_cog[[plt_idx[3]]] <- p_clinical_cog[[plt_idx[3]]] + labs(title = "AD Pathology × -mPACC") + theme(plot.subtitle = element_text(hjust = 0.5))
 
 
-img_width = 90 / 25.4
+img_width = 140 / 25.4
 p_name <- "supplementary_clin_int.png"
-ggsave(file.path(figure_path, p_name), p_clinical_cog, width = img_width*scaling_factor, height = img_width*0.6*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
+ggsave(file.path(figure_path, p_name), p_clinical_cog, width = img_width*scaling_factor, 
+       height = img_width*0.6*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
+img <- magick::image_read(file.path(figure_path, p_name))
+img_resized <- magick::image_resize(img, magick_geom_scaling)
+magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+
+######################################################################
+# Supplementary figure for analysis in clinical group without mPACC
+######################################################################
+
+clinical_wo_cog <-  plot_gradient_relationships(biofinder_df |> filter(fmri_bl, diagnosis=="MCI" | diagnosis=="AD", !is.na(mPACC_v1)) |> 
+                                                   mutate(`-mPACC_v1` = -mPACC_v1), 
+                                                 gradient_data = grad_df |> filter(study=="biofinder"), 
+                                                 gradients = c(1, 3),
+                                                 vect = TRUE,
+                                                 gradient_colors = gradient_cols,
+                                                 list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
+                                                 mod_formula = formula(paste0(" ~ age + pathology_ad + sex + rsqa__MeanFD")),
+                                                 logistic_fit = FALSE,
+                                                 covariates = c("sex", "rsqa__MeanFD"),
+                                                 filter_criteria = quo(),
+                                                 r2_size = 6,
+                                                 show_networks = FALSE,
+                                                 tag_prefix = "",
+                                                 tag_sep = "",
+                                                 layout_construction = "horizontal",
+                                                 include_gradient_plots = TRUE,
+                                                 right_term_side = FALSE,
+                                                 plt_title = "",
+                                                 cache_runs = FALSE)
+
+n_clin <- clinical_wo_cog$n
+clin_l_marg = 0
+p_clinical_wo_cog <-
+  clinical_wo_cog$plot + plot_annotation(title = paste0("Diagnosed MCI/AD (Ab+)", " (N=", n_clin, ")"), 
+                                          subtitle = expression(FC[parcel] ~ "~" ~ age + pathology + sex + motion),
+                                          theme = theme(plot.subtitle = element_text(hjust = 0, vjust = -0.05,
+                                                                                     family = "mono",
+                                                                                     margin = margin(l = clin_l_marg, unit = "npc")), 
+                                                        plot.title.position = "plot",
+                                                        plot.title = element_text( hjust =0, margin = margin(l = clin_l_marg, unit = "npc"))
+                                          )
+  ) &
+  theme(plot.tag = element_blank(),
+        text = element_text(size = 14)
+  )
+
+plt_idx <- 3:4
+p_clinical_wo_cog[[plt_idx[1]]] <- p_clinical_wo_cog[[plt_idx[1]]] + labs(title = "Age")
+p_clinical_wo_cog[[plt_idx[2]]] <- p_clinical_wo_cog[[plt_idx[2]]] + labs(title = "AD Pathology")
+
+img_width = 90 / 25.4
+p_name <- "supplementary_clin_without_cognition.png"
+ggsave(file.path(figure_path, p_name), p_clinical_wo_cog, width = img_width*scaling_factor, height = img_width*0.85*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
+img <- magick::image_read(file.path(figure_path, p_name))
+img_resized <- magick::image_resize(img, magick_geom_scaling)
+magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+
+
+##############################################################################
+# Supplementary figure for cognitively unimpaired without interaction
+##############################################################################
+
+health_cog_no_interact <-  plot_gradient_relationships(biofinder_df |> filter(fmri_bl, diagnosis=="Normal" | diagnosis=="SCD", abnorm_ab==0, !apoe4) |> 
+                                                         mutate(`-mPACC_v1` = -mPACC_v1),
+                                                       gradient_data = grad_df |> filter(study == "biofinder"), 
+                                                       gradients = c(1, 3),
+                                                       gradient_colors = gradient_cols,
+                                                       r2_size = rel(7),
+                                                       base_size_ = 18,
+                                                       list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
+                                                       vect = TRUE,
+                                                       mod_formula = formula(paste0(" ~ age + `-mPACC_v1` + pathology_ad + sex + rsqa__MeanFD")),
+                                                       logistic_fit = FALSE,
+                                                       covariates = c("sex", "rsqa__MeanFD"),
+                                                       filter_criteria = quo(),
+                                                       show_networks = FALSE,
+                                                       tag_prefix = "",
+                                                       tag_sep = "",
+                                                       layout_construction = "horizontal",
+                                                       plot_spacing = 0.2,
+                                                       include_gradient_plots = TRUE,
+                                                       right_term_side = FALSE,
+                                                       plt_title = "",
+                                                       cache_runs = FALSE)
+
+n_health <- health_cog_no_interact$n
+health_l_marg <- 0
+p_health_cog_no_interact <- health_cog_no_interact$plot &
+  theme(plot.tag = element_blank(),
+        title  = element_text(size = rel(0.8))) 
+
+p_health_cog_no_interact <- p_health_cog_no_interact + 
+  plot_annotation(title = paste0("Cognitively unimpaired, no APOE e4, Ab-", 
+                                 " (N=", n_health, ")"), 
+                  subtitle = expression(FC[parcel] ~ "~" ~ age + "-mPACC" + pathology + sex + motion),
+                  theme = theme(plot.subtitle = element_text(size = rel(1),
+                                                             family = "mono",
+                                                             face = "italic",
+                                                             hjust = 0, 
+                                                             vjust = -0.05, 
+                                                             margin = margin(l = health_l_marg, unit = "npc")), 
+                                plot.title = element_text(size = rel(1.2), 
+                                                          hjust =0, 
+                                                          margin = margin(l = health_l_marg, unit = "npc")))) 
+
+
+plt_idx <- 3:5
+#plt_idx <- plt_idx-1
+p_health_cog_no_interact[[plt_idx[1]]] <- p_health_cog_no_interact[[plt_idx[1]]] + labs(title = "Age")
+p_health_cog_no_interact[[plt_idx[2]]] <- p_health_cog_no_interact[[plt_idx[2]]] + labs(title = "-mPACC", subtitle = "(Inverted cognition)") + theme(plot.subtitle = element_text(hjust = 0.5))
+p_health_cog_no_interact[[plt_idx[3]]] <- p_health_cog_no_interact[[plt_idx[3]]] + labs(title = "AD pathology")
+
+img_width = 150 / 25.4
+p_name <- "supplementary_health_no_interaction.png"
+ggsave(file.path(figure_path, p_name), p_health_cog_no_interact, width = img_width*scaling_factor, height = img_width*0.6*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
 img <- magick::image_read(file.path(figure_path, p_name))
 img_resized <- magick::image_resize(img, magick_geom_scaling)
 magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
@@ -1322,8 +1499,14 @@ library(finalfit)
 
 
 descriptives <- biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |> 
-  select(age, pathology_ad, sex, rsqa__MeanFD, diagnosis) |> 
-  rename(MeanFD = rsqa__MeanFD) |> 
+  select(age, pathology_ad, sex, rsqa__MeanFD, diagnosis, abnorm_ab, education, cho12, cho34, cho56) |> 
+  mutate(abnorm_ab = ifelse(abnorm_ab == 1, "Positive", "Negative")) |> 
+  rename(MeanFD = rsqa__MeanFD,
+         Education = education,
+         Aβ = abnorm_ab,
+         Braak12 = cho12,
+         Braak34 = cho34,
+         Braak56 = cho56) |> 
   rename(Age = age) |> 
   rename(Pathology = pathology_ad) |> 
   mutate(sex = ifelse(sex == 1, "Female", "Male"),
@@ -1334,41 +1517,62 @@ descriptives <- biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad
   rename(Diagnosis = diagnosis) |> 
   rename(Sex = sex) 
 
-explanatory = c("Age", "Pathology", "MeanFD", "Sex")
+explanatory = c("Age",  "Pathology", "Aβ", "Braak12", "Braak34", "Braak56", "MeanFD", "Education", "Sex")
 dependent = 'Diagnosis'
 descriptives |>
-  summary_factorlist(dependent, explanatory, cont = "median",
+  summary_factorlist(dependent, explanatory, cont = "mean",
                      p=FALSE, add_dependent_label=FALSE,
                      dependent_label_prefix = "",
                      add_col_totals = TRUE,
                      digits = c(2, 2, 3, 1, 0)
   ) |> 
-  mutate(Cohort = "BioFINDER") |> 
+  mutate(Cohort = "BioFINDER",
+         label = case_when(
+           grepl("Braak", label) ~ paste0(label, " (SUVR)"),
+           label == "MeanFD" ~ "Mean FD (mm)",
+           label == "Pathology" ~ "Pathology Score",
+           label == "Education" ~ "Education (Years)",
+           TRUE ~ label
+         )
+         ) |> 
   relocate(Cohort)-> t1_bf
 
 
 
 descriptives_adni <- adni_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |>
-  select(age, pathology_ad, sex, diagnosis, rsqa__MeanFD) |> 
+  select(age, pathology_ad, sex, diagnosis, rsqa__MeanFD, abnorm_ab, education_yrs, braak1, braak34, braak56) |> 
+  mutate(abnorm_ab = ifelse(abnorm_ab == 1, "Positive", "Negative")) |> 
   mutate(sex = ifelse(sex == 0, "Male", "Female")) |> 
   mutate(Diagnosis = factor(ifelse(diagnosis=="MCI",  "MCI_ab+", 
                                    ifelse(diagnosis=="Dementia",  "AD", diagnosis)), 
                             levels= c("CN", "MCI_ab+", "AD"))) |> 
-  rename(MeanFD = rsqa__MeanFD) |> 
-  rename(Age = age) |> 
-  rename(Pathology = pathology_ad) |> 
-  rename(Sex = sex) 
+  rename(Age = age,
+         MeanFD = rsqa__MeanFD,
+         Pathology = pathology_ad,
+         Education = education_yrs,
+         Aβ = abnorm_ab,
+         Braak12 = braak1,
+         Braak34 = braak34,
+         Braak56 = braak56,
+         Sex = sex)
 
-explanatory = c("Age", "Pathology", "Sex", "MeanFD")
 dependent = 'Diagnosis'
 descriptives_adni |>
-  summary_factorlist(dependent, explanatory, cont = "median",
+  summary_factorlist(dependent, explanatory, cont = "mean",
                      p=FALSE, add_dependent_label=FALSE,
                      dependent_label_prefix = "",
                      add_col_totals = TRUE,
                      digits = c(2, 2, 3, 1, 0)
   ) |> 
-  mutate(Cohort = "ADNI") |> 
+  mutate(Cohort = "ADNI", 
+         label = case_when(
+           grepl("Braak", label) ~ paste0(label, " (SUVR)"),
+           label == "MeanFD" ~ "Mean FD (mm)",
+           label == "Pathology" ~ "Pathology Score",
+           label == "Education" ~ "Education (Years)",
+           TRUE ~ label
+         )
+         ) |> 
   relocate(Cohort)-> t1_adni
 
 t1 <- rbind(t1_bf, t1_adni)
@@ -1386,26 +1590,34 @@ write_rds(t1, file.path(table_path, "CS_tbl1.rds"))
 descriptives <- biofinder_df |> 
   drop_na(age, tau_pathology, sex, # mPACC_v1, 
           rsqa__MeanFD) |> 
+  mutate(abnorm_ab = ifelse(abnorm_ab == 1, "Positive", "Negative")) |> 
   group_by(sid) |> 
   arrange(sid, fmri_date) |> 
   mutate(
     Diagnosis_BL = first(diagnosis),
-    ab_bl = first(abnorm_ab),
-    age_bl = min(age),
+    education_bl = first(education),
+    education_follow = last(education),
+    aβ_bl = first(abnorm_ab),
+    Age_bl = first(age),
+    Age_follow = last(age),
     path_bl = first(tau_pathology),
-    # path_bl_grp = cut(path_bl, quantile(path_bl, probs = seq(0, 1, length.out = 4))),
-    mPACC_bl = first(mPACC_v1),
-    #ageΔ  = age - age_bl,
+    path_follow = last(tau_pathology),
+    Braak12_bl = first(cho12),
+    Braak34_bl = first(cho34),
+    Braak56_bl = first(cho56),
+    Braak12_follow = last(cho12),
+    Braak34_follow = last(cho34),
+    Braak56_follow = last(cho56),
+    
+    interval = (difftime(last(fmri_date), first(fmri_date), units = "days")/365) |> as.numeric(),
+
     pathΔ = last(tau_pathology) - path_bl,
     time = (difftime(fmri_date, first(fmri_date), units = "days")/365) |> as.numeric(),
-    time_diff = as.numeric(difftime(fmri_date, lag(fmri_date), units = "days")) / 365,
-    mean_time = mean(time_diff, na.rm = TRUE),
     n_visits = n()
   ) |>  
   fill(diagnosis, .direction = "downup") |> 
   ungroup() |>   
   filter(n()>1, .by = "sid") |> 
-  rename(Age = age) |> 
   mutate(sex = ifelse(sex == 1, "Female", "Male"),
          Diagnosis_BL = ifelse(Diagnosis_BL %in% c("AD", "MCI", "SCD", "Normal"), Diagnosis_BL, "Other"),
          Diagnosis_BL = ifelse(Diagnosis_BL %in% c("SCD", "Normal"), "CN", Diagnosis_BL), 
@@ -1415,15 +1627,49 @@ descriptives <- biofinder_df |>
   rename(Sex = sex) |> 
   filter(fmri_date == max(fmri_date), .by = "sid") 
 
+
+
 longi_tbl1_bf <- descriptives |> 
-  summary_factorlist("Diagnosis_BL", c("Age", "mean_time", "pathΔ", "Sex"), cont = "median",
+  summary_factorlist("Diagnosis_BL", c(
+    "n_visits",
+    "interval",
+    "pathΔ",
+    "Sex", 
+    "education",
+    "Age_bl", 
+    "path_bl", 
+    "aβ_bl",
+    "Braak12_bl",
+    "Braak34_bl",
+    "Braak56_bl",
+    "Age_follow",
+    "path_follow",
+    "Braak12_follow",
+    "Braak34_follow",
+    "Braak56_follow"), cont = "mean",
                      p=FALSE, add_dependent_label=FALSE,
                      dependent_label_prefix = "",
                      add_col_totals = TRUE,
                      digits = c(2, 2, 3, 1, 0)
   ) |> 
-  mutate(Cohort = "BioFINDER") |> 
-  relocate(Cohort)
+  mutate(Cohort = "BioFINDER",
+         label = ifelse(label == "", NA, label)) |> 
+  fill(label, .direction = "down") |> 
+  mutate(TimePoint = case_when(
+    grepl("follow", label) ~ "Last follow up",
+    grepl("bl", label) ~ "Baseline",
+    TRUE ~ "Constant"
+  ),
+  TimePoint = as_factor(TimePoint)) |> 
+  mutate(label = str_remove_all(label, "_follow"),
+         label = str_remove_all(label, "_bl"),
+         label = str_replace_all(label, "pathΔ", "ΔPathology score"),
+         label = str_replace_all(label, "path", "Pathology score"),
+         label = str_replace_all(label, "interval", "Follow up (Years)"),
+         label = str_replace_all(label, "n_visits", "Number of visits"),
+         label = str_replace_all(label, "education", "Education (Years)"),
+         label = ifelse(grepl("Braak", label), paste0(label, " (SUVR)"), label)) |> 
+  relocate(Cohort, TimePoint) 
 
 
 longitudinal_table <- rbind(longi_tbl1_bf)

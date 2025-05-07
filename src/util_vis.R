@@ -21,6 +21,7 @@ plot_gradient_relationships <- function(subject_data,
                                         layout_construction = "horizontal",
                                         right_term_side = FALSE,
                                         include_gradient_plots = TRUE,
+                                        gray_out = FALSE,
                                         side_color_bar = TRUE,
                                         plot_spacing = 0.3,
                                         show_networks = FALSE,
@@ -336,9 +337,10 @@ plot_gradient_relationships <- function(subject_data,
         
         p <- plot_data %>% 
           ggplot(aes(x = .data[[i]], y =.data[[j]],
-                     color = name)) +
-          geom_point(alpha = 0.2) +
-          stat_poly_line(se = FALSE, color = "#323232") +
+                     color = if (!gray_out) name else "gray")) +
+          geom_point(alpha = ifelse(gray_out, 0.05, 0.2)) +
+          stat_poly_line(se = FALSE, 
+                         color = ifelse(gray_out, "#808080", "#323232")) +
           labs(#title = term_,
             x = x_lab,
             y = y_lab,
@@ -367,6 +369,7 @@ plot_gradient_relationships <- function(subject_data,
           
           
           p <- p + ggpp::annotate(geom = "text_npc", label = label_corr,
+                                  alpha = ifelse(gray_out, 0.2, 1),
                                     size = r2_size,
                                     npcx = "left", npcy = "top",
                                     family = "sans",
@@ -378,6 +381,14 @@ plot_gradient_relationships <- function(subject_data,
                                 parse = TRUE, color = "#323232", label.x = "left", label.y = "top", size = r2_size)
         }
         
+        if (gray_out) {
+          p <- p + ggpp::annotate("text_npc",
+                                  npcx = "middle", 
+                                  npcy = "middle",
+                                  label = "?",
+                                  size = 28
+          )
+        }
         
         
         if (side_color_bar) {
@@ -464,8 +475,8 @@ plot_gradient_relationships <- function(subject_data,
     )
     
     if (n_gradients>1) {
-      for (g in 4:(length(gradients)+2)){
-        layout <- c(layout, area(g+1, 1))
+      for (g in seq(5, n_plot_rows, by =2)){
+        layout <- c(layout, area(g, 1))
       }
     }
     
@@ -589,7 +600,6 @@ plot_gradient_relationships <- function(subject_data,
 }
 
 
-
 plot_gams_v1 <- function(gam_predictions, grad_df, 
                          atlas_geometry = readRDS("data/atlas_data/Schaefer2018_1000Parcels_geometry.rds"),
                          gradient_cols = data.frame(gradient1 = c("#3F596D", "#D38A4E"), 
@@ -612,7 +622,7 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
   
   
   legend_labs <-  c("Ab42/40", "Braak12", "Braak34", "Braak56")
-  biof_path_plot <- biofinder_df %>% filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) %>% 
+  biof_path_plot <- biofinder_data %>% filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) %>% 
     select(pathology_ad, ab_ratio, 
            starts_with("braak"), starts_with("cho")) %>% 
     mutate(across(where(is.numeric) & !pathology_ad, scale)) %>% 
@@ -627,8 +637,17 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
     ggsci::scale_color_nejm(name = "Pathology", labels = legend_labs) +
     theme(legend.position = "right",
           legend.title.position = "top",
+          #ggside.panel.scale = 0.2,
           legend.text = element_text(size = rel(0.6)),
           legend.title = element_text(size = rel(0.8)))  
+    # geom_xsidehistogram(aes(x = pathology_ad),
+    #                     color = "black",
+    #                     fill = "lightgray",
+    #                     bins = 20,
+    #                     data = biofinder_data %>% filter(fmri_bl, !is.na(age), !is.na(pathology_ad)),
+    #                      inherit.aes = FALSE) +
+    # scale_xsidey_continuous(breaks = c(0, 100, 200), position = "left") +
+    # ggside(x.pos = "bottom")
   
   pathology_plot <- biof_path_plot +
     theme(legend.position = "")  
@@ -760,7 +779,7 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
       ) +
       theme_ggside_void() +
       ggside(x.pos = "bottom", y.pos = "right") +
-      theme(ggside.panel.scale = 0.02)
+      theme(ggside.panel.scale = 0.05)
     
     if (spintest) {
       
@@ -872,7 +891,7 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
       ) +
       theme_ggside_void() +
       ggside(x.pos = "bottom", y.pos = "left") +
-      theme(ggside.panel.scale = 0.02)
+      theme(ggside.panel.scale = 0.05)
     
     
     if (spintest) {
@@ -907,7 +926,7 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
               mean_grad_value = mean(gradient1)) %>% 
     ggplot(aes(pathology_ad, mean_pred_fc, group = mean_grad_value, color = mean_grad_value)) +
     geom_line(linewidth = 1) +
-    labs(x = "Pathology score", y = "Predicted FC") +
+    labs(x = "Pathology score", y = "Predicted FC", color = "Mean G1\nin ventile") +
     #guides(colour = guide_colorbar(title.position="top", title.hjust = 0.0))+
     scale_color_gradient2(
       high = gradient_cols[[1]][2], mid = "white", low = gradient_cols[[1]][1]) +
@@ -917,7 +936,8 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
       legend.box.spacing = unit(0.0025, "npc"),
       legend.title = element_blank(),
       legend.text = element_text(margin = margin(l = 0.8), size = rel(0.7))
-    )
+    ) 
+  
   
   r2_pat <- gam_predictions$pat_derivs %>% pivot_longer(starts_with("7Networks"), names_to = "region", values_to = "value") %>%
     inner_join(grad_df) %>%
@@ -925,7 +945,13 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
     summarise(grad_R2 = cor(value, gradient1)) %>%
     ggplot(aes(pathology_ad, grad_R2)) +
     geom_line() +
-    labs(y = "Correlation (r)", x = "Pathology score")
+    labs(y = "Correlation (r)", x = "Pathology score") +
+    theme(
+      ggside.panel.scale = 0.2
+    ) 
+  # +
+  #   geom_xsidehistogram(aes(x = pathology_ad), data = biofinder_data, inherit.aes = FALSE) +
+  #   ggside(x.pos = "top")
   
   
   
@@ -938,6 +964,7 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
       geom_vline(xintercept = x_int, linetype = "dashed")
   }
   
+  age_range <- range(gam_predictions$age_pred$age)
   
   quantile_trajectories_term2 <- gam_predictions$age_pred %>% 
     pivot_longer(starts_with("7Networks"), names_to = "region", values_to = "predicted_fc") %>% 
@@ -948,10 +975,9 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
               mean_grad_value = mean(gradient3)) %>% 
     ggplot(aes(age, mean_pred_fc, group = mean_grad_value, color = mean_grad_value)) +
     geom_line(linewidth = 1) +
-    labs(y = "Predicted FC", x = "Age") +
+    labs(y = "Predicted FC", x = "Age", color = "Mean G3\nin ventile") +
     scale_color_gradient2(
       high = gradient_cols[[3]][2], mid = "white", low = gradient_cols[[3]][1]) +
-    labs(color = "") +
     #guides(colour = guide_colorbar(title.position="top", title.hjust = 0.0))+
     scale_y_continuous(labels = scales::label_number(accuracy = 0.01)) +
     theme(
@@ -960,7 +986,7 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
       legend.box.spacing = unit(0.005, "npc"),
       legend.title = element_blank(),
       legend.text = element_text(margin = margin(l = 0.8), size = rel(0.7))
-    )
+    ) 
   
   r2_term2 <- gam_predictions$age_derivs %>% pivot_longer(starts_with("7Networks"), names_to = "region", values_to = "value") %>%
     inner_join(grad_df ) %>%
@@ -968,7 +994,12 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
     summarise(grad_R2 = cor(value, gradient3)) %>%
     ggplot(aes(age, grad_R2)) +
     geom_line() +
-    labs(y = "Correlation (r)", x = "Age")
+    theme(ggside.panel.scale = 0.2) +
+    labs(y = "Correlation (r)", x = "Age") 
+    # geom_xsidehistogram(aes(x = age), data = biofinder_data |> 
+    #                       filter(age > age_range[1], age < age_range[2]), 
+    #                     inherit.aes = FALSE) +
+    # ggside(x.pos = "bottom")
   
   
   for(x_int in seq_range(gam_predictions$age_pred$age, 5)){
@@ -1008,7 +1039,7 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
       axis_titles = "collect", axes = "collect"
       #guides = "collect" 
     )  & 
-    theme(plot.tag.position  = c(0.175, 1.02),
+    theme(plot.tag.position  = c(0.175, 0.9),
           plot.tag = element_text(size = rel(0.6), hjust = 0, vjust = 0),
           panel.background = element_rect(fill = "transparent", colour = NA),
           plot.background = element_rect(fill = "transparent", colour = NA),
@@ -1037,12 +1068,68 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
     draw_plot(c) +
     draw_figure_label("C")
   
+  get_net_legend <- function(b_size = 11, point_size = 3){
+    #scale_factor <- 5
+    x <- grad_df %>% filter(study == "biofinder") |> 
+      ggplot(aes(gradient1, gradient3, color = name)) +
+      geom_point(alpha = 0.5) +
+      theme_bw(base_size = b_size) +
+      guides(color = guide_legend(
+        label.hjust=0,
+        byrow = TRUE,
+        nrow = 2, 
+        override.aes = list(size = rel(point_size))
+      )) +
+      scale_color_manual(values = net_names %>% select(name, col) %>% deframe) +
+      theme(
+        legend.position = "bottom",
+        #legend.key.size = unit(0.0, "cm"),
+        legend.key.spacing.x = unit(0.2, "cm"),
+        legend.key.spacing.y = unit(-1.25, "cm"),
+        legend.direction = "horizontal",
+        #legend.title.position = "",
+        legend.text.position = "right",
+        legend.title = element_blank(),
+        legend.text = element_text(size = rel(0.8), margin = margin(l = 0, r = 2, unit = "pt")),
+        legend.background = element_blank()
+      )
+    
+    leg <- ggpubr::get_legend(x)
+    leg <- ggpubr::as_ggplot(leg)
+    leg 
+  }
+  
+  net_legend <- get_net_legend()
+  
+  age_hist <- biofinder_data |> filter(age > age_range[1], age < age_range[2]) |>  
+    ggplot(aes(x = age)) +
+    geom_histogram(bins = 20, color = "black", fill = "lightgray") +
+    labs(y = "", x = "") +
+    scale_y_continuous(breaks = c(0, 100), position = "right") +
+    theme(axis.ticks.x = element_blank(),
+          axis.text.x = element_blank()
+          )
+  
+  path_hist <- biofinder_data  |>
+    ggplot(aes(x = pathology_ad)) +
+    geom_histogram(bins = 20, color = "black", fill = "lightgray") +
+    labs(y = "", x = "") +
+    scale_y_continuous(breaks = c(0, 200), position = "left") +
+    theme(axis.ticks.x = element_blank(),
+          axis.text.x = element_blank()
+    )
+  
   # 
-  ggdraw() +
-    draw_plot(a, x = 0, y = 0.70, width = 1, height = 0.30) +
+  nonlin_p <-   ggdraw() +
+    draw_plot(a, x = 0, y = 0.7, width = 1, height = 0.30) +
     draw_plot(b, x = 0, y = 0.30, width = 1, height = 0.40) +
+    draw_plot(age_hist, x = 0.55, y = 0.55, width = 0.44, height = 0.065) +
+    draw_plot(path_hist, x = 0.015, y = 0.66, width = 0.44, height = 0.065) +
     draw_plot(pat_leg, y = 0.585, x = 0.4, width = 0.2, height = 0.1) +
     draw_plot(c, x = 0, y = 0.0, width = 1, height = 0.30) +
+    draw_plot(net_legend, x = 0.05, y = -0.025, width = 0.2, height = 0.1)+
+    draw_text(text = c("Mean G1\nin ventile", 
+                       "Mean G3\nin ventile"), x = c(0.485, 0.965), y = c(0.465, 0.465), size = 11) +
     draw_line(
       x = c(0.099, 0.01, 0.01),
       y = c(0.685, 0.725, 0.81), 
@@ -1093,11 +1180,12 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
       y = c(0.35, 0.285, 0.19), 
       linetype = 2
     )
-
+  nonlin_p
 }
 
 
 figure_one <- function(subject_data,
+                       subject_data_replication,
                        measures_list, measures_list_replication, gradients_df = grad_df %>% filter(study=="biofinder"),
                        gradients_df_replication = grad_df %>% filter(study=="adni"),
                        tag_size = 21,
@@ -1157,7 +1245,7 @@ figure_one <- function(subject_data,
       plot.title = element_text(size = rel(plot_title_size)),
       axis.title = element_text(size = rel(axes_title_size))) 
   
-  p_bf <- p_bf + plot_annotation(title = paste0("Cross-sectional", " (N=", n_cs, ")"),
+  p_bf <- p_bf + plot_annotation(title = paste0("BioFINDER", " (N=", n_cs, ")"),
                                  subtitle = expression(italic(FC[parcel] ~ "~" ~ age + pathology + sex + motion)),
                                  theme = theme(plot.subtitle = element_text(size = rel(0.9),
                                                                             hjust = 0,
@@ -1169,19 +1257,18 @@ figure_one <- function(subject_data,
                                                plot.title = element_text(size = rel(1), hjust =0, margin = margin(l = l_marg, unit = "npc")))
   )
   
-  plt_idx <- 4
-  if (length(selected_gradients) < 2) plt_idx <- plt_idx-1
+  plt_idx <- length(selected_gradients) + 2
   p_bf[[plt_idx[1]]] <- p_bf[[plt_idx[1]]] + labs(title = "AD Pathology")
   
   p_bf <- ggdraw() + 
     draw_plot(p_bf) + 
-    draw_plot_label("A", x = l_marg-l_marg, size = tag_size) + 
-    draw_label("BioFINDER", x = (1/3.1/2), y = 0.75, hjust = 0.5, size =  draw_size)
+    draw_plot_label("A", x = l_marg-l_marg, size = tag_size) 
+    #draw_label("BioFINDER", x = (1/3.1/2), y = 0.75, hjust = 0.5, size =  draw_size)
   
   if (boxed) p_bf <- p_bf + theme(plot.background = element_rect(color = "black", linewidth = 1))
   
 
-  adni_p <-  plot_gradient_relationships(adni_df %>% filter(fmri_bl), 
+  adni_p <-  plot_gradient_relationships(subject_data_replication, 
                                          gradient_data = gradients_df_replication, 
                                          gradients = selected_gradients,
                                          gradient_colors = gradient_cols,
@@ -1210,7 +1297,7 @@ figure_one <- function(subject_data,
       plot.title = element_text(size = rel(plot_title_size)),
       axis.title = element_text(size = rel(axes_title_size)))
   
-  p_a <- p_a + plot_annotation(title = paste0("External Replication", " (N=", n_adni, ")"), 
+  p_a <- p_a + plot_annotation(title = paste0("ADNI", " (N=", n_adni, ")"), 
                                subtitle = expression(italic(FC[parcel] ~ "~" ~ age + pathology + sex + motion)),
                                theme = theme(plot.subtitle = element_text(size = rel(0.9), 
                                                                           hjust = 0, 
@@ -1223,14 +1310,15 @@ figure_one <- function(subject_data,
   )
   
   
-  plt_idx <- 4
-  if (length(selected_gradients) < 2) plt_idx <- plt_idx-1
+  
+  plt_idx <- length(selected_gradients) + 2
+  
   p_a[[plt_idx[1]]] <- p_a[[plt_idx[1]]] + labs(title = "AD Pathology")
   
   p_a <- ggdraw() + 
     draw_plot(p_a) + 
-    draw_plot_label("B", x = l_marg-l_marg, size = tag_size) + 
-    draw_label("ADNI", x = (1/3.1/2), y = 0.75, hjust = 0.5, size =  draw_size)
+    draw_plot_label("B", x = l_marg-l_marg, size = tag_size) 
+    #draw_label("ADNI", x = (1/3.1/2), y = 0.75, hjust = 0.5, size =  draw_size)
   
   if (boxed) p_a <- p_a + theme(plot.background = element_rect(color = "black", linewidth = 1))
   
@@ -2460,11 +2548,11 @@ longitudinal_and_window_analysis <- function(long_df,
     draw_plot(p_bf_long_cp, x = 0, y = 0.51, width = 0.645, height = 0.49) +
     draw_plot(slide_meth, x = 0.655, y = 0.51, width = 0.345, height = 0.49) +
     draw_plot(window_plots_cp, x = 0, y = 0.0, width = 1, height = 0.5) +
-    annotate("curve",  x = 0.89, y = 0.5105, xend = 0.706, yend = 0.39,
+    annotate("curve",  x = 0.89, y = 0.5105, xend = 0.706, yend = 0.4075,
              linewidth = 3,
              color = "white",
              curvature = 0.29) +
-    annotate("curve",  x = 0.89, y = 0.5105, xend = 0.706, yend = 0.39, linewidth = 1,
+    annotate("curve",  x = 0.89, y = 0.5105, xend = 0.706, yend = 0.4075, linewidth = 1,
              arrow = arrow(length = unit(0.13, "inches")), 
              curvature = 0.29) 
   

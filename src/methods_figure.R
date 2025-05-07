@@ -84,7 +84,7 @@ g1 <- grad_df %>% filter(study=="biofinder") %>% pull(gradient1)
 g2 <- grad_df %>% filter(study=="biofinder") %>% pull(gradient2)
 g3 <- grad_df %>% filter(study=="biofinder") %>% pull(gradient3)
 
-g_list <- list(g1 = g1, g2 = g2, g3 = g3)
+g_list <- list(gradient1 = g1, gradient2 = g2, gradient3 = g3)
 
 for (g in names(g_list)) {
   p_name <- paste0(g, ".png")
@@ -94,7 +94,7 @@ for (g in names(g_list)) {
           symm = FALSE, ColSideColors = pastel_colors,
           #hclustfun = hclust(, method = "complete"),
           #RowSideColors = pastel_colors,
-          col = hcl.colors(100),
+          col = colorRampPalette(c(gradient_cols[1, g], "white", gradient_cols[2, g]))(100),
           labRow = NA,
           labCol = NA,
           margins = c(0, 0)
@@ -154,6 +154,7 @@ bf_dx <-  plot_gradient_relationships(biofinder_df %>%
                                       gradient_data = grad_df %>% filter(study=="biofinder"), 
                                       gradients = c(1, 2, 3),
                                       vect = TRUE,
+                                      gray_out = TRUE,
                                       r2_size = rel(4.5),
                                       gradient_colors = gradient_cols,
                                       list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
@@ -173,9 +174,9 @@ p_dx <- bf_dx$plot &
   theme(text = element_text(size = 15),
         plot.tag = element_blank())
 
-p_dx[[5]] <- p_dx[[5]] + ggtitle("MCI vs. CN")
-p_dx[[6]] <- p_dx[[6]] + ggtitle("AD vs. CN")
-#p_dx[[7]] <- p_dx[[7]] + ggtitle("AD")
+p_dx[[4]] <- p_dx[[4]] + ggtitle("Term1")
+p_dx[[5]] <- p_dx[[5]] + ggtitle("Term2")
+p_dx[[6]] <- p_dx[[6]] + ggtitle("Term3")
 
 img_width <- 180/25.4/2
 
