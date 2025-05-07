@@ -2,3 +2,5 @@
 .Rhistory
 .RData
 .Ruserdata
+data/adni_src_data
+data/bf_src_data
