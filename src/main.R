@@ -20,6 +20,7 @@ library(broom)
 library(SCORPIUS)
 library(conflicted)
 library(magick)
+library(sf)
 library(readxl)
 library(ggpmisc)
 library(cowplot)
@@ -1002,6 +1003,63 @@ magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
       ## ##     ## ##        ##        ##       ##       ##     ## ##       ##  ####    ##    ######### ##   ##      ##    
 ##    ## ##     ## ##        ##        ##       ##       ##     ## ##       ##   ###    ##    ##     ## ##    ##     ##    
  ######   #######  ##        ##        ######## ######## ##     ## ######## ##    ##    ##    ##     ## ##     ##    ##    
+
+
+########################################################
+# Supplementary figure with diagnoses
+########################################################
+
+bf_dx <-  plot_gradient_relationships(biofinder_df %>% 
+                                        filter(fmri_bl) %>%
+                                        mutate(motion = rsqa__MeanFD
+                                        ) %>% 
+                                        mutate(diagnosis = ifelse(diagnosis %in% c("Normal", "SCD"), "CN/SCD", diagnosis)) %>% 
+                                        mutate(diagnosis=factor(diagnosis, levels = c("CN/SCD", "MCI", "AD"))), 
+                                      gradient_data = grad_df %>% filter(study=="biofinder"), 
+                                      gradients = c(1, 2, 3),
+                                      vect = TRUE,
+                                      gray_out = FALSE,
+                                      r2_size = rel(4.5),
+                                      gradient_colors = gradient_cols,
+                                      list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
+                                      mod_formula = formula(paste0(" ~ age + diagnosis + sex + rsqa__MeanFD")),
+                                      covariates = c("sex", "rsqa__MeanFD"),
+                                      filter_criteria = quo(),
+                                      show_networks = FALSE,
+                                      tag_prefix = "",
+                                      tag_sep = "",
+                                      layout_construction = "horizontal",
+                                      include_gradient_plots = TRUE,
+                                      right_term_side = FALSE,
+                                      plt_title = "",
+                                      cache_runs = FALSE)
+
+p_dx <- bf_dx$plot + 
+  plot_annotation(title = paste0("BioFINDER", " (N=", bf_dx$n, ")"), subtitle = expression(FC[parcel] ~ "~" ~ age + diagnosis + sex + motion),
+                  theme = theme(plot.subtitle = element_text(hjust = 0, vjust = -0.05,
+                                                             family = "mono",
+                                                             margin = margin(l = 0, unit = "npc")), 
+                                plot.background = element_rect(colour = "black"),
+                                plot.title.position = "plot",
+                                plot.title = element_text( hjust =0, margin = margin(l = 0, unit = "npc"))
+                  )) &
+  theme(text = element_text(size = 15),
+        plot.tag = element_blank())         
+
+
+p_dx[[4]] <- p_dx[[4]] + ggtitle("Age")
+p_dx[[5]] <- p_dx[[5]] + ggtitle("MCI vs. CN")
+p_dx[[6]] <- p_dx[[6]] + ggtitle("AD vs. CN")
+
+img_width <- 180/25.4/2
+
+p_name <- "supplementary_diagnosis.png"
+ggsave(file.path(figure_path, p_name), p_dx, width = img_width*3, 
+       bg = "white", height = img_width*0.9*3, units = "in", dpi = 300, device = "png")
+img <- magick::image_read(file.path(figure_path, p_name))
+img_resized <- magick::image_resize(img, "33%x33%")
+magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+
 
 ########################################################
 # Supplementary figure with gradient 2

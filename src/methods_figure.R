@@ -2,6 +2,7 @@ library(proxy)
 library(RColorBrewer)
 library(kableExtra)
 library(patchwork)
+library(sf)
 
 zero_out_mat <- function(mat, thresh) {
   library(matrixStats)
