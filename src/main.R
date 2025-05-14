@@ -429,6 +429,7 @@ if (from_start) {
   
   gradient_dir <- "data/gradients"
   
+  if (extract_timeseries) {
   # images have been accessed from https://neurovault.org/collections/1598/
   nifti_images <- list.files(gradient_dir, pattern = "\\.nii.gz$")
   
@@ -457,7 +458,9 @@ if (from_start) {
   }
   close(pb)
   marg_gradients <- as_tibble(marg_gradients)
-  
+  } else {
+    marg_gradients <- read_csv("data/gradients/margulies_gradients.csv")
+  }
   
   ###################################################
   # Create gradients from average healthy connectomes
