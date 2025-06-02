@@ -41,6 +41,8 @@ docker run --rm \
   Rscript src/main.R
 ```
 
+This will run all analyses (without pre-calculating measures etc) and spit out the manuscript with figures usin synthetic data in `docker_out`.
+
 Ensure the host mount paths are the absolute path to the repo (i.e. `~/fc_changes_follow_gradients`, if you put it in you home folder).
 
 * `-v` mounts local directories into the container for data input and output.
@@ -158,6 +160,11 @@ The code in `main.R` runs the following major steps:
 
 If you encounter any issues, please open an issue on GitHub, and we'll assist you as quickly as possible.
 
+The non-container version of this code has only been tested locally on ubuntu 22.04. If you have dependency troubles I recommend
+the containerized version. 
+
+The code is not as well documented as I would have wanted at this time, so please raise an issue or contact me directly for further inquiries.
+
 ---
 
 ## Citation
@@ -168,6 +175,3 @@ Rittmo, J., Franzmeier, N., Strandberg, O., Chauveau, L., Satterthwaite, T. D., 
 
 ---
 
-## Contact
-
-Please raise an issue or contact us directly for further inquiries or collaboration.
