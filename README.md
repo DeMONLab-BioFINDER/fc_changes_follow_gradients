@@ -1,4 +1,4 @@
-**Functional Connectivity Changes in Aging and Alzheimer's Disease**
+## Functional Connectivity Changes in Aging and Alzheimer's Disease
 
 This repository provides code for reproducing analyses and figures from the manuscript:
 
@@ -120,20 +120,20 @@ The code in `main.R` runs the following major steps:
 
     * Build “young, healthy” average ADNI connectome → call `get_gradients` once (PCA) → bind with BioFINDER gradients → loop over parameter grid to build `gradient_data_adni` → merge with BioFINDER → save a
 
-11. **(Optional) Methods Figure (commented out)** 
+11. **(Optional) Methods Figure** 
     
-    * Run code to generate pngs used in the methods plot. This plot is not reproducible as it was put together in inkscape. All other figures are generated.
+    * Run code to generate pngs used in the methods plot, this is now commented out in main.R, just uncomment our source `methods_figure.R` to generate the figures used in it. This plot is not reproducible as it was put together in inkscape. All other figures are generated.
 
 12. **Main Figures**
 
-    * **Figure 1**: `figure_one(...)` cross-sectional biofinder + ADNI (cognition is also generated but we take only the first half), save as PNG
+    * **Figure 1**: `figure_one(...)` cross-sectional biofinder + ADNI (cognition is also generated but we take only the first figure panels), save as PNG
     * **Figure 2**: first calculate non-linear trajectories: `gam_pred_nodes(...)` → `plot_gams_v1(...)`, save as PNG
     * **Figure 3**: Build "longitudinal" df → `longitudinal_and_window_analysis(...)`, save main & supp PNG
     * **Figure 4**: `figure_one(...)` cognition panels only, save as PNG
 
 13. **Supplementary Figures**
 
-    * Many calls to `plot_gradient_relationships(...)`, `figure_one(...)`, `overlaid_main_results(...)` with different and/or measures (diagnosis, gradient 2 only, within/between-network affinity, nodal strength, no-threshold affinity, clinical interactions, healthy group interactions, pathology scatter/densities, main overlaid nets). Each saved to a distinct file under `paper/figures/…`.
+    * Many calls to `plot_gradient_relationships(...)`, `figure_one(...)`, `overlaid_main_results(...)` with different and/or measures (diagnosis, gradient 2 only, within/between-network affinity, nodal strength, no-threshold affinity, clinical interactions, healthy group interactions, pathology densities etc.). Each saved to a distinct file under `paper/figures/…`.
 
 14. **Table 1 (Cross-Sectional)**
 
