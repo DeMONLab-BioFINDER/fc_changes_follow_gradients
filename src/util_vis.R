@@ -1,7 +1,10 @@
 plot_gradient_relationships <- function(subject_data,
                                         gradient_data,
                                         list_of_parcel_data, 
-                                        atlas_geometry = readRDS("data/atlas_data/Schaefer2018_1000Parcels_geometry.rds"),
+                                        atlas_geometry = readRDS("data/atlas_data/schaef_ggseg2.rds"),
+                                        add_shade = FALSE,
+                                        shade_alpha = 0.01,
+                                        shade_size = 0.01,
                                         vect = FALSE,
                                         base_size_ = 11,
                                         gradients = c(1, 3),
@@ -40,6 +43,7 @@ plot_gradient_relationships <- function(subject_data,
   require(patchwork)
   require(ggpmisc)
   require(sf)
+  require(ggtext)
   
   
   old <- theme_set(theme_bw(base_size = base_size_))
@@ -169,15 +173,18 @@ plot_gradient_relationships <- function(subject_data,
       
       p <-  ests %>%
         filter(term == term_of_i) %>%
-        inner_join(atlas_geometry, by = "region") %>%
+        right_join(atlas_geometry$atlas, by = "region") %>%
         ggplot() +
         geom_sf(aes(
           fill = statistic,
           geometry = geometry), linewidth= 0.1,
-          show.legend = FALSE)+
+          show.legend = FALSE) +
+        (if (add_shade)
+          geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
+         else NULL) +
         theme_void(base_size = base_size_)+
         labs(fill = 't', title = str_to_title(str_replace(term_of_i, "_", " ")),
-             tag = tag_labs[i]
+             #tag = tag_labs[i]
              ) +
         theme(#legend.position = "",
           panel.background = element_rect(fill = "transparent", colour = NA),
@@ -222,15 +229,18 @@ plot_gradient_relationships <- function(subject_data,
       
       if (include_gradient_plots) {
         gradient_plots[[paste0(stud,"_", grad)]] <- gradient_data %>% filter(study==stud) %>% 
-          inner_join(atlas_geometry, by = "region") %>%
+          right_join(atlas_geometry$atlas, by = "region") %>%
           ggplot() +
           geom_sf(aes(
             fill = .data[[grad]],
             geometry = geometry), linewidth= 0.1,
             show.legend = FALSE)+
+          (if (add_shade)
+            geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
+           else NULL) +
           theme_void(base_size = base_size_)+
           labs(fill = "", title = str_to_title(str_replace(paste0("_", grad), "_", " ")),
-               tag = tag_labs[i]
+               #tag = tag_labs[i]
           ) +
           theme(legend.position = "",
                 panel.background = element_rect(fill = "transparent", colour = NA),
@@ -244,10 +254,11 @@ plot_gradient_relationships <- function(subject_data,
             mid = "white",
             high = gradient_colors[[grad]][2] 
           ) 
+        
         i = i +1
       } else {
         gradient_plots[[paste0(stud,"_", grad)]] <- gradient_data %>% filter(study==stud) %>% 
-          inner_join(atlas_geometry, by = "region") %>%
+          inner_join(atlas_geometry$atlas, by = "region") %>%
           ggplot() +
           geom_sf(aes(
             fill = .data[[grad]],
@@ -255,7 +266,7 @@ plot_gradient_relationships <- function(subject_data,
             show.legend = FALSE)+
           theme_void(base_size = base_size_)+
           labs(fill = "", title = str_to_title(str_replace(paste0("_", grad), "_", " ")),
-               tag = tag_labs[i]
+               #tag = tag_labs[i]
           ) +
           theme(legend.position = "",
                 panel.background = element_rect(fill = "transparent", colour = NA),
@@ -344,7 +355,7 @@ plot_gradient_relationships <- function(subject_data,
           labs(#title = term_,
             x = x_lab,
             y = y_lab,
-            tag = tag_labs[count],
+            #tag = tag_labs[count],
             color = "Network") +
           xlim(x_min, x_max)+
           #ylim(y_min, y_max)+
@@ -363,24 +374,30 @@ plot_gradient_relationships <- function(subject_data,
           r <- cor(plot_data[[i]], plot_data[[j]], method = "pearson")
           p_val <- perm_sphere_p(plot_data[[i]], plot_data[[j]], perm.id = perms, corr.type='pearson')
           
-          p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("italic(p[spin]) < ", "italic(p[spin]) == ", "italic(p[spin]) > "))(p_val)
+          #p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("italic(p[spin]) < ", "italic(p[spin]) == ", "italic(p[spin]) > "))(p_val)
+          #label_corr <- paste0("italic(r) == ", r |> round(2),"*','~", p_lab)
+          p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("<i>p<sub>spin</sub></i> &lt; ", "<i>p<sub>spin</sub></i> = ", "<i>p<sub>spin</sub></i> &gt; "))(p_val)
+          label_corr <- paste0("<i>r</i> = ", r |> round(2), " ,&#8203;&nbsp;" , p_lab)
           
-          label_corr <- paste0("italic(r) == ", r |> round(2),"*','~", p_lab)
           
-          
-          p <- p + ggpp::annotate(geom = "text_npc", label = label_corr,
-                                  alpha = ifelse(gray_out, 0.2, 1),
-                                    size = r2_size,
-                                    npcx = "left", npcy = "top",
-                                    family = "sans",
-                                    parse = TRUE) 
+          p <- p + labs(subtitle = label_corr) +
+            theme(plot.subtitle = element_markdown(size = rel(0.75), hjust = 0.95, margin = margin(b = 3),
+                                                   color = ifelse(gray_out, scales::alpha("black", 0.2), "black")))
+            
+          #   subtitle = label = label_corr, alpha = ifelse(gray_out, 0.2, 1)
+          # p <- p + ggpp::annotate(geom = "text_npc", label = label_corr,
+          #                         alpha = ifelse(gray_out, 0.2, 1),
+          #                           size = r2_size,
+          #                           npcx = "left", npcy = "top",
+          #                           family = "sans",
+          #                           parse = TRUE)
         } else {
           p <- p + stat_poly_eq(aes(label = paste(after_stat(rr.label),
                                                   str_remove(after_stat(rr.confint.label), "95% CI "),
                                                   sep = "*\" \"*")),
                                 parse = TRUE, color = "#323232", label.x = "left", label.y = "top", size = r2_size)
         }
-        
+                
         if (gray_out) {
           p <- p + ggpp::annotate("text_npc",
                                   npcx = "middle", 
@@ -595,13 +612,13 @@ plot_gradient_relationships <- function(subject_data,
           plot.tag.position  = if (right_term_side) c(0.1, 0.96) else c(0.9, 0.96),
           #plot.tag = element_text(size = 8, hjust = 0, vjust = 0)
           )
-  list(plot = p, n = ests %>% pull(n) %>% unique(), model_formula = ests %>% pull(model_formula) %>% unique())
+  list(plot = p, n = ests %>% pull(n) %>% unique(), model_formula = ests %>% pull(model_formula) %>% unique(), tmaps = ests)
   
 }
 
 
 plot_gams_v1 <- function(gam_predictions, grad_df, 
-                         atlas_geometry = readRDS("data/atlas_data/Schaefer2018_1000Parcels_geometry.rds"),
+                         atlas_geometry = readRDS("data/atlas_data/schaef_ggseg2.rds"),
                          gradient_cols = data.frame(gradient1 = c("#3F596D", "#D38A4E"), 
                                                     gradient2 =  c("#4682B4", "#781286"),  
                                                     gradient3 =  c("#8A6081", "#738518")),
@@ -1190,6 +1207,9 @@ figure_one <- function(subject_data,
                        gradients_df_replication = grad_df %>% filter(study=="adni"),
                        tag_size = 21,
                        draw_size = 18,
+                       shade = FALSE,
+                       shade_a = 0.01,
+                       shade_s = 0.01,
                        b_size = 11,
                        plot_title_size = 1,
                        axes_title_size = 1,
@@ -1224,6 +1244,9 @@ figure_one <- function(subject_data,
                                        list_of_parcel_data = measures_list,
                                        empty_row_height = empt_row_height,
                                        base_size_ = b_size,
+                                       add_shade = shade,
+                                       shade_alpha = shade_a,
+                                       shade_size = shade_s,
                                        vect = TRUE,
                                        mod_formula = formula(paste0(" ~ age + pathology_ad + sex + rsqa__MeanFD")),
                                        covariates = c("sex", "rsqa__MeanFD"),
@@ -1277,6 +1300,9 @@ figure_one <- function(subject_data,
                                          empty_row_height = empt_row_height,
                                          base_size_ = b_size,
                                          vect = TRUE,
+                                         add_shade = shade,
+                                         shade_alpha = shade_a,
+                                         shade_size = shade_s,
                                          r2_size = rel(r2_sizing1),
                                          covariates = c("sex", "rsqa__MeanFD"),
                                          id_var = "file_func",
@@ -1344,6 +1370,9 @@ figure_one <- function(subject_data,
                                              mod_formula = formula(paste0("~ scale(age) * scale(-mPACC_v1) + pathology_ad + sex + rsqa__MeanFD")),
                                              logistic_fit = FALSE,
                                              vect = TRUE,
+                                             add_shade = shade,
+                                             shade_alpha = shade_a,
+                                             shade_size = shade_s,
                                              covariates = c("sex", "rsqa__MeanFD"),
                                              filter_criteria = quo(),
                                              show_networks = FALSE,
@@ -1399,6 +1428,9 @@ figure_one <- function(subject_data,
                                                base_size_ = b_size,
                                                r2_size = rel(r2_sizing2),
                                                vect = TRUE,
+                                               add_shade = shade,
+                                               shade_alpha = shade_a,
+                                               shade_size = shade_s,
                                                mod_formula = formula(paste0(" ~ age + pathology_ad + `-mPACC_v1` +  sex + rsqa__MeanFD")),
                                                logistic_fit = FALSE,
                                                covariates = c("sex", "rsqa__MeanFD"),
@@ -1623,7 +1655,7 @@ net_names_plot <- function(net_names, text_size = 3.8, vertical = TRUE, tile_hei
 
 
 overlaid_main_results <- function(subject_data, fc_matrix, 
-                                  atlas_geometry = readRDS("data/atlas_data/Schaefer2018_1000Parcels_geometry.rds"),
+                                  atlas_geometry = readRDS("data/atlas_data/schaef_ggseg2.rds"),
                                   network_geometry = readRDS("data/atlas_data/Yeo2011_7_geometry.rds"),
                                   base_size_ = 21){
   
@@ -1834,7 +1866,7 @@ overlaid_main_results <- function(subject_data, fc_matrix,
 
 
 plot_grads_over_params <- function(connectome_list, 
-                                   atlas_geometry = readRDS("data/atlas_data/Schaefer2018_1000Parcels_geometry.rds"),
+                                   atlas_geometry = readRDS("data/atlas_data/schaef_ggseg2.rds"),
                                    param_grid = NULL, n_gradients = 1:3, base_size_=18) {
 
   require(sf)

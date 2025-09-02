@@ -75,7 +75,7 @@ get_gradients <- function(connectome_ests,
                           n_gradients = 1:3,
                           on_affinity = TRUE, 
                           threshold = 0.5,
-                          atlas_geometry = readRDS("data/atlas_data/Schaefer2018_1000Parcels_geometry.rds"),
+                          atlas_geometry = readRDS("data/atlas_data/schaef_ggseg2.rds"),
                           method = c("diffusion", "pca"),
                           similarity_method = "cosine",
                           reorder_components = FALSE,
@@ -391,7 +391,7 @@ get_gradients <- function(connectome_ests,
 
 
 plot_grads_over_params <- function(connectome_list,
-                                   atlas_geometry = readRDS("data/atlas_data/Schaefer2018_1000Parcels_geometry.rds"),
+                                   atlas_geometry = readRDS("data/atlas_data/schaef_ggseg2.rds"),
                                    param_grid = NULL, 
                                    n_gradients = 1:3) {
   

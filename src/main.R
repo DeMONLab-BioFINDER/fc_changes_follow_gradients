@@ -66,6 +66,7 @@ clean_dir <- "data/processed_and_cleaned"
 atlas_dir <- "data/atlas_data"
 
 schaef1k <- readRDS(file.path(atlas_dir, "Schaefer2018_1000Parcels_geometry.rds"))
+schaef1k <- readRDS(file.path(atlas_dir, "schaef_ggseg2.rds"))
 yeo7 <- readRDS(file.path(atlas_dir, "Yeo2011_7_geometry.rds"))
 
 # Yeo 7 network colors and names
@@ -845,7 +846,7 @@ source("src/util_vis.R")
 # These parameters set the final figure width, and the scaling to use to 
 # get elements and font sizes aligned
 img_width <-  180 / 25.4
-scaling_factor <-  3
+scaling_factor <-  4
 magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
 
 ################
@@ -859,10 +860,13 @@ fig_one <- figure_one(subject_data = biofinder_df,
                       measures_list_replication = list(nodal_affinity = fc_measures_adni$affinity),
                       gradients_df = grad_df |> filter(study == "biofinder"),
                       gradients_df_replication = grad_df |> filter(study == "adni"),
+                      shade = TRUE,
+                      shade_a = 0.0075,
+                      shade_s = 0.001,
                       selected_gradients = c(1, 3), 
-                      empt_row_height = -0.1,
-                      b_size = 21,
-                      draw_size = 21,
+                      empt_row_height = -0.15,
+                      b_size = 28,
+                      draw_size = 28,
                       plot_title_size = 0.9,
                       axes_title_size = 0.9,
                       r2_sizing1 = 6,
@@ -971,7 +975,7 @@ magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
 ######################
 
 img_width = 180 / 25.4
-scaling_factor <-  3
+scaling_factor <-  4
 magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
 
 fig4 <- figure_one(subject_data = biofinder_df,
@@ -981,10 +985,12 @@ fig4 <- figure_one(subject_data = biofinder_df,
                    gradients_df = grad_df |> filter(study == "biofinder"),
                    gradients_df_replication = grad_df |> filter(study == "adni"),
                    selected_gradients = c(1, 3), 
-                   tag_size = 18,
-                   draw_size = 18,
-                   empt_row_height = -0.1,
-                   b_size = 18,
+                   empt_row_height = -0.15,
+                   b_size = 24,
+                   draw_size = 24,
+                   shade = TRUE,
+                   shade_a = 0.0075,
+                   shade_s = 0.001,
                    plot_title_size = 0.85,
                    axes_title_size = 0.85,
                    r2_sizing2 = 4.4,
