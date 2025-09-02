@@ -31,16 +31,18 @@ conflicts_prefer(dplyr::select)
 conflicts_prefer(dplyr::lag)
 
 
+# These arguments are set as environmental variables when running the docker image
+# if you are running the code on your own machine, set them manually
+
+from_start <- as.logical(Sys.getenv("FROM_START", "FALSE"))
+create_brain_permutations <- as.logical(Sys.getenv("CREATE_BRAIN_PERMUTATIONS", "FALSE"))
+extract_timeseries <- as.logical(Sys.getenv("EXTRACT_TIMESERIES", "FALSE"))
+real_data <- as.logical(Sys.getenv("REAL_DATA", "FALSE"))
+
 figure_path <- "paper/figures"
 dir.create(figure_path, showWarnings = FALSE)
 table_path <- "paper/tables"
 dir.create(table_path, showWarnings = FALSE)
-
-from_start <- FALSE
-create_brain_permutations <- FALSE
-extract_timeseries <- FALSE
-real_data <- TRUE
-
 
 data_dir <- ifelse(real_data, "data/bf_src_data",  "data/bf_src_data_synthetic")
 dir.create(data_dir, showWarnings = FALSE)
@@ -567,7 +569,7 @@ if (real_data) {
 rm(adni_df)
 
 adni_df__ <- adni_df_ |> 
-  mutate(EXAMDATE_func = as.Date(EXAMDATE_func),
+  mutate(EXAMDATE_func = as.Date(EXAMDATE_func, format = "%m-%d-%y"),
          id_ses = file_func) |> 
   relocate(id_ses) |> 
   mutate(fmri_bl = EXAMDATE_func == min(EXAMDATE_func), .by = ID) |> 
@@ -615,7 +617,7 @@ for (file in fd_files) {
   adni_fd[[sub_and_ses]] <- read_csv(file.path(ts_dir_adni, file), show_col_types = FALSE)
 }
 
-rsqa <- lapply(adni_fd, function(x) c(rsqa__MeanFD = x |> pull(1) |> mean(), rsqa__MaxFD = x |> pull(1) |> max()))
+rsqa <- lapply(adni_fd, function(x) c(rsqa__MeanFD = x |> pull(displacement) |> mean(), rsqa__MaxFD = x |> pull(displacement) |> max()))
 rsqa_fd <- do.call(rbind, rsqa) |> as_tibble(rownames = NA) |> rownames_to_column("id_ses")
 
 
@@ -697,7 +699,7 @@ if (from_start) {
 
 success_vec <- list.files(connectome_dir_adni) |> tools::file_path_sans_ext()
 adni_df <- adni_df___ |> filter(id_ses %in% success_vec) |> 
-  inner_join(rsqa_fd) 
+  inner_join(rsqa_fd, join_by(ID==id_ses)) # Set the join variable depending on if longitudinal data is used
 
 adni_df_unfilt <- adni_df |> mutate(motion_filter = (rsqa__MeanFD<0.3 & rsqa__MaxFD<3))
 adni_df <- adni_df_unfilt |>  filter(motion_filter)
@@ -834,7 +836,7 @@ grad_df <- readRDS(file.path(clean_dir, "grad_df.rds"))
 # Source the methods_figure.R script to generate all plots for the methods figure.
 # However, the figures have then been manually put together in inkscape 
 
-source("src/methods_figure.R")
+# source("src/methods_figure.R")
 
 ########################
 # Main figures
@@ -889,6 +891,8 @@ magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
 source("src/util.R")
 source("src/util_vis.R")
 
+print("Running non-linear models")
+  
 gam_preds_affinity <- gam_pred_nodes(biofinder_df |> filter(fmri_bl),
                                      fc_matrix = fc_measures_bf$affinity,
                                      roi_names = rois, 
@@ -946,8 +950,11 @@ biofinder_df |>
 # Very case specific function for creating figure 3
 longitudindal_figs <- longitudinal_and_window_analysis(long_df = long_bf_, 
                                                        b_size = 18,
-                                                       run_windowing = FALSE
-                                                         #ifelse(from_start, TRUE, FALSE) 
+                                                       run_windowing = 
+                                                         ifelse(from_start & 
+                                                                !file.exists("data/processed_and_cleaned/sliding_window_age_res.rds") &
+                                                                !file.exists("data/processed_and_cleaned/sliding_window_path_res.rds"), 
+                                                              TRUE, FALSE) 
                                                        )
 
 img_width = 180 / 25.4
@@ -1764,4 +1771,4 @@ if (from_start) {
 ##    ##  ##       ##   ### ##     ## ##       ##    ##     ##        ##     ## ##        ##     ## ##       ##    ##  
 ##     ## ######## ##    ## ########  ######## ##     ##    ##        ##     ## ##        ##     ## ######## ##     ##
 
-quarto::quarto_render("paper/fc_changes_paper.qmd")
+source("src/render_paper.R")
