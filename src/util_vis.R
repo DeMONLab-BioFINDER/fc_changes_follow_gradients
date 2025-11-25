@@ -1,24 +1,106 @@
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(purrr)
+
+make_gradient_plots <- function(gradient_data,
+                                gradient_colors = data.frame(gradient1 = c("#3F596D", "#D38A4E"), 
+                                                             gradient2 = c("#4682B4", "#781286"),  
+                                                             gradient3 = c("#8A6081", "#738518")),
+                                atlas_geometry = readRDS("data/atlas_data/schaef_ggseg2.rds"),
+                                region_col = "region",
+                                grad_char = c("gradient1", "gradient2", "gradient3"),
+                                include_gradient_plots = TRUE,
+                                add_shade = FALSE,
+                                shade_size = 0.1,
+                                shade_alpha = 0.3,
+                                grad_name = TRUE,
+                                base_size_ = 10) {
+  
+  gradient_plots <- list()
+  
+  for (grad in grad_char) {
+    
+    if (include_gradient_plots) {
+      
+      plot_data <- gradient_data %>%
+        right_join(atlas_geometry$atlas)
+      
+      p <- ggplot(plot_data) +
+        geom_sf(aes(
+          fill = .data[[grad]],
+          geometry = geometry
+        ),
+        linewidth = 0.1,
+        show.legend = FALSE) +
+        (if (add_shade)
+          geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
+         else NULL) +
+        theme_void(base_size = base_size_) +
+        labs(
+          fill = "",
+          title = str_to_title(str_replace(paste0("_", grad), "_", " "))
+        ) +
+        (if (grad_name)
+          labs(title = dplyr::case_when(
+            grad == "gradient1" ~ "Sens-Assoc",
+            grad == "gradient2" ~ "Vis-Mot",
+            grad == "gradient3" ~ "Rep-Exec",
+            TRUE ~ grad
+          )) else NULL) +
+        theme(
+          legend.position = "",
+          panel.background = element_rect(fill = "transparent", colour = NA),
+          plot.background = element_rect(fill = "transparent", colour = NA),
+          legend.background = element_rect(fill = "transparent", colour = NA),
+          legend.box.background = element_rect(fill = "transparent", colour = NA),
+          plot.title = element_text(color = "black", hjust = 0.5)
+        ) +
+        scale_fill_gradient2(
+          low = gradient_colors[[grad]][1],
+          mid = "white",
+          high = gradient_colors[[grad]][2]
+        )
+      
+      # store plot with simple gradient name
+      gradient_plots[[grad]] <- p
+    }
+  }
+  
+  return(gradient_plots)
+}
+
+
 plot_gradient_relationships <- function(subject_data,
                                         gradient_data,
                                         list_of_parcel_data, 
+                                        t_mat = NULL,
                                         atlas_geometry = readRDS("data/atlas_data/schaef_ggseg2.rds"),
                                         add_shade = FALSE,
                                         shade_alpha = 0.01,
                                         shade_size = 0.01,
                                         vect = FALSE,
                                         base_size_ = 11,
+                                        grad_name = TRUE,
                                         gradients = c(1, 3),
                                         gradient_colors = NULL,
                                         empty_row_height = 0,
                                         padding = 0,
                                         r2_size = rel(4.6),
                                         spintest = TRUE,
+                                        rectangle = FALSE,
+                                        l_width = 0.1,
                                         perms = readRDS("data/atlas_data/permutations_1000_hungarian.rds"),
                                         id_var = "image_file",
                                         mod_formula = formula(paste0("FC ~ age")),
                                         covariates = c("sex", "rsqa__MeanFD"),
                                         filter_criteria = quo(),
-                                        plt_title = "",
+                                        plt_title = NULL,
+                                        brain_title_vjust = 0,
+                                        brain_subtitle_vjust = 0,
+                                        plt_subtitle = FALSE,
+                                        group_n_title = FALSE,
+                                        brain_names = NULL,
                                         tag_sep = "",
                                         tag_prefix = "",
                                         layout_construction = "horizontal",
@@ -72,7 +154,7 @@ plot_gradient_relationships <- function(subject_data,
       prev_mod_formula <- function() {
         tryCatch(
           {
-            list(suppressWarnings(readRDS("analysis_cache/model_formula.rds")), 
+            list(suppressWarnings(readRDS("analysis_cache/model_formula.rds")),
                  readRDS("analysis_cache/analysis_name.rds"),
                  readRDS("analysis_cache/filter_crit.rds"))
           },
@@ -89,20 +171,20 @@ plot_gradient_relationships <- function(subject_data,
       write_rds(mod_formula, "analysis_cache/model_formula.rds")
       write_rds(analysis_name, "analysis_cache/analysis_name.rds")
       write_rds(as_label(filter_criteria), "analysis_cache/filter_crit.rds")
-      
+
       if (
         identical(mod_formula, prev_values[[1]]) & identical(analysis_name, prev_values[[2]]) & identical(as_label(filter_criteria), prev_values[[3]])
       ){
         list_of_fits <- read_rds("analysis_cache/list_of_fits.rds")
       } else {
-        
+
         list_of_fits <- list()
         for (analysis in analysis_name) {
           print(paste0("Running linear models for ", analysis))
-          list_of_fits[[analysis]] <- 
+          list_of_fits[[analysis]] <-
             nodal_regression_fits(
-              subject_data %>% filter(!!filter_criteria), 
-              list_of_parcel_data[[analysis]], 
+              subject_data %>% filter(!!filter_criteria),
+              list_of_parcel_data[[analysis]],
               vectorised = vect,
               roi_names = rois,
               id_var = id_var,
@@ -112,19 +194,35 @@ plot_gradient_relationships <- function(subject_data,
         }
         write_rds(list_of_fits, "analysis_cache/list_of_fits.rds")
       }
-      
+
     } else {
       list_of_fits <- list()
       for (analysis in analysis_name) {
         print(paste0("Running linear models for ", analysis))
-        list_of_fits[[analysis]] <- 
-          nodal_regression_fits(
-            subject_data %>% filter(!!filter_criteria), 
-            list_of_parcel_data[[analysis]], 
-            vectorised = vect,
-            roi_names = rois,
-            id_var = id_var,
-            model_formula = mod_formula)
+        
+        
+        if (!is.null(t_mat)) {
+          list_of_fits[[analysis]] <- 
+            nodal_regression_fits_roiwise_pred(
+              subject_data %>% filter(!!filter_criteria), 
+              list_of_parcel_data[[analysis]], 
+              tau_matrix = t_mat,
+              vectorised = vect,
+              roi_names = rois,
+              id_var = id_var,
+              model_formula = mod_formula)
+          
+        } else {
+          list_of_fits[[analysis]] <- 
+            nodal_regression_fits(
+              subject_data %>% filter(!!filter_criteria), 
+              list_of_parcel_data[[analysis]], 
+              vectorised = vect,
+              roi_names = rois,
+              id_var = id_var,
+              model_formula = mod_formula)
+        }
+        
       }
     }
     
@@ -135,7 +233,7 @@ plot_gradient_relationships <- function(subject_data,
         select(term, region, statistic, n, model_formula)
     }
     
-  }
+  } 
   
   if (longitudinal) {
     list_of_ests <- list()
@@ -161,6 +259,10 @@ plot_gradient_relationships <- function(subject_data,
     }
   }
   
+  if (group_n_title) {
+    group_sizes <- get_factor_group_sizes(mod_formula, data = subject_data)  
+  }
+  
   plot_brain_ests <- function(ests, tag = "a") {
     parcel_line_size = 0.1
     #bsize = 16
@@ -171,19 +273,28 @@ plot_gradient_relationships <- function(subject_data,
     i = 1
     for (term_of_i in terms_of_interest) {
       
+      if (group_n_title) {
+        if(term_of_i %in% group_sizes$term){
+          plot_sub <- paste0("(n = ", group_sizes |> filter(term == term_of_i) |> pull(n), ")")
+        } else {
+          plot_sub = ""
+        }
+      }
+      
       p <-  ests %>%
         filter(term == term_of_i) %>%
         right_join(atlas_geometry$atlas, by = "region") %>%
         ggplot() +
         geom_sf(aes(
           fill = statistic,
-          geometry = geometry), linewidth= 0.1,
+          geometry = geometry), linewidth= l_width,
           show.legend = FALSE) +
         (if (add_shade)
           geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
          else NULL) +
         theme_void(base_size = base_size_)+
         labs(fill = 't', title = str_to_title(str_replace(term_of_i, "_", " ")),
+             subtitle = if(group_n_title) plot_sub  else waiver()
              #tag = tag_labs[i]
              ) +
         theme(#legend.position = "",
@@ -191,13 +302,21 @@ plot_gradient_relationships <- function(subject_data,
           plot.background = element_rect(fill = "transparent", colour = NA),
           legend.background = element_rect(fill = "transparent", colour = NA),
           legend.box.background = element_rect(fill = "transparent", colour = NA),
-          plot.title = element_text(color = "black", hjust = 0.5)
+          plot.title = element_text(color = "black", hjust = 0.5, vjust = brain_title_vjust),
+          plot.subtitle = element_text(hjust = 0.5, size = rel(0.7), vjust = brain_subtitle_vjust),
         ) +
         scale_fill_gradient2(
           low = muted("blue"),
           mid = "white",
           high = muted("red") 
         )
+      
+      if(!is.null(brain_names)) {
+        if(!is.na(brain_names[i])) {
+          b_name <- brain_names[i]
+          p <- p + ggtitle(b_name)
+        }
+      }
       
       i = i + 1
       
@@ -233,7 +352,7 @@ plot_gradient_relationships <- function(subject_data,
           ggplot() +
           geom_sf(aes(
             fill = .data[[grad]],
-            geometry = geometry), linewidth= 0.1,
+            geometry = geometry), linewidth= l_width,
             show.legend = FALSE)+
           (if (add_shade)
             geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
@@ -241,13 +360,20 @@ plot_gradient_relationships <- function(subject_data,
           theme_void(base_size = base_size_)+
           labs(fill = "", title = str_to_title(str_replace(paste0("_", grad), "_", " ")),
                #tag = tag_labs[i]
-          ) +
+          ) + 
+          (if (grad_name)
+            labs(title = case_when(
+              grad == "gradient1" ~ "Sens-Assoc",
+              grad == "gradient2" ~ "Vis-Mot",
+              grad == "gradient3" ~ "Rep-Exec",
+              TRUE ~ grad
+            ))  else NULL) +
           theme(legend.position = "",
                 panel.background = element_rect(fill = "transparent", colour = NA),
                 plot.background = element_rect(fill = "transparent", colour = NA),
                 legend.background = element_rect(fill = "transparent", colour = NA),
                 legend.box.background = element_rect(fill = "transparent", colour = NA),
-                plot.title = element_text(color = "black", hjust = 0.5)
+                plot.title = element_text(color = "black", hjust = 0.5, vjust = -3)
           ) +
           scale_fill_gradient2(
             low = gradient_colors[[grad]][1],
@@ -262,7 +388,7 @@ plot_gradient_relationships <- function(subject_data,
           ggplot() +
           geom_sf(aes(
             fill = .data[[grad]],
-            geometry = geometry), alpha = 0, linewidth= 0.1, color = NA,
+            geometry = geometry), alpha = 0, linewidth= l_width, color = NA,
             show.legend = FALSE)+
           theme_void(base_size = base_size_)+
           labs(fill = "", title = str_to_title(str_replace(paste0("_", grad), "_", " ")),
@@ -589,16 +715,36 @@ plot_gradient_relationships <- function(subject_data,
   brain_plots <- unlist(list_of_brain_plots_ests, recursive = FALSE)
   
   plots_to_include <- c(gradient_plots, brain_plots, plots)
-
+  
+  if (plt_subtitle) {
+    #f <- mod_formula
+    rhs <- ests$model_formula[1]
+    rhs <- str_remove(rhs, "~")
+    #rhs <- paste0(rhs)[2]
+    rhs <- gsub("\\*", "×", rhs)
+    rhs_expr <- parse(text = rhs)[[1]]
+    #subtit_expr <- parse(text = expr_str)[[1]]
+    subtit_expr <- bquote(FC[parcel] ~ '~' ~ .(rhs_expr))
+  } else {
+    subtit_expr <- ""
+  }
+  
+  if (!is.null(plt_title)) {
+    n = ests %>% pull(n) %>% unique()
+    plt_title <- paste0(plt_title, " (N = ", n, ")")
+  } 
   
   p <- Reduce(`+`, plots_to_include) +
-    plot_annotation(title = plt_title, #subtitle = sub_title, 
+    plot_annotation(title = plt_title, subtitle = subtit_expr,
                     #tag_levels = c('A', '1'),
                     theme = theme(
                       plot.title = element_text(#size = 28,
-                        hjust = 0.5),
-                      plot.subtitle = element_text(#size = 28,
-                        hjust = 0.5)
+                        hjust = 0),
+                      plot.subtitle = element_text(size = rel(0.9),
+                                                   hjust = 0,
+                                                   vjust = -0.05,
+                                                   family = "mono",
+                                                   face = "italic")
                     )) +
     plot_layout(design = layout, axis_titles = "collect", axes = "collect", guides = "collect",
                 widths = col_widths,
@@ -612,6 +758,11 @@ plot_gradient_relationships <- function(subject_data,
           plot.tag.position  = if (right_term_side) c(0.1, 0.96) else c(0.9, 0.96),
           #plot.tag = element_text(size = 8, hjust = 0, vjust = 0)
           )
+  
+  if (rectangle) {
+    p <- p + plot_annotation(theme = theme(plot.background = element_rect(color = "black", fill = NA)))
+  }
+  
   list(plot = p, n = ests %>% pull(n) %>% unique(), model_formula = ests %>% pull(model_formula) %>% unique(), tmaps = ests)
   
 }
@@ -622,6 +773,10 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
                          gradient_cols = data.frame(gradient1 = c("#3F596D", "#D38A4E"), 
                                                     gradient2 =  c("#4682B4", "#781286"),  
                                                     gradient3 =  c("#8A6081", "#738518")),
+                         add_shade = FALSE,
+                         shade_alpha = 0.01,
+                         shade_size = 0.01,
+                         grad_name = TRUE,
                          biofinder_data, scale_fac = 3,
                          spintest = TRUE,
                          perms = readRDS("data/atlas_data/permutations_1000_hungarian.rds"),
@@ -673,14 +828,13 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
   pat_leg <- ggpubr::as_ggplot(pat_leg)
   
   
-  
   gradient_plots <- list()
   i = 1
   grad_char <- c("gradient1", "gradient2", "gradient3")
     for (grad in grad_char) {
         gradient_plots[[paste0(grad)]] <- grad_df %>% filter(study=="biofinder") %>% 
           #mutate(segregation = ifelse(segregation<0, 0, segregation)) %>% 
-          inner_join(atlas_geometry, by = "region") %>%
+          right_join(atlas_geometry$atlas, by = "region") %>%
           ggplot() +
           geom_sf(aes(
             fill = .data[[grad]],
@@ -693,9 +847,17 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
           #           geometry = geometry
           #         ), alpha = 0, linewidth = 0.5,
           #         show.legend = FALSE) +
+          (if (add_shade)
+            geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
+           else NULL) +
           theme_void()+
-          labs(fill = "", title = str_to_title(str_replace(paste0("_", grad), "_", " "))
-          ) +
+          (if (grad_name)
+            labs(title = case_when(
+              grad == "gradient1" ~ "Sens-Assoc",
+              grad == "gradient2" ~ "Vis-Mot",
+              grad == "gradient3" ~ "Social-Exec",
+              TRUE ~ grad
+            ))  else NULL) +
           theme(legend.position = "",
                 panel.background = element_rect(fill = "transparent", colour = NA),
                 plot.background = element_rect(fill = "transparent", colour = NA),
@@ -721,12 +883,15 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
       filter(pathology_ad == pat_grp) %>% 
       group_by(region, pathology_ad) %>% 
       summarise(value=mean(value)) %>% 
-      inner_join(atlas_geometry, by = "region") %>%
+      right_join(atlas_geometry$atlas, by = "region") %>%
       ggplot() +
       geom_sf(aes(
         fill = value,
         geometry = geometry), linewidth= 0.1,
         show.legend = FALSE)+
+      (if (add_shade)
+        geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
+       else NULL) +
       theme_void()+
       theme(legend.position = "",
             plot.margin = unit(c(0, 0, 0, 0), "npc"),
@@ -770,7 +935,7 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
       labs(
         #title = "Pathology AD {current_frame}",
         color = "Network",
-        x = "FC slopes averaged over pathology quartiles", 
+        x = "Affinity slopes averaged over pathology quartiles", 
         y = "") +
       scale_color_manual(values = net_names %>% select(name, col) %>% deframe())+
       scale_y_continuous(position = "right", limits = c(min(grad_df$gradient1), max(grad_df$gradient1))) +
@@ -832,13 +997,16 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
       filter(age == age_grp) %>% 
       group_by(region, age) %>% 
       summarise(value=mean(value)) %>% 
-      inner_join(atlas_geometry, by = "region") %>%
+      right_join(atlas_geometry$atlas, by = "region") %>%
       ggplot() +
       geom_sf(aes(
         #frame = pathology_ad,
         fill = value,
         geometry = geometry), linewidth= 0.1,
         show.legend = FALSE)+
+      (if (add_shade)
+        geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
+       else NULL) +
       theme_void()+
       #labs(title = "Pathology AD {current_frame}")+
       theme(legend.position = "",
@@ -883,7 +1051,7 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
                          ) +
       labs(
         color = "Network",
-        x = "FC slopes averaged over age quartiles", 
+        x = "Affinity slopes averaged over age quartiles", 
         y = "") +
       scale_color_manual(values = net_names %>% select(name, col) %>% deframe()) +
       theme(axis.title.y = element_blank(),
@@ -1205,6 +1373,9 @@ figure_one <- function(subject_data,
                        subject_data_replication,
                        measures_list, measures_list_replication, gradients_df = grad_df %>% filter(study=="biofinder"),
                        gradients_df_replication = grad_df %>% filter(study=="adni"),
+                       fig1_formula_bf = formula(" ~ age + pathology_ad + sex + rsqa__MeanFD"),
+                       fig1_formula_ad = formula(" ~ age + pathology_ad + sex + rsqa__MeanFD"),
+                       brain_plot_names_f1 = NULL,
                        tag_size = 21,
                        draw_size = 18,
                        shade = FALSE,
@@ -1218,7 +1389,8 @@ figure_one <- function(subject_data,
                        boxed = FALSE,
                        empt_row_height = 0,
                        selected_gradients = c(1, 3), 
-                       split = FALSE) {
+                       split = FALSE,
+                       fig = NULL) {
   library(cowplot)
   # library(showtext)
   # showtext_opts(dpi = 300)
@@ -1235,118 +1407,145 @@ figure_one <- function(subject_data,
   l_marg = 0.05
   #text_size = 28
   
+  # if (split & fig = "1") {
+  #   
+  # }
   
-  
-  bf_p <-  plot_gradient_relationships(subject_data %>% filter(fmri_bl), 
-                                       gradient_data = gradients_df, 
-                                       gradients = selected_gradients,
-                                       gradient_colors = gradient_cols,
-                                       list_of_parcel_data = measures_list,
-                                       empty_row_height = empt_row_height,
-                                       base_size_ = b_size,
-                                       add_shade = shade,
-                                       shade_alpha = shade_a,
-                                       shade_size = shade_s,
-                                       vect = TRUE,
-                                       mod_formula = formula(paste0(" ~ age + pathology_ad + sex + rsqa__MeanFD")),
-                                       covariates = c("sex", "rsqa__MeanFD"),
-                                       r2_size = rel(r2_sizing1),
-                                       filter_criteria = quo(),
-                                       show_networks = FALSE,
-                                       tag_prefix = "",
-                                       tag_sep = "",
-                                       layout_construction = "horizontal",
-                                       include_gradient_plots = TRUE,
-                                       right_term_side = FALSE,
-                                       plt_title = "",
-                                       cache_runs = FALSE)
-  
-  n_cs <- bf_p$n
-  p_bf <- bf_p$plot &
-    theme(#text = element_text(size = text_size),
-      plot.tag = element_blank(),
-      plot.title = element_text(size = rel(plot_title_size)),
-      axis.title = element_text(size = rel(axes_title_size))) 
-  
-  p_bf <- p_bf + plot_annotation(title = paste0("BioFINDER", " (N=", n_cs, ")"),
-                                 subtitle = expression(italic(FC[parcel] ~ "~" ~ age + pathology + sex + motion)),
-                                 theme = theme(plot.subtitle = element_text(size = rel(0.9),
-                                                                            hjust = 0,
-                                                                            vjust = -0.05,
-                                                                            family = "mono",
-                                                                            face = "italic",
-                                                                            margin = margin(l = l_marg, unit = "npc")),
-                                               plot.title.position = "plot",
-                                               plot.title = element_text(size = rel(1), hjust =0, margin = margin(l = l_marg, unit = "npc")))
-  )
-  
-  plt_idx <- length(selected_gradients) + 2
-  p_bf[[plt_idx[1]]] <- p_bf[[plt_idx[1]]] + labs(title = "AD Pathology")
-  
-  p_bf <- ggdraw() + 
-    draw_plot(p_bf) + 
-    draw_plot_label("A", x = l_marg-l_marg, size = tag_size) 
-    #draw_label("BioFINDER", x = (1/3.1/2), y = 0.75, hjust = 0.5, size =  draw_size)
-  
-  if (boxed) p_bf <- p_bf + theme(plot.background = element_rect(color = "black", linewidth = 1))
-  
-
-  adni_p <-  plot_gradient_relationships(subject_data_replication, 
-                                         gradient_data = gradients_df_replication, 
+  fig1 <- function(){ 
+    bf_p <-  plot_gradient_relationships(subject_data %>% filter(fmri_bl), 
+                                         gradient_data = gradients_df, 
                                          gradients = selected_gradients,
                                          gradient_colors = gradient_cols,
-                                         list_of_parcel_data = measures_list_replication,
-                                         mod_formula = formula(paste0(" ~ age + pathology_ad + sex + rsqa__MeanFD")),
+                                         list_of_parcel_data = measures_list,
                                          empty_row_height = empt_row_height,
                                          base_size_ = b_size,
-                                         vect = TRUE,
                                          add_shade = shade,
                                          shade_alpha = shade_a,
                                          shade_size = shade_s,
-                                         r2_size = rel(r2_sizing1),
+                                         vect = TRUE,
+                                         mod_formula = fig1_formula_bf,
                                          covariates = c("sex", "rsqa__MeanFD"),
-                                         id_var = "file_func",
+                                         r2_size = rel(r2_sizing1),
                                          filter_criteria = quo(),
                                          show_networks = FALSE,
                                          tag_prefix = "",
+                                         tag_sep = "",
                                          layout_construction = "horizontal",
                                          include_gradient_plots = TRUE,
                                          right_term_side = FALSE,
                                          plt_title = "",
                                          cache_runs = FALSE)
-  
-  
-  n_adni <- adni_p$n
-  p_a <- adni_p$plot &
-    theme(#text = element_text(size = text_size),
-      plot.tag = element_blank(),
-      plot.title = element_text(size = rel(plot_title_size)),
-      axis.title = element_text(size = rel(axes_title_size)))
-  
-  p_a <- p_a + plot_annotation(title = paste0("ADNI", " (N=", n_adni, ")"), 
-                               subtitle = expression(italic(FC[parcel] ~ "~" ~ age + pathology + sex + motion)),
-                               theme = theme(plot.subtitle = element_text(size = rel(0.9), 
-                                                                          hjust = 0, 
-                                                                          vjust = -0.05,
-                                                                          family = "mono",
-                                                                          face = "italic",
-                                                                          margin = margin(l = l_marg, unit = "npc")), 
-                                             plot.title.position = "plot",
-                                             plot.title = element_text(size = rel(1), hjust =0, margin = margin(l = l_marg, unit = "npc")))
-  )
-  
-  
-  
-  plt_idx <- length(selected_gradients) + 2
-  
-  p_a[[plt_idx[1]]] <- p_a[[plt_idx[1]]] + labs(title = "AD Pathology")
-  
-  p_a <- ggdraw() + 
-    draw_plot(p_a) + 
-    draw_plot_label("B", x = l_marg-l_marg, size = tag_size) 
+    
+    n_cs <- bf_p$n
+    p_bf <- bf_p$plot &
+      theme(#text = element_text(size = text_size),
+        plot.tag = element_blank(),
+        plot.title = element_text(size = rel(plot_title_size)),
+        axis.title = element_text(size = rel(axes_title_size))) 
+    
+    
+    f <- fig1_formula_bf
+    rhs <- deparse(f[[2]])
+    expr_str <- paste0("italic(FC[parcel] ~ '~' ~ ", rhs, ")")
+    subtit_expr <- parse(text = expr_str)[[1]]
+    
+    p_bf <- p_bf + plot_annotation(title = paste0("BioFINDER", " (N=", n_cs, ")"),
+                                   subtitle = subtit_expr,
+                                   theme = theme(plot.subtitle = element_text(size = rel(0.9),
+                                                                              hjust = 0,
+                                                                              vjust = -0.05,
+                                                                              family = "mono",
+                                                                              face = "italic",
+                                                                              margin = margin(l = l_marg, unit = "npc")),
+                                                 plot.title.position = "plot",
+                                                 plot.title = element_text(size = rel(1), hjust =0, margin = margin(l = l_marg, unit = "npc")))
+    )
+    
+    if (!is.null(brain_plot_names_f1)) {
+      plt_idx_start <- length(selected_gradients) 
+      
+      for (i in seq_along(brain_plot_names_f1)) {
+        p_bf[[plt_idx_start + i]] <- p_bf[[plt_idx_start + i]] + (if (!is.na(brain_plot_names_f1[i])) labs(title = brain_plot_names_f1[i]) else NULL)
+      }
+    }
+
+    
+    p_bf <- ggdraw() + 
+      draw_plot(p_bf) + 
+      draw_plot_label("A", x = l_marg-l_marg, size = tag_size) 
+    #draw_label("BioFINDER", x = (1/3.1/2), y = 0.75, hjust = 0.5, size =  draw_size)
+    
+    if (boxed) p_bf <- p_bf + theme(plot.background = element_rect(color = "black", linewidth = 1))
+    
+    
+    adni_p <-  plot_gradient_relationships(subject_data_replication, 
+                                           gradient_data = gradients_df_replication, 
+                                           gradients = selected_gradients,
+                                           gradient_colors = gradient_cols,
+                                           list_of_parcel_data = measures_list_replication,
+                                           mod_formula = fig1_formula_ad,
+                                           empty_row_height = empt_row_height,
+                                           base_size_ = b_size,
+                                           vect = TRUE,
+                                           add_shade = shade,
+                                           shade_alpha = shade_a,
+                                           shade_size = shade_s,
+                                           r2_size = rel(r2_sizing1),
+                                           covariates = c("sex", "rsqa__MeanFD"),
+                                           id_var = "file_func",
+                                           filter_criteria = quo(),
+                                           show_networks = FALSE,
+                                           tag_prefix = "",
+                                           layout_construction = "horizontal",
+                                           include_gradient_plots = TRUE,
+                                           right_term_side = FALSE,
+                                           plt_title = "",
+                                           cache_runs = FALSE)
+    
+    
+    n_adni <- adni_p$n
+    p_a <- adni_p$plot &
+      theme(#text = element_text(size = text_size),
+        plot.tag = element_blank(),
+        plot.title = element_text(size = rel(plot_title_size)),
+        axis.title = element_text(size = rel(axes_title_size)))
+    
+    f <- fig1_formula_ad
+    rhs <- deparse(f[[2]])
+    expr_str <- paste0("italic(FC[parcel] ~ '~' ~ ", rhs, ")")
+    subtit_expr_ad <- parse(text = expr_str)[[1]]
+    
+    p_a <- p_a + plot_annotation(title = paste0("ADNI", " (N=", n_adni, ")"), 
+                                 subtitle = subtit_expr_ad,
+                                 theme = theme(plot.subtitle = element_text(size = rel(0.9), 
+                                                                            hjust = 0, 
+                                                                            vjust = -0.05,
+                                                                            family = "mono",
+                                                                            face = "italic",
+                                                                            margin = margin(l = l_marg, unit = "npc")), 
+                                               plot.title.position = "plot",
+                                               plot.title = element_text(size = rel(1), hjust =0, margin = margin(l = l_marg, unit = "npc")))
+    )
+    
+    
+    if (!is.null(brain_plot_names_f1)) {
+      plt_idx_start <- length(selected_gradients) 
+      
+      for (i in seq_along(brain_plot_names_f1)) {
+        p_a[[plt_idx_start + i]] <- p_a[[plt_idx_start + i]] + (if (!is.na(brain_plot_names_f1[i])) labs(title = brain_plot_names_f1[i]) else NULL)
+      }
+    }
+    
+    p_a <- ggdraw() + 
+      draw_plot(p_a) + 
+      draw_plot_label("B", x = l_marg-l_marg, size = tag_size) 
     #draw_label("ADNI", x = (1/3.1/2), y = 0.75, hjust = 0.5, size =  draw_size)
+    
+    if (boxed) p_a <- p_a + theme(plot.background = element_rect(color = "black", linewidth = 1))
+    return(list(p_bf = p_bf, p_a = p_a))
+  }
   
-  if (boxed) p_a <- p_a + theme(plot.background = element_rect(color = "black", linewidth = 1))
+
   
   # overlay <- ggdraw() +
   #   draw_plot(p_bf, x = 0, y = 0, width = 0.35, height = 1) +
@@ -1358,68 +1557,9 @@ figure_one <- function(subject_data,
   # Cognition
   #######
   
-  
-  health_cog <-  plot_gradient_relationships(subject_data %>% filter(fmri_bl, diagnosis=="Normal" | diagnosis=="SCD", abnorm_ab==0, !apoe4),
-                                             gradient_data = gradients_df, 
-                                             gradients = selected_gradients,
-                                             gradient_colors = gradient_cols,
-                                             list_of_parcel_data = measures_list,
-                                             empty_row_height = empt_row_height,
-                                             base_size_ = b_size,
-                                             r2_size = rel(r2_sizing2),
-                                             mod_formula = formula(paste0("~ scale(age) * scale(-mPACC_v1) + pathology_ad + sex + rsqa__MeanFD")),
-                                             logistic_fit = FALSE,
-                                             vect = TRUE,
-                                             add_shade = shade,
-                                             shade_alpha = shade_a,
-                                             shade_size = shade_s,
-                                             covariates = c("sex", "rsqa__MeanFD"),
-                                             filter_criteria = quo(),
-                                             show_networks = FALSE,
-                                             tag_prefix = "",
-                                             tag_sep = "",
-                                             layout_construction = "horizontal",
-                                             plot_spacing = 0.2,
-                                             include_gradient_plots = TRUE,
-                                             right_term_side = FALSE,
-                                             plt_title = "",
-                                             cache_runs = FALSE)
-  
-  n_health <- health_cog$n
-  health_l_marg <- l_marg - 0.016666
-  p_health_cog <- health_cog$plot &
-    theme(plot.tag = element_blank(),
-          plot.title = element_text(size = rel(plot_title_size)),
-          axis.title = element_text(size = rel(axes_title_size))
-    )
-  
-  p_health_cog <- p_health_cog + plot_annotation(title = paste0("Cognitively unimpaired, no APOE e4, Ab-", " (N=", n_health, ")"), 
-                                                 subtitle = expression(italic(FC[parcel] ~ "~" ~ age * "×" * "-mPACC" + pathology + sex + motion)),
-                                                 theme = theme(plot.subtitle = element_text(size = rel(0.9),
-                                                                                            hjust = 0, 
-                                                                                            vjust = -0.05, 
-                                                                                            family = "mono",
-                                                                                            face = "italic",
-                                                                                            margin = margin(l = health_l_marg, unit = "npc")), 
-                                                               plot.title.position = "plot",
-                                                               plot.title = element_text(size = rel(1), hjust =0, margin = margin(l = health_l_marg, unit = "npc")))
-  )
-  
-  plt_idx <- 3:6
-  if (length(selected_gradients) < 2) plt_idx <- plt_idx-1
-  p_health_cog[[plt_idx[1]]] <- p_health_cog[[plt_idx[1]]] + labs(title = "Age") + theme(plot.title = element_text(vjust = -1.5)) 
-  p_health_cog[[plt_idx[2]]] <- p_health_cog[[plt_idx[2]]] + labs(title = "-mPACC", subtitle = "(Inverted cognition)") + theme(plot.subtitle = element_text(hjust = 0.5, size = rel(0.6)))
-  p_health_cog[[plt_idx[3]]] <- p_health_cog[[plt_idx[3]]] + labs(title = "AD Pathology") + theme(plot.title = element_text(vjust = -1.5)) 
-  p_health_cog[[plt_idx[4]]] <- p_health_cog[[plt_idx[4]]] + labs(title = "-mPACC×Age") + theme(plot.title = element_text(vjust = -1.5)) 
-  
-  p_health_cog <- ggdraw() + draw_plot(p_health_cog) + 
-    draw_plot_label(ifelse(split, "A", "C"), x = health_l_marg-health_l_marg, size = tag_size) + 
-    draw_label("BioFINDER", x = (1/5/2), y = 0.75, hjust = 0.5, size =  draw_size)
-  
-  
-  
-  clinical_cog <-  plot_gradient_relationships(subject_data %>% filter(fmri_bl, diagnosis=="MCI" | diagnosis=="AD", !is.na(mPACC_v1)) %>% 
-                                                 mutate(`-mPACC_v1` = -mPACC_v1), 
+  fig2 <- function() {
+    health_cog <-  plot_gradient_relationships(subject_data %>% filter(fmri_bl, diagnosis=="Normal" | diagnosis=="SCD", abnorm_ab==0, !apoe4
+                                                                       ),
                                                gradient_data = gradients_df, 
                                                gradients = selected_gradients,
                                                gradient_colors = gradient_cols,
@@ -1427,51 +1567,114 @@ figure_one <- function(subject_data,
                                                empty_row_height = empt_row_height,
                                                base_size_ = b_size,
                                                r2_size = rel(r2_sizing2),
+                                               mod_formula = formula(paste0("~ scale(age) * scale(-mPACC_v1) + pathology_ad + sex + rsqa__MeanFD")),
+                                               logistic_fit = FALSE,
                                                vect = TRUE,
                                                add_shade = shade,
                                                shade_alpha = shade_a,
                                                shade_size = shade_s,
-                                               mod_formula = formula(paste0(" ~ age + pathology_ad + `-mPACC_v1` +  sex + rsqa__MeanFD")),
-                                               logistic_fit = FALSE,
                                                covariates = c("sex", "rsqa__MeanFD"),
                                                filter_criteria = quo(),
                                                show_networks = FALSE,
                                                tag_prefix = "",
                                                tag_sep = "",
                                                layout_construction = "horizontal",
-                                               include_gradient_plots = FALSE,
+                                               plot_spacing = 0.2,
+                                               include_gradient_plots = TRUE,
                                                right_term_side = FALSE,
                                                plt_title = "",
                                                cache_runs = FALSE)
-  
-  n_clin <- clinical_cog$n
-  clin_l_marg = 0.3
-  p_clinical_cog <-
-    clinical_cog$plot  &
-    theme(plot.tag = element_blank(),
-          plot.title = element_text(size = rel(plot_title_size)),
-          axis.title = element_text(size = rel(axes_title_size))
+    
+    n_health <- health_cog$n
+    health_l_marg <- l_marg - 0.016666
+    p_health_cog <- health_cog$plot &
+      theme(plot.tag = element_blank(),
+            plot.title = element_text(size = rel(plot_title_size)),
+            axis.title = element_text(size = rel(axes_title_size))
+      )
+    
+    p_health_cog <- p_health_cog + plot_annotation(title = paste0("Cognitively unimpaired w/o APOE ε4 (Aβ-)", " (N=", n_health, ")"), 
+                                                   subtitle = expression(italic(FC[parcel] ~ "~" ~ age * "×" * "-mPACC" + pathology + sex + motion)),
+                                                   theme = theme(plot.subtitle = element_text(size = rel(0.9),
+                                                                                              hjust = 0, 
+                                                                                              vjust = -0.05, 
+                                                                                              family = "mono",
+                                                                                              face = "italic",
+                                                                                              margin = margin(l = health_l_marg, unit = "npc")), 
+                                                                 plot.title.position = "plot",
+                                                                 plot.title = element_text(size = rel(1), hjust =0, margin = margin(l = health_l_marg, unit = "npc")))
     )
+    
+    plt_idx <- 3:6
+    if (length(selected_gradients) < 2) plt_idx <- plt_idx-1
+    p_health_cog[[plt_idx[1]]] <- p_health_cog[[plt_idx[1]]] + labs(title = "Age") + theme(plot.title = element_text(vjust = -1.5)) 
+    p_health_cog[[plt_idx[2]]] <- p_health_cog[[plt_idx[2]]] + labs(title = "-mPACC", subtitle = "(Inverted cognition)") + theme(plot.subtitle = element_text(hjust = 0.5, size = rel(0.6)))
+    p_health_cog[[plt_idx[3]]] <- p_health_cog[[plt_idx[3]]] + labs(title = "AD Pathology") + theme(plot.title = element_text(vjust = -1.5)) 
+    p_health_cog[[plt_idx[4]]] <- p_health_cog[[plt_idx[4]]] + labs(title = "-mPACC×Age") + theme(plot.title = element_text(vjust = -1.5)) 
+    
+    p_health_cog <- ggdraw() + draw_plot(p_health_cog) + 
+      draw_plot_label(ifelse(split, "A", "C"), x = health_l_marg-health_l_marg, size = tag_size) + 
+      draw_label("BioFINDER", x = (1/5/2), y = 0.75, hjust = 0.5, size =  draw_size)
+    
+    
+    
+    clinical_cog <-  plot_gradient_relationships(subject_data %>% filter(fmri_bl, diagnosis=="MCI" | diagnosis=="AD", !is.na(mPACC_v1)) %>% 
+                                                   mutate(`-mPACC_v1` = -mPACC_v1), 
+                                                 gradient_data = gradients_df, 
+                                                 gradients = selected_gradients,
+                                                 gradient_colors = gradient_cols,
+                                                 list_of_parcel_data = measures_list,
+                                                 empty_row_height = empt_row_height,
+                                                 base_size_ = b_size,
+                                                 r2_size = rel(r2_sizing2),
+                                                 vect = TRUE,
+                                                 add_shade = shade,
+                                                 shade_alpha = shade_a,
+                                                 shade_size = shade_s,
+                                                 mod_formula = formula(paste0(" ~ age + pathology_ad + `-mPACC_v1` +  sex + rsqa__MeanFD")),
+                                                 logistic_fit = FALSE,
+                                                 covariates = c("sex", "rsqa__MeanFD"),
+                                                 filter_criteria = quo(),
+                                                 show_networks = FALSE,
+                                                 tag_prefix = "",
+                                                 tag_sep = "",
+                                                 layout_construction = "horizontal",
+                                                 include_gradient_plots = FALSE,
+                                                 right_term_side = FALSE,
+                                                 plt_title = "",
+                                                 cache_runs = FALSE)
+    
+    n_clin <- clinical_cog$n
+    clin_l_marg = 0.3
+    p_clinical_cog <-
+      clinical_cog$plot  &
+      theme(plot.tag = element_blank(),
+            plot.title = element_text(size = rel(plot_title_size)),
+            axis.title = element_text(size = rel(axes_title_size))
+      )
+    
+    p_clinical_cog <- p_clinical_cog + plot_annotation(title = paste0("Diagnosed MCI/AD (Aβ+)", " (N=", n_clin, ")"), 
+                                                       subtitle = expression(italic(FC[parcel] ~ "~" ~ age + pathology + "-mPACC" + sex + motion)),
+                                                       theme = theme(plot.subtitle = element_text(size = rel(0.9), 
+                                                                                                  hjust = 0, 
+                                                                                                  vjust = -0.05, 
+                                                                                                  family = "mono",
+                                                                                                  face = "italic",
+                                                                                                  margin = margin(l = clin_l_marg, unit = "npc")), 
+                                                                     plot.title.position = "plot",
+                                                                     plot.title = element_text(size = rel(1), hjust =0, margin = margin(l = clin_l_marg, unit = "npc")))
+    )
+    
+    plt_idx <- 3:5
+    if (length(selected_gradients) < 2) plt_idx <- plt_idx-1
+    p_clinical_cog[[plt_idx[1]]] <- p_clinical_cog[[plt_idx[1]]] + labs(title = "Age") + theme(plot.title = element_text(vjust = -1.5)) 
+    p_clinical_cog[[plt_idx[2]]] <- p_clinical_cog[[plt_idx[2]]] + labs(title = "AD Pathology") + theme(plot.title = element_text(vjust = -1.5)) 
+    p_clinical_cog[[plt_idx[3]]] <- p_clinical_cog[[plt_idx[3]]] + labs(title = "-mPACC", subtitle = "(Inverted cognition)") + theme(plot.subtitle = element_text(hjust = 0.5, size = rel(0.6)))
+    
+    p_clinical_cog <- ggdraw() + draw_plot(p_clinical_cog) + draw_plot_label(ifelse(split, "B", "D"), x = clin_l_marg-l_marg, size = tag_size)
+    return(list(p_health_cog = p_health_cog, p_clinical_cog = p_clinical_cog))
+  }
   
-  p_clinical_cog <- p_clinical_cog + plot_annotation(title = paste0("Diagnosed MCI/AD (Ab+)", " (N=", n_clin, ")"), 
-                                                     subtitle = expression(italic(FC[parcel] ~ "~" ~ age + pathology + "-mPACC" + sex + motion)),
-                                                     theme = theme(plot.subtitle = element_text(size = rel(0.9), 
-                                                                                                hjust = 0, 
-                                                                                                vjust = -0.05, 
-                                                                                                family = "mono",
-                                                                                                face = "italic",
-                                                                                                margin = margin(l = clin_l_marg, unit = "npc")), 
-                                                                   plot.title.position = "plot",
-                                                                   plot.title = element_text(size = rel(1), hjust =0, margin = margin(l = clin_l_marg, unit = "npc")))
-  )
-  
-  plt_idx <- 3:5
-  if (length(selected_gradients) < 2) plt_idx <- plt_idx-1
-  p_clinical_cog[[plt_idx[1]]] <- p_clinical_cog[[plt_idx[1]]] + labs(title = "Age") + theme(plot.title = element_text(vjust = -1.5)) 
-  p_clinical_cog[[plt_idx[2]]] <- p_clinical_cog[[plt_idx[2]]] + labs(title = "AD Pathology") + theme(plot.title = element_text(vjust = -1.5)) 
-  p_clinical_cog[[plt_idx[3]]] <- p_clinical_cog[[plt_idx[3]]] + labs(title = "-mPACC", subtitle = "(Inverted cognition)") + theme(plot.subtitle = element_text(hjust = 0.5, size = rel(0.6)))
-  
-  p_clinical_cog <- ggdraw() + draw_plot(p_clinical_cog) + draw_plot_label(ifelse(split, "B", "D"), x = clin_l_marg-l_marg, size = tag_size)
   
   
   
@@ -1546,67 +1749,110 @@ figure_one <- function(subject_data,
   net_legend2 <- get_net_legend()
   
   
-  if (split) {
+  if (split & is.null(fig)) {
     fig_one_two <- list()
-    
+    figure1_org <- fig1()
+    figure2_org <- fig2()
     
     if (boxed) {
+      
       fig_one_two[[1]] <- ggdraw() +
-        draw_plot(p_bf, x = 0, y = 0.05, width = 0.49, height = 0.95) +
+        draw_plot(figure1_org$p_bf, x = 0, y = 0.05, width = 0.49, height = 0.95) +
         #draw_plot(p_bf_long, x = 0.26, y = 0.05, width = 0.36, height = 0.95) +
-        draw_plot(p_a, x = 0.51, y = 0.05, width = 0.49, height = 0.95) +
+        draw_plot(figure1_org$p_a, x = 0.51, y = 0.05, width = 0.49, height = 0.95) +
         draw_plot(net_legend1, x = 0.3,  y = 0.025, width = 0.4, height = 0.015)
       
     } else {
+      
       fig_one_two[[1]] <- ggdraw() +
-        draw_plot(p_bf, x = 0, y = 0.05, width = 0.5, height = 0.95) +
+        draw_plot(figure1_org$p_bf, x = 0, y = 0.05, width = 0.5, height = 0.95) +
         #draw_plot(p_bf_long, x = 0.26, y = 0.05, width = 0.36, height = 0.95) +
-        draw_plot(p_a, x = 0.5, y = 0.05, width = 0.5, height = 0.95) +
+        draw_plot(figure1_org$p_a, x = 0.5, y = 0.05, width = 0.5, height = 0.95) +
         draw_plot(net_legend1, x = 0.4,  y = 0.025, width = 0.3, height = 0.015)
     }
     
     
     if (boxed) {
       fig_one_two[[2]] <- ggdraw() +
-        draw_plot(p_health_cog, x = 0.0, y = 0.05, width = 0.6, height = 0.95) +
-        draw_plot(p_clinical_cog, x = 0.5, y = 0.05, width = 0.49, height = 0.95) +
+        draw_plot(figure2_org$p_health_cog, x = 0.0, y = 0.05, width = 0.6, height = 0.95) +
+        draw_plot(figure2_org$p_clinical_cog, x = 0.5, y = 0.05, width = 0.49, height = 0.95) +
         draw_plot(net_legend2, x = 0.4,  y = 0.025, width = 0.4, height = 0.015) +
         theme(plot.background = element_rect(color = "black"))
     } else {
       fig_one_two[[2]] <- ggdraw() +
-        draw_plot(p_health_cog, x = 0.0, y = 0.00, width = 0.6, height = 1) +
-        draw_plot(p_clinical_cog, x = 0.5, y = 0.00, width = 0.49, height = 1) +
+        draw_plot(figure2_org$p_health_cog, x = 0.0, y = 0.00, width = 0.6, height = 1) +
+        draw_plot(figure2_org$p_clinical_cog, x = 0.5, y = 0.00, width = 0.49, height = 1) +
         draw_plot(net_legend2, x = 0.02,  y = 0.035, width = 0.2, height = 0.015) 
     }
     
-    
-    
     return(fig_one_two)
     
+  } else if (split & fig == 1) { 
+    figure1_org <- fig1()
+    
+    if (boxed) {
+      
+      x <- ggdraw() +
+        draw_plot(figure1_org$p_bf, x = 0, y = 0.05, width = 0.49, height = 0.95) +
+        #draw_plot(p_bf_long, x = 0.26, y = 0.05, width = 0.36, height = 0.95) +
+        draw_plot(figure1_org$p_a, x = 0.51, y = 0.05, width = 0.49, height = 0.95) +
+        draw_plot(net_legend1, x = 0.3,  y = 0.025, width = 0.4, height = 0.015)
+      
+    } else {
+      
+      x <- ggdraw() +
+        draw_plot(figure1_org$p_bf, x = 0, y = 0.05, width = 0.5, height = 0.95) +
+        #draw_plot(p_bf_long, x = 0.26, y = 0.05, width = 0.36, height = 0.95) +
+        draw_plot(figure1_org$p_a, x = 0.5, y = 0.05, width = 0.5, height = 0.95) +
+        draw_plot(net_legend1, x = 0.4,  y = 0.025, width = 0.3, height = 0.015)
+    }
+    
+    return(x)
+    
+  } else if (split & fig == 2) {
+      
+    if (boxed) {
+      x <- ggdraw() +
+        draw_plot(figure2_org$p_health_cog, x = 0.0, y = 0.05, width = 0.6, height = 0.95) +
+        draw_plot(figure2_org$p_clinical_cog, x = 0.5, y = 0.05, width = 0.49, height = 0.95) +
+        draw_plot(net_legend2, x = 0.4,  y = 0.025, width = 0.4, height = 0.015) +
+        theme(plot.background = element_rect(color = "black"))
+    } else {
+      x <- ggdraw() +
+        draw_plot(figure2_org$p_health_cog, x = 0.0, y = 0.00, width = 0.6, height = 1) +
+        draw_plot(figure2_org$p_clinical_cog, x = 0.5, y = 0.00, width = 0.49, height = 1) +
+        draw_plot(net_legend2, x = 0.02,  y = 0.035, width = 0.2, height = 0.015) 
+    }
+    
+    return(x)
+    
   } else {
+    
+    figure1_org <- fig1()
+    figure2_org <- fig2()
     
     if (boxed) {
       
       
       bottom_plots <- ggdraw() +
-        draw_plot(p_health_cog, x = 0.0, y = 0.0, width = 0.6, height = 1) +
-        draw_plot(p_clinical_cog, x = 0.5, y = 0.0, width = 0.49, height = 1) +
+        draw_plot(figure2_org$p_health_cog, x = 0.0, y = 0.0, width = 0.6, height = 1) +
+        draw_plot(figure2_org$p_clinical_cog, x = 0.5, y = 0.0, width = 0.49, height = 1) +
         draw_plot(net_legend2, x = 0.02,  y = 0.035, width = 0.2, height = 0.015) +
         theme(plot.background = element_rect(color = "black", linewidth = 1))
       
       figure1 <- ggdraw() +
-        draw_plot(p_bf, x = 0, y = 0.505, width = 0.495, height = 0.495) +
+        draw_plot(figure1_org$p_bf, x = 0, y = 0.505, width = 0.495, height = 0.495) +
         #draw_plot(p_bf_long, x = 0.26, y = 0.50, width = 0.36, height = 0.5) +
-        draw_plot(p_a, x = 0.505, y = 0.505, width = 0.495, height = 0.495) +  
+        draw_plot(figure1_org$p_a, x = 0.505, y = 0.505, width = 0.495, height = 0.495) +  
         draw_plot(bottom_plots, x = 0.0, y = 0.0, width = 1, height = 0.49) 
 
     } else {
       figure1 <- ggdraw() +
-        draw_plot(p_bf, x = 0, y = 0.50, width = 0.5, height = 0.5) +
+        draw_plot(figure1_org$p_bf, x = 0, y = 0.50, width = 0.5, height = 0.5) +
         #draw_plot(p_bf_long, x = 0.26, y = 0.50, width = 0.36, height = 0.5) +
-        draw_plot(p_a, x = 0.5, y = 0.50, width = 0.5, height = 0.5) +  
-        draw_plot(p_health_cog, x = 0.0, y = 0.01, width = 0.6, height = 0.5) +
-        draw_plot(p_clinical_cog, x = 0.5, y = 0.01, width = 0.49, height = 0.5) +
+        draw_plot(figure1_org$p_a, x = 0.5, y = 0.50, width = 0.5, height = 0.5) +  
+        draw_plot(figure2_org$p_health_cog, x = 0.0, y = 0.01, width = 0.6, height = 0.5) +
+        draw_plot(figure2_org$p_clinical_cog, x = 0.5, y = 0.01, width = 0.49, height = 0.5) +
         draw_plot(net_legend, x = 0.4,  y = 0.00, width = 0.4, height = 0.015)
     }
   
@@ -2222,15 +2468,18 @@ longitudinal_and_window_analysis <- function(long_df,
   bf_longitudinal <-  plot_gradient_relationships(long_bf_, 
                                                   gradient_data = grad_df %>% filter(study=="biofinder"), 
                                                   gradients = c(1, 3),
-                                                  empty_row_height = -0.15,
+                                                  empty_row_height = -0.1,
                                                   gradient_colors = gradient_cols,
+                                                  add_shade = TRUE, 
+                                                  shade_alpha = 0.0075,
+                                                  shade_size = 0.001,
                                                   r2_size = rel(3.8),
                                                   base_size_ = b_size,
                                                   list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
                                                   covariates = c("time", "sex", "rsqa__MeanFD"),
                                                   filter_criteria = quo(),
                                                   show_networks = FALSE,
-                                                  plt_title = "",
+                                                  plt_title = NULL,
                                                   tag_prefix = "",
                                                   tag_sep = "",
                                                   layout_construction = "horizontal",
@@ -2261,9 +2510,9 @@ longitudinal_and_window_analysis <- function(long_df,
   
   p_bf_long[[1]] <- p_bf_long[[1]] + theme(plot.title = element_text(vjust = -3))
   p_bf_long[[2]] <- p_bf_long[[2]] + theme(plot.title = element_text(vjust = -3))
-  p_bf_long[[3]] <- p_bf_long[[3]] + labs(title = "Age BL") + theme(plot.title = element_text(vjust = -1.5))
-  p_bf_long[[4]] <- p_bf_long[[4]] + labs(title = "Pathology BL") + theme(plot.title = element_text(vjust = -1.5))
-  p_bf_long[[5]] <- p_bf_long[[5]] + labs(title = bquote(Δ* "Pathology" ~ (t[i]-t[0]) ) ) + theme(plot.title = element_text(vjust = -4))
+  p_bf_long[[3]] <- p_bf_long[[3]] + labs(title = "Age BL") + theme(plot.title = element_text(vjust = -0.0))
+  p_bf_long[[4]] <- p_bf_long[[4]] + labs(title = "Pathology BL") + theme(plot.title = element_text(vjust = -0.0))
+  p_bf_long[[5]] <- p_bf_long[[5]] + labs(title = bquote(Δ* "Pathology" ~ (t[i]-t[0]) ) ) + theme(plot.title = element_text(vjust = -0.5))
   
   ###########################
   # Windowing

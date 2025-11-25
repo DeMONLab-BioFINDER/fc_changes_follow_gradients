@@ -1,3 +1,31 @@
+get_factor_group_sizes <- function(formula, data) {
+  
+  terms_obj <- terms(formula, data = data)
+  term_labels <- attr(terms_obj, "term.labels")
+  
+  # Identify which predictors are factors
+  factor_vars <- term_labels[sapply(term_labels, function(var) is.factor(data[[var]]))]
+  
+  # Build a data frame of results
+  out <- do.call(rbind, lapply(factor_vars, function(var) {
+    tab <- table(data[[var]])
+    lvls <- names(tab)
+    baseline <- levels(data[[var]])[1]
+    non_baseline_lvls <- lvls[lvls != baseline]
+    
+    # Construct term names like lm() would
+    term_names <- paste0(var, non_baseline_lvls)
+    
+    data.frame(term = term_names,
+               n = as.numeric(tab[non_baseline_lvls]),
+               stringsAsFactors = FALSE)
+  }))
+  
+  rownames(out) <- NULL
+  return(out)
+}
+
+
 fc_strength <- function(connectomes, atlas = yeo_msk, roi_names, threshold = 0, replace = 0){
   
   zero_out_mat <- function(mat, thresh, replacement) {
@@ -185,6 +213,7 @@ nodal_regression_fits <- function(subject_data,
     return(similarity_fits)
     
   } else {
+    print("non-vectorised version")
     
     inter_sub_long <- as.data.frame(fc_matrix) %>% rownames_to_column(id_var) %>%
       inner_join(subject_data, by = id_var) %>%
@@ -199,11 +228,13 @@ nodal_regression_fits <- function(subject_data,
         reg_dat <- inter_sub_long %>% filter(region == roi)  
       }
       
+      mod_form <- reformulate(attr(terms(model_formula), "term.labels"), response = dep_var)
+    
       if (!logistic) {
-        fit <- lm(model_formula, data = reg_dat)
+        fit <- lm(mod_form, data = reg_dat)
       }
       if (logistic) {
-        fit <- glm(model_formula, data = reg_dat, family = binomial(link = "logit"))
+        fit <- glm(mod_form, data = reg_dat, family = binomial(link = "logit"))
       }
       similarity_fits[[roi]] <- fit
 
@@ -215,6 +246,90 @@ nodal_regression_fits <- function(subject_data,
     return(similarity_fits)
   } 
     
+}
+
+nodal_regression_fits_roiwise_pred <- function(subject_data,
+                                               fc_matrix, 
+                                               roi_names,
+                                               tau_matrix = NULL,
+                                               logistic = FALSE,
+                                               scale_fc = FALSE,
+                                               vectorised = FALSE,
+                                               id_var = "image_file",
+                                               id_tau = "tau_file",
+                                               dep_var = "FC",
+                                               model_formula = formula(" ~ age + tau_pathology + sex + rsqa__MeanFD")) {
+  
+  # --- Vectorized mode (fast matrix regression) ---
+  if (vectorised) {
+    bio_filtered <- subject_data %>% 
+      drop_na(all_of(all.vars(model_formula)), cho12)
+    X_base <- model.matrix(model_formula, data = bio_filtered)
+    Y <- as.data.frame(fc_matrix[bio_filtered[[id_var]], ])
+    
+    if (!is.null(tau_matrix)) {
+      tau_df <- as.data.frame(tau_matrix[bio_filtered[[id_tau]], ])
+    }
+    
+    similarity_fits <- list()
+    for (roi in roi_names) {
+      if (!is.null(tau_matrix)) {
+        X <- cbind(X_base, tau_df[[roi]])
+        colnames(X)[ncol(X)] <- "tau_parcel"
+      } else {
+        X <- X_base
+      }
+      fit <- lm.fit(X, Y[[roi]])
+      fit$formula <- update(model_formula, paste0("~ tau_parcel + ", as.character(model_formula)[2]))
+      similarity_fits[[roi]] <- fit
+    }
+    
+    return(similarity_fits)
+  }
+  
+  # --- Non-vectorized mode (loop with tidy df) ---
+  inter_sub_long <- as.data.frame(fc_matrix) %>%
+    rownames_to_column(id_var) %>%
+    inner_join(subject_data, by = id_var) %>%
+    pivot_longer(starts_with('7Networks'), names_to = 'region', values_to = dep_var)
+  
+  if (!is.null(tau_matrix)) {
+    tau_long <- as.data.frame(tau_matrix) %>%
+      rownames_to_column(id_var) %>%
+      pivot_longer(starts_with('7Networks'), names_to = 'region', values_to = 'tau_val')
+    
+    inter_sub_long <- inter_sub_long %>%
+      left_join(tau_long, by = c(id_var, "region"))
+  }
+  
+  similarity_fits <- list()
+  ticker <- 0
+  pb <- txtProgressBar(min = 0, max = length(roi_names), initial = 0) 
+  
+  for (roi in roi_names) {
+    reg_dat <- inter_sub_long %>% filter(region == roi)
+    if (scale_fc) reg_dat <- reg_dat %>% mutate(dep_var = scale(.data[[dep_var]]))
+    
+    if (!is.null(tau_matrix)) {
+      # Add tau term dynamically
+      formula_with_tau <- update(model_formula, paste("~ tau_val +", as.character(model_formula)[2]))
+    } else {
+      formula_with_tau <- model_formula
+    }
+    
+    if (!logistic) {
+      fit <- lm(formula_with_tau, data = reg_dat)
+    } else {
+      fit <- glm(formula_with_tau, data = reg_dat, family = binomial(link = "logit"))
+    }
+    
+    similarity_fits[[roi]] <- fit
+    ticker <- ticker + 1
+    setTxtProgressBar(pb, ticker)
+  }
+  
+  close(pb)
+  return(similarity_fits)
 }
 
 get_nodal_ests <- function(fit_list, roi_names = rois, vectorised = TRUE, mc = FALSE){
@@ -405,7 +520,7 @@ gam_pred_nodes <- function(subject_data,
                            print_ticker = TRUE, 
                            id_var = "image_file",
                            dep_var = "FC",
-                           model_formula = formula("FC ~ s(age) + s(pathology_ad) + sex")) {
+                           model_formula = formula("FC ~ s(age) + s(pathology_ad) + sex + rsqa__MeanFD")) {
   library(mgcv)
   library(gratia)
   fc_matrix_long <- as.data.frame(fc_matrix) %>% rownames_to_column(id_var) %>% 
@@ -420,7 +535,7 @@ gam_pred_nodes <- function(subject_data,
   pat_derivs <- c()
   age_derivs <- c()
   ticker = 0
-  if (print_ticker) pb = txtProgressBar(min = 0, max = length(roi_names), initial = 0) 
+  if (print_ticker) pb = txtProgressBar(min = 0, max = length(roi_names), initial = 0, style = 3) 
   for (roi in roi_names) {
     gam_fit <- gam(model_formula, data = fc_matrix_long %>% filter(region == roi))
     #similarity_fits[[roi]] <- gam_fit
