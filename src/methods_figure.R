@@ -107,18 +107,20 @@ for (g in names(g_list)) {
   image_write(cropped_img, path = file.path(figure_path_concept, p_name))
 }
 
-atlas_geometry = readRDS("data/atlas_data/Schaefer2018_1000Parcels_geometry.rds")
+atlas_geometry = readRDS("data/atlas_data/schaef_ggseg2.rds")
 
 net_names <- data.frame(name = c('Vis', 'SomMot', 'DorsAttn','SalVentAttn','Limbic', 'Cont', 'Default'),
                         col = c("#781286", "#4682B4", "#00760E", "#C43AFA", "#c7cc7a", "#E69422", "#CD3E4E"), #"#DCF8A4"
                         label = c(1:7))
 
-pastel_brain <- atlas_geometry %>% 
-  inner_join(data.frame(region = rois, p_cols = pastel_colors)) %>% 
+pastel_brain <- atlas_geometry$atlas %>% 
+  left_join(data.frame(region = rois, p_cols = pastel_colors)) %>% 
+  mutate(p_cols = ifelse(is.na(p_cols), "grey50", p_cols)) |> 
   ggplot() +
   geom_sf(aes(fill = p_cols,
               geometry = geometry), linewidth= 0.2,
           show.legend = FALSE)+
+  geom_sf(data = atlas_geometry$shade, size = 0.01, alpha = 0.02) +
   theme_void() +
   scale_fill_identity()
 
@@ -156,6 +158,9 @@ bf_dx <-  plot_gradient_relationships(biofinder_df %>%
                                       gradients = c(1, 2, 3),
                                       vect = TRUE,
                                       gray_out = TRUE,
+                                      add_shade = TRUE, 
+                                      shade_alpha = 0.01,
+                                      shade_size = 0.01,
                                       r2_size = rel(4.5),
                                       gradient_colors = gradient_cols,
                                       list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
@@ -171,7 +176,7 @@ bf_dx <-  plot_gradient_relationships(biofinder_df %>%
                                       plt_title = "",
                                       cache_runs = FALSE)
 
-p_dx <- bf_dx$plot &
+p_dx <- bf_dx$plot + plot_annotation(title = "") &
   theme(text = element_text(size = 15),
         plot.tag = element_blank())
 

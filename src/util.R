@@ -1,28 +1,26 @@
 get_factor_group_sizes <- function(formula, data) {
   
+  # Extract terms from the formula
   terms_obj <- terms(formula, data = data)
   term_labels <- attr(terms_obj, "term.labels")
   
-  # Identify which predictors are factors
-  factor_vars <- term_labels[sapply(term_labels, function(var) is.factor(data[[var]]))]
+  # Identify factor predictors appearing in the model matrix
+  factor_vars <- names(Filter(is.factor, data[all.vars(formula)]))
   
-  # Build a data frame of results
+  # Build output
   out <- do.call(rbind, lapply(factor_vars, function(var) {
     tab <- table(data[[var]])
-    lvls <- names(tab)
-    baseline <- levels(data[[var]])[1]
-    non_baseline_lvls <- lvls[lvls != baseline]
-    
-    # Construct term names like lm() would
-    term_names <- paste0(var, non_baseline_lvls)
-    
-    data.frame(term = term_names,
-               n = as.numeric(tab[non_baseline_lvls]),
-               stringsAsFactors = FALSE)
+    data.frame(
+      variable = var,
+      level    = names(tab),
+      term     = paste0(var, names(tab)),
+      n        = as.numeric(tab),
+      stringsAsFactors = FALSE
+    )
   }))
   
   rownames(out) <- NULL
-  return(out)
+  out
 }
 
 
@@ -332,14 +330,58 @@ nodal_regression_fits_roiwise_pred <- function(subject_data,
   return(similarity_fits)
 }
 
-get_nodal_ests <- function(fit_list, roi_names = rois, vectorised = TRUE, mc = FALSE){
+get_nodal_ests <- function(fit_list, roi_names = rois, vectorised = TRUE, recover_missing_contr = FALSE, mc = FALSE){
   
+  contrast_from_lmfit <- function(est, R, resvar, c_vec) {
+    stopifnot(length(est) == length(c_vec),
+              all(dim(R) == c(length(est), length(est))))
+    
+    est_c <- sum(c_vec * est)
+    var_c <- as.numeric(resvar * t(c_vec) %*% R %*% c_vec)
+    se_c  <- sqrt(var_c)
+    t_c   <- est_c / se_c
+    
+    list(estimate = est_c, se = se_c, t = t_c)
+  }
+  
+  recover_missing_contrasts <- function(est, R, resvar, contrast_list) {
+    out <- list()
+    
+    for (var in names(contrast_list)) {
+      C <- contrast_list[[var]]  # contrast matrix for this variable
+      
+      # Only apply to actual matrices (not NULL or "contr.treatment" descriptors)
+      if (!is.matrix(C)) next
+      
+      # How many rows/cols?
+      nr <- nrow(C)
+      nc <- ncol(C)
+      
+      if (nr == nc) next
+      
+      omitted_idx <- (nc + 1):nr
+      
+      for (i in omitted_idx) {
+        full_c <- rep(0, length(est))
+        var_idx <- grepl(paste0("^", var), names(est))
+        
+        full_c[var_idx] <- C[i, ]
+        
+        con <- contrast_from_lmfit(est, R, resvar, full_c)
+        
+        out[[paste0(var, i)]] <- con
+      }
+    }
+    
+    out
+  }
  
   tictoc::tic()
   
       if(vectorised) {
         
         if (!mc) {
+          
           fits_ests <- data.frame()
           pb = txtProgressBar(min = 0, max = length(roi_names), initial = 0, style = 3) 
           i = 0
@@ -362,6 +404,22 @@ get_nodal_ests <- function(fit_list, roi_names = rois, vectorised = TRUE, mc = F
               mutate(region = roi,
                      n = length(r),
                      model_formula = deparse1(z$formula))
+            
+            if (recover_missing_contr) {
+              contrast_info <- attr(z$qr$qr, "contrasts")
+              missings <- recover_missing_contrasts(est, R, resvar, contrast_info)
+              for (nm in names(missings)) {
+                t_values <- t_values %>%
+                  add_row(
+                    term = nm,
+                    statistic = missings[[nm]]$t,
+                    region = roi,
+                    n = length(z$residuals),
+                    model_formula = deparse1(z$formula)
+                  )
+              }
+            }
+            
             fits_ests <- rbind(fits_ests, t_values)
             setTxtProgressBar(pb, i)
             i = i + 1
@@ -401,6 +459,21 @@ get_nodal_ests <- function(fit_list, roi_names = rois, vectorised = TRUE, mc = F
                 n             = length(r),
                 model_formula = deparse1(deparse1(z$formula))
               )
+              
+              if (recover_missing_contr) {
+                contrast_info <- attr(z$qr$qr, "contrasts")
+                missings <- recover_missing_contrasts(est, R, resvar, contrast_info)
+                for (nm in names(missings)) {
+                  df_tvals <- df_tvals %>%
+                    add_row(
+                      term = nm,
+                      statistic = missings[[nm]]$t,
+                      region = roi,
+                      n = length(r),
+                      model_formula = deparse1(deparse1(z$formula))
+                    )
+                }
+              }
               
               df_tvals
             })
@@ -537,7 +610,8 @@ gam_pred_nodes <- function(subject_data,
   ticker = 0
   if (print_ticker) pb = txtProgressBar(min = 0, max = length(roi_names), initial = 0, style = 3) 
   for (roi in roi_names) {
-    gam_fit <- gam(model_formula, data = fc_matrix_long %>% filter(region == roi))
+    gam_fit <- gam(model_formula, data = fc_matrix_long %>% filter(region == roi)#, method = "REML", gamma = 1.2
+                   )
     #similarity_fits[[roi]] <- gam_fit
     
     pat_newdata <-  expand_grid(age = 66.65896, pathology_ad = seq(0, 1, length.out = 100), rsqa__MeanFD = 0.17, sex = c(0, 1))

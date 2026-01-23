@@ -163,7 +163,6 @@ close(pb)
 }
 
 
-
 ###########################################
 # Subject data
 # ------------
@@ -179,6 +178,7 @@ biofinder_df__ <- sub_data |>
   mutate(
     fmri_date = as.Date(str_extract(csv_rsqa__index, "(?<=__).*"), format = "%Y%m%d"),
     visit = Visit,
+    etiology = underlying_etiology_text_baseline_variable,
     image_file = csv_rsqa__index,
     tau_file = csv_tnic_sr_mr_fs__index,
     abnorm_ab = Abnormal_CSF_Ab42_Ab40_Ratio,
@@ -199,6 +199,7 @@ biofinder_df__ <- sub_data |>
          fmri_bl,
          fmri_date,
          visit,
+         etiology,
          image_file,
          tau_file,
          has_longitudinal,
@@ -477,7 +478,8 @@ if (from_start) {
   
   healthy_young_connectomes <- con_cube_bf[, , biofinder_df |> filter(fmri_bl, age < 61, diagnosis == "Normal", abnorm_ab==0, !apoe4) |> pull(image_file)]
   average_connectome <- apply(healthy_young_connectomes, c(1, 2), mean)
-  write_rds(average_connectome, file.path(atlas_dir, "average_connectome_normalyoung.rds"))
+  #write_rds(average_connectome, file.path(atlas_dir, "average_connectome_normalyoung.rds"))
+  average_connectome = read_rds(file.path(atlas_dir, "average_connectome_normalyoung.rds"))
   rm(healthy_young_connectomes)
   
   # This takes some time, creates supplementary figure 9
@@ -492,6 +494,7 @@ if (from_start) {
     draw_line(x = c(0.15, 0.545), y = c(0.9725, 0.9725)) +
     draw_line(x = c(0.59, 0.985), y = c(0.9725, 0.9725)) 
   
+  comp_plot <- comp_plot + theme(plot.background = element_rect(color = "black"))
   # This is max millimiter (of journals) in inches
   img_width = 180 / 25.4
   
@@ -501,7 +504,6 @@ if (from_start) {
   magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
   p_name <- "gradient_param_comparison_bf.png"
   
-  print("Writing supplementary figure 9")
   ggsave(file.path(figure_path, p_name), comp_plot , #patch_plots[["biofinder"]], 
          width = img_width*scaling_factor, height = img_width*scaling_factor*0.675, bg ="white")
   img <- magick::image_read(file.path(figure_path, p_name))
@@ -873,7 +875,7 @@ source("src/util_vis.R")
 # These parameters set the final figure width, and the scaling to use to 
 # get elements and font sizes aligned
 img_width <-  180 / 25.4
-scaling_factor <-  4
+scaling_factor <-  3
 magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
 
 ################
@@ -892,11 +894,11 @@ fig_one <- figure_one(subject_data = biofinder_df,
                       shade_s = 0.001,
                       selected_gradients = c(1, 3), 
                       empt_row_height = -0.15,
-                      b_size = 28,
-                      draw_size = 28,
+                      b_size = 24,
+                      draw_size = 24,
                       plot_title_size = 0.9,
                       axes_title_size = 0.9,
-                      boxed = FALSE,
+                      boxed = TRUE,
                       split = TRUE,
                       fig = 1,
                       fig1_formula_bf = formula(" ~ age + pathology_ad + sex + rsqa__MeanFD"),
@@ -1103,14 +1105,15 @@ bf_dx <-  plot_gradient_relationships(biofinder_df %>%
                                       gradient_data = grad_df %>% filter(study=="biofinder"), 
                                       gradients = c(1, 2, 3),
                                       vect = TRUE,
+                                      add_shade = TRUE, 
+                                      shade_alpha = 0.0075,
+                                      shade_size = 0.001,
                                       gray_out = FALSE,
                                       r2_size = rel(4.5),
                                       gradient_colors = gradient_cols,
                                       list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
                                       mod_formula = formula(paste0(" ~ age + diagnosis + sex + rsqa__MeanFD")),
                                       covariates = c("sex", "rsqa__MeanFD"),
-                                      filter_criteria = quo(),
-                                      show_networks = FALSE,
                                       tag_prefix = "",
                                       tag_sep = "",
                                       layout_construction = "horizontal",
@@ -1149,7 +1152,7 @@ magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
 ########################################################
 # Supplementary figure with gradient 2
 ########################################################
-
+source("src/util_vis.R")
 fig_one <- figure_one(subject_data = biofinder_df,
                       subject_data_replication = adni_df |> filter(fmri_bl),
                       measures_list =list(nodal_affinity = fc_measures_bf$affinity), 
@@ -1157,6 +1160,9 @@ fig_one <- figure_one(subject_data = biofinder_df,
                       gradients_df = grad_df |> filter(study == "biofinder"),
                       gradients_df_replication = grad_df |> filter(study == "adni"),
                       selected_gradients = c(2), 
+                      shade = TRUE,
+                      shade_a = 0.0075,
+                      shade_s = 0.001,
                       empt_row_height = -0.1,
                       b_size = 21,
                       draw_size = 21,
@@ -1164,8 +1170,12 @@ fig_one <- figure_one(subject_data = biofinder_df,
                       axes_title_size = 0.9,
                       r2_sizing1 = 6,
                       boxed = FALSE,
-                      split = TRUE)
+                      split = TRUE,
+                      brain_plot_names_f1 = c(NA, "AD Pathology"))
 
+img_width = 180 / 25.4
+scaling_factor <-  3
+magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
 
 p_name <- "supplementary_gradient2.png"
 ggsave(file.path(figure_path, p_name), fig_one[[1]],
@@ -1190,6 +1200,9 @@ within_supp <- figure_one(subject_data = biofinder_df,
                           gradients_df = grad_df |> filter(study == "biofinder"),
                           gradients_df_replication = grad_df |> filter(study == "adni"),
                           selected_gradients = c(1, 3),
+                          shade = TRUE,
+                          shade_a = 0.0075,
+                          shade_s = 0.001,
                           tag_size = 18,
                           draw_size = 18,
                           empt_row_height = -0.1,
@@ -1199,7 +1212,8 @@ within_supp <- figure_one(subject_data = biofinder_df,
                           r2_sizing2 = 4.5,
                           r2_sizing1 = 6,
                           boxed = TRUE,
-                          split = FALSE)
+                          split = FALSE,
+                          brain_plot_names_f1 = c(NA, "AD Pathology"))
 
 p_name <- "within_supplementary.png"
 ggsave(file.path(figure_path, p_name), within_supp, width = img_width*scaling_factor, height = img_width*0.8*scaling_factor,
@@ -1229,7 +1243,11 @@ between_supp <- figure_one(subject_data = biofinder_df,
                            r2_sizing2 = 4.5,
                            r2_sizing1 = 6,
                            boxed = TRUE,
-                           split = FALSE)
+                           split = FALSE,
+                           shade = TRUE,
+                           shade_a = 0.0075,
+                           shade_s = 0.001,
+                           brain_plot_names_f1 = c(NA, "AD Pathology"))
 
 p_name <- "between_supplementary.png"
 ggsave(file.path(figure_path, p_name), between_supp, width = img_width*scaling_factor, height = img_width*0.8*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
@@ -1260,7 +1278,11 @@ strength_supp <- figure_one(subject_data = biofinder_df,
                             r2_sizing2 = 4.5,
                             r2_sizing1 = 6,
                             boxed = TRUE,
-                            split = FALSE)
+                            split = FALSE,
+                            shade = TRUE,
+                            shade_a = 0.0075,
+                            shade_s = 0.001,
+                            brain_plot_names_f1 = c(NA, "AD Pathology"))
 
 p_name <- "supplementary_strength.png"
 ggsave(file.path(figure_path, p_name), strength_supp, width = img_width*scaling_factor, height = img_width*0.8*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
@@ -1289,7 +1311,11 @@ aff_no_thresh <- figure_one(subject_data = biofinder_df,
                             r2_sizing2 = 4.5,
                             r2_sizing1 = 6,
                             boxed = TRUE,
-                            split = FALSE)
+                            split = FALSE,
+                            shade = TRUE,
+                            shade_a = 0.0075,
+                            shade_s = 0.001,
+                            brain_plot_names_f1 = c(NA, "AD Pathology"))
 
 p_name <- "supplementary_affinity_no_thresh_correlation.png"
 ggsave(file.path(figure_path, p_name), aff_no_thresh, width = img_width*scaling_factor, height = img_width*0.8*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
@@ -1314,6 +1340,9 @@ clinical_cog_int <-  plot_gradient_relationships(biofinder_df |> filter(fmri_bl,
                                                  covariates = c("sex", "rsqa__MeanFD"),
                                                  filter_criteria = quo(),
                                                  r2_size = 5,
+                                                 add_shade = TRUE, 
+                                                 shade_alpha = 0.01,
+                                                 shade_size = 0.01,
                                                  show_networks = FALSE,
                                                  tag_prefix = "",
                                                  tag_sep = "",
@@ -1365,6 +1394,9 @@ clinical_wo_cog <-  plot_gradient_relationships(biofinder_df |> filter(fmri_bl, 
                                                  list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
                                                  mod_formula = formula(paste0(" ~ age + pathology_ad + sex + rsqa__MeanFD")),
                                                  logistic_fit = FALSE,
+                                                add_shade = TRUE, 
+                                                shade_alpha = 0.01,
+                                                shade_size = 0.01,
                                                  covariates = c("sex", "rsqa__MeanFD"),
                                                  filter_criteria = quo(),
                                                  r2_size = 6,
@@ -1418,6 +1450,9 @@ health_cog_no_interact <-  plot_gradient_relationships(biofinder_df |> filter(fm
                                                        base_size_ = 18,
                                                        list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
                                                        vect = TRUE,
+                                                       add_shade = TRUE, 
+                                                       shade_alpha = 0.01,
+                                                       shade_size = 0.01,
                                                        mod_formula = formula(paste0(" ~ age + `-mPACC_v1` + pathology_ad + sex + rsqa__MeanFD")),
                                                        logistic_fit = FALSE,
                                                        covariates = c("sex", "rsqa__MeanFD"),
@@ -1480,6 +1515,9 @@ health_cog <-  plot_gradient_relationships(biofinder_df |> filter(fmri_bl, diagn
                                            base_size_ = 18,
                                            list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
                                            vect = TRUE,
+                                           add_shade = TRUE, 
+                                           shade_alpha = 0.01,
+                                           shade_size = 0.01,
                                            mod_formula = formula(paste0(" ~ scale(age) * scale(-mPACC_v1) + sex + rsqa__MeanFD")),
                                            logistic_fit = FALSE,
                                            covariates = c("sex", "rsqa__MeanFD"),
@@ -1570,20 +1608,34 @@ legend_labs <-  c("Ab42/40", "Braak12", "Braak34", "Braak56")
 biof_path_plot <- biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |> 
   select(pathology_ad, ab_ratio, 
          starts_with("braak"), starts_with("cho")) |> 
-  mutate(across(where(is.numeric) & !pathology_ad, scale)) |> 
-  pivot_longer(-pathology_ad, names_to = "scaled_pat_measures", values_to = "value") |> 
+  mutate(across(where(is.numeric) & !pathology_ad, scale)) 
+ab_mean <- attr(biof_path_plot$ab_ratio, c("scaled:center"))
+ab_sd <- attr(biof_path_plot$ab_ratio, c("scaled:scale"))
+ab_pos <- (0.08 - ab_mean)/ab_sd
+
+biof_path_plot <- biof_path_plot |> 
+  pivot_longer(-pathology_ad, names_to = "scaled_pat_measures", values_to = "value") %>% 
   ggplot(aes(pathology_ad, value, color = scaled_pat_measures)) +
   geom_smooth() +
-  guides(color = guide_legend(theme = theme(
-    legend.direction = "horizontal",
-    legend.title.position = "left",
-    legend.text.position = "bottom",
-    # legend.text = element_text(hjust = 0.5, vjust = 1, #angle = 90
-    #                            )
-  ))) +
+  guides(color = guide_legend(
+    nrow=1, byrow=TRUE,
+    title.position="left", 
+    label.position = "bottom",
+    title.hjust = 0)) +
+  geom_hline(yintercept = ab_pos, linetype = 6) +
+  geom_text(inherit.aes = FALSE, 
+            data = data.frame(x = 0.85, y = ab_pos),
+            aes(x = x, y = y),
+            label = "Aβ+", nudge_y = 0.5, size = 5) +
   labs(x = "Pathology score", y = "Scaled value")+
   ggsci::scale_color_nejm(name = "Pathology", labels = legend_labs) +
-  theme(legend.position = "bottom")  
+  theme(legend.position = "bottom",
+        legend.margin = margin(-8, 20, 0, 0),
+        legend.box.margin = margin(-8, 20, 0, 0),
+        #ggside.panel.scale = 0.2,
+        legend.text = element_text(size = rel(0.6)),
+        legend.title = element_text(size = rel(0.8)))  
+
 
 dens <- biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |> 
   mutate(Diagnosis = ifelse(diagnosis == "Normal", "CN", diagnosis) |> factor(levels = c("CN", "SCD", "MCI", "AD")) ) |> 
@@ -1598,7 +1650,9 @@ dens <- biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |>
     # legend.text = element_text(hjust = 0.5, vjust = 1, #angle = 90
     #                            )
   ))) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom", 
+        legend.margin = margin(-8, 0, 0, 0),
+        legend.box.margin = margin(-8, 0, 0, 0))
 
 path_plot <- biof_path_plot + dens + plot_layout(axis_titles = "collect") 
 
