@@ -373,20 +373,19 @@ format:
       # Run Quarto's default filters first
       - quarto
       - section-bibliographies
+      - authors-block
       - filters/author-contributions.lua
-     #reference-doc: custom-reference-doc_edited.docx
-  # html:
-  #   page-layout: article
-  #   grid:
-  #     sidebar-width: 200px
-  #     body-width: 1000px
-  #     margin-width: 200px
-  #     gutter-width: 1.5rem
-#embed-resources: true
+      - at: post-quarto
+        path: figure-collect
+figure-collect:
+  figure-dir: figures_copy
+  figure-caption-section: figure-caption-section
+  copy-figures: true
+  keep-figures: false
+  figure-kinds: [fig, suppfig]
+  clean-figure-dir: true
 theme: default
 reference-section-title: References
-filters:
-  - authors-block
 geometry:
   - left=.75in
   - right=.75in
@@ -592,35 +591,6 @@ We analyzed resting-state fMRI data from the BioFINDER-2 cohort (973 participant
 
 In studies comparing aging and AD, it is common to rely on clinical diagnostic criteria. However, these criteria may confound pathological processes with cognitive factors (e.g., resilience). To isolate pathological AD effects, we used a continuous measure of pathology severity by nonlinearly mapping participants onto a continuous trajectory based on CSF Aβ42/40 ratio and tau PET using the SCORPIUS method [@SCORPIUS]. This continuous pathology measure was used instead of clinical diagnoses to quantify AD disease progression in all subsequent analyses (but see @suppfig-diagnosis for an analysis with clinical diagnoses). In @fig-concept D, the relationship between this composite pathology score and its constituents is visualized, along with its distribution over clinical groups.
 
-```{r message=FALSE, warning=FALSE, eval = TRUE}
-#| label: tbl-table1
-#| tbl-cap-location: bottom
-#| tbl-cap: "Cross-sectional characteristics in BioFINDER and ADNI. Pathology scores were calculated by non-linearly mapping individuals's CSF Aβ42/40 ratio and tau PET SUVR from Braak I-II, III-IV, V-VI regions onto a trajectory from 0 to 1 where 0 indicates no pathology. Abbreviations: FD = frame displacement (scanner motion); SD = standard deviation, CN = cognitively normal; MCI = mild cognitive impairment; AD = Alzheimer’s disease."
-library(kableExtra)
-library(flextable)
-
-t1 <- readRDS("tables/CS_tbl1.rds")
-t1 %>% 
-  mutate(label = str_replace_all(label, "MeanFD", "Mean FD"),
-         label = str_replace_all(label, "Pathology", "Pathology Score")) -> t1
-
-
-ft <- flextable(t1)
-
-ft <- ft %>%
-  merge_v(j = c("Cohort")) %>% 
-  valign(j = c("Cohort"), valign = "top", part = "body") %>% 
-  fontsize(size = 8, part = "body") %>% 
-  autofit() %>% 
-  set_header_labels(
-  label = " ",
-  levels = "  ",
-  `MCI_ab+` = "MCI Aβ+"
-  ) 
-
-ft
-
-```
 
 :::: column-page
 ::: {#fig-concept}
@@ -756,8 +726,78 @@ The strength of this study lies in its large, single-site main cohort and the se
 
 In sum, our findings reveal that age- and AD-related FCS alterations align with distinct large-scale cortical gradients of functional organization. These alignments vary along the age and AD pathology spectra, and are associated with cognition, independent of AD pathology burden. We propose that gradient-like FCS changes may reflect a general neural signature of cognitive strain or system-level stress, while acknowledging that the directionality of this relationship is uncertain. Similarly, we cannot conclude whether this signature is detrimental or compensatory -- our parcelwise mediation analyses seem to suggest that they are both. We show that these patterns emerge in older individuals, those that are cognitively healthy but have subtle AD pathology, and clinically impaired patients alike, suggesting that cognitive demands may increasingly exceed available neural resources in these groups.
 
+## Tables
+
+```{r message=FALSE, warning=FALSE, eval = TRUE}
+#| label: tbl-table1
+#| tbl-cap-location: bottom
+#| tbl-cap: "Cross-sectional characteristics in BioFINDER and ADNI. Pathology scores were calculated by non-linearly mapping individuals's CSF Aβ42/40 ratio and tau PET SUVR from Braak I-II, III-IV, V-VI regions onto a trajectory from 0 to 1 where 0 indicates no pathology. Abbreviations: FD = frame displacement (scanner motion); SD = standard deviation, CN = cognitively normal; MCI = mild cognitive impairment; AD = Alzheimer’s disease."
+library(kableExtra)
+library(flextable)
+
+t1 <- readRDS("tables/CS_tbl1.rds")
+t1 %>% 
+  mutate(label = str_replace_all(label, "MeanFD", "Mean FD"),
+         label = str_replace_all(label, "Pathology", "Pathology Score")) -> t1
 
 
+ft <- flextable(t1)
+
+ft <- ft %>%
+  merge_v(j = c("Cohort")) %>% 
+  valign(j = c("Cohort"), valign = "top", part = "body") %>% 
+  fontsize(size = 8, part = "body") %>% 
+  autofit() %>% 
+  set_header_labels(
+  label = " ",
+  levels = "  ",
+  `MCI_ab+` = "MCI Aβ+"
+  ) 
+
+ft
+
+```
+
+
+```{r message=FALSE, warning=FALSE, eval=TRUE}
+#| label: tbl-table2
+#| tbl-cap-location: bottom
+#| tbl-cap: "Characteristics of the longitudinal BioFINDER-2 sample. Because no CSF Aβ data were available longitudinally for AD dementia patients, pathology scores were recomputed using only tau PET SUVR from Braak I-II, III-IV, V-VI regions. TimePoint indicates whether a variable is baseline, last available follow-up, or consistent across time. Abbreviations: FD = frame displacement (scanner motion); SD = standard deviation, CN = cognitively normal; MCI = mild cognitive impairment; AD = Alzheimer’s disease."
+
+
+t1 <- readRDS("tables/LT_tbl1.rds")
+
+t1 <- t1 |> select(-Cohort)
+  
+
+ft <- flextable(t1)
+
+ft <- ft %>%
+  #merge_v(j = c("Cohort")) %>% 
+  merge_v(j = c("TimePoint")) %>% 
+  merge_v(j = c("label")) %>% 
+  valign(j = c("TimePoint", "label"), valign = "top", part = "body") %>% 
+  fontsize(size = 8, part = "body") %>% 
+  fontsize(size = 10, part = "header") %>% 
+  autofit() %>% 
+  set_header_labels(
+  label = " ",
+  levels = "  ",
+  `MCI_ab+` = "MCI Aβ+"
+  ) 
+  # add_header_row(
+  # values = c(NA, "Diagnosis"), 
+  # colwidths = c(4, 3))
+ft
+
+
+```
+
+## Figure captions
+
+::: {.figure-caption-section}
+
+:::
 
 ## Acknowledgements
 
@@ -802,39 +842,6 @@ Distribution of age and pathology score of the main cross-sectional sample.
 
 **ADNI**. Information related to participant consent in The Alzheimer’s Disease Neuroimaging Initiative can be found at (ADNI; http://adni.loni.usc.edu). For up-to-date information, see www.adni-info.org. A total sample of N = 131 had the exact same variables available as in the discovery cohort (CSF Aβ42/40, tau PET, fMRI), with two individuals being excluded for excessive in-scanner motion. Of those, there were 89 healthy controls and 40 participants diagnosed with dementia or mild cognitive impairment. All cognitively impaired cases were Aβ-positive as assessed by abnormal CSF Aβ42/40 or amyloid PET. See table @tbl-table1 for further details.
 
-```{r message=FALSE, warning=FALSE, eval=TRUE}
-#| label: tbl-table2
-#| tbl-cap-location: bottom
-#| tbl-cap: "Characteristics of the longitudinal BioFINDER-2 sample. Because no CSF Aβ data were available longitudinally for AD dementia patients, pathology scores were recomputed using only tau PET SUVR from Braak I-II, III-IV, V-VI regions. TimePoint indicates whether a variable is baseline, last available follow-up, or consistent across time. Abbreviations: FD = frame displacement (scanner motion); SD = standard deviation, CN = cognitively normal; MCI = mild cognitive impairment; AD = Alzheimer’s disease."
-
-
-t1 <- readRDS("tables/LT_tbl1.rds")
-
-t1 <- t1 |> select(-Cohort)
-  
-
-ft <- flextable(t1)
-
-ft <- ft %>%
-  #merge_v(j = c("Cohort")) %>% 
-  merge_v(j = c("TimePoint")) %>% 
-  merge_v(j = c("label")) %>% 
-  valign(j = c("TimePoint", "label"), valign = "top", part = "body") %>% 
-  fontsize(size = 8, part = "body") %>% 
-  fontsize(size = 10, part = "header") %>% 
-  autofit() %>% 
-  set_header_labels(
-  label = " ",
-  levels = "  ",
-  `MCI_ab+` = "MCI Aβ+"
-  ) 
-  # add_header_row(
-  # values = c(NA, "Diagnosis"), 
-  # colwidths = c(4, 3))
-ft
-
-
-```
 
 ## Data acquisition and processing
 
@@ -1117,4 +1124,10 @@ Results from parcelwise models using tau PET SUVR extracted for each Schaefer-10
 ![](revision_figures/caus_plot.jpg)
 
 \A Cross-sectional results of the full sample with education in the model and sex as variable of interest (A). Correlations of the t-maps from pathology (path) and age in the model FC~parcel~ \~ age + AD pathology + sex + motion, when accounting for the variance of nodal affinity averaged across subjects. The correlation between the pathology t-map and the SA axis persists even though we account for mean nodal affinity, indicating it is not the shared data structure that accounts for the correlation between the two (B). Individual nodal affinity maps correlated with the SA and RE axis respectively show that, while individual affinity maps tend to negatively correlate with the SA axis, they do not on average tend to correlate with the RE axis.
+:::
+
+## Supplementary figure captions
+
+::: {.figure-caption-section-suppfig}
+
 :::
