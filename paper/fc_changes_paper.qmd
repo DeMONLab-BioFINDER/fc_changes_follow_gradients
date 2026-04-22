@@ -757,13 +757,7 @@ The strength of this study lies in its large, single-site main cohort and the se
 In sum, our findings reveal that age- and AD-related FCS alterations align with distinct large-scale cortical gradients of functional organization. These alignments vary along the age and AD pathology spectra, and are associated with cognition, independent of AD pathology burden. We propose that gradient-like FCS changes may reflect a general neural signature of cognitive strain or system-level stress, while acknowledging that the directionality of this relationship is uncertain. Similarly, we cannot conclude whether this signature is detrimental or compensatory -- our parcelwise mediation analyses seem to suggest that they are both. We show that these patterns emerge in older individuals, those that are cognitively healthy but have subtle AD pathology, and clinically impaired patients alike, suggesting that cognitive demands may increasingly exceed available neural resources in these groups.
 
 
-### Data availability
 
-Data from the validation cohort ADNI is a public access dataset and can be obtained by application from http://adni.loni.usc.edu/. The BioFINDER data are not publicly available, but anonymized data may be made available upon request to qualified academic investigators. Data sharing must comply with EU General Data Protection Regulation (GDPR), decisions of the Swedish Ethical Review Authority, and regulations of Region Skåne.
-
-### Code availability and used software
-
-Timeseries extraction from fMRI Nifti images was performed using Nilearn [@abraham2014] in Python 3.12, all other analyses and visualisation was done using R 4.4.2 (2024) using an array of different packages including: tidyverse [@tidyverse]; sf [@sf]; cowplot [@cowplot]; patchwork [@patchwork]; magick [@magick]; lme4 [@lme4]; gratia [@gratia]; ggpmisc [@ggpmisc]; ggside [@ggside]; mgcv [@mgcv]; and SCORPIUS [@SCORPIUS]. Code for all analyses and visualisation, including a quarto document for reproducing this manuscript with synthetic data is available at https://github.com/DeMONLab-BioFINDER/fc_changes_follow_gradients.
 
 ## Acknowledgements
 
@@ -906,9 +900,13 @@ To assess nonlinear patterns of longitudinal change across the old age and AD pa
 
 To examine whether FCS mediated the relationships between age or AD pathology and domain specific cognitive performance, we conducted parcel-wise mediation analyses across the cortical surface. For each cortical parcel, we specified a mediation model in which either age or AD pathology served as the independent variable (X), parcel-wise FCS as the mediator (M), and cognitive performance as the outcome (Y). Mediation models were fitted separately for memory and executive domain scores. All models included sex and mean framewise displacement as covariates, and age or pathology was additionally included as a covariate when not serving as the independent variable. For each parcel, we estimated the direct effect (X → Y), the mediator effect (X → M), and the indirect effect (X → M → Y). Indirect effects were summarized as parcel-wise mediation coefficients and mapped across the cortex (see @fig-cogfull).
 
-::: {.sectionrefs}
-:::
+### Data availability
 
+Data from the validation cohort ADNI is a public access dataset and can be obtained by application from http://adni.loni.usc.edu/. The BioFINDER data are not publicly available, but anonymized data may be made available upon request to qualified academic investigators. Data sharing must comply with EU General Data Protection Regulation (GDPR), decisions of the Swedish Ethical Review Authority, and regulations of Region Skåne.
+
+### Code availability and used software
+
+Timeseries extraction from fMRI Nifti images was performed using Nilearn [@abraham2014] in Python 3.12, all other analyses and visualisation was done using R 4.4.2 (2024) using an array of different packages including: tidyverse [@tidyverse]; sf [@sf]; cowplot [@cowplot]; patchwork [@patchwork]; magick [@magick]; lme4 [@lme4]; gratia [@gratia]; ggpmisc [@ggpmisc]; ggside [@ggside]; mgcv [@mgcv]; and SCORPIUS [@SCORPIUS]. Code for all analyses and visualisation, including a quarto document for reproducing this manuscript with synthetic data is available at https://github.com/DeMONLab-BioFINDER/fc_changes_follow_gradients.
 
 # Supplementary
 

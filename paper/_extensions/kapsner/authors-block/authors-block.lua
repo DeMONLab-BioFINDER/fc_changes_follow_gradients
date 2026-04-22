@@ -17,6 +17,8 @@ THIS SOFTWARE.
 ]]
 
 local List = require 'pandoc.List'
+local utils = require 'pandoc.utils'
+local stringify = utils.stringify
 
 -- [import]
 local from_utils = require "utils"
@@ -35,15 +37,34 @@ local create_authors_inlines = from_authors.create_authors_inlines
 -- [/import]
 
 -- This is the main-part
+-- Apply a custom Word paragraph style to the blocks inserted by this filter.
+-- Pandoc doesn't support attributes on Para nodes, so we wrap the paragraph(s)
+-- in a Div with the `custom-style` attribute. For docx output this becomes a
+-- paragraph style (requires the style to exist in the reference.docx).
+local function style_inserted_blocks(blocks, style_name)
+  if blocks == nil then return nil end
+  if not (FORMAT and FORMAT:match('docx')) then return blocks end
+  if #blocks == 0 then return blocks end
+  local attr = pandoc.Attr('', {}, { ['custom-style'] = style_name })
+  return { pandoc.Div(blocks, attr) }
+end
+
 function Pandoc(doc)
   local meta = doc.meta
   local body = List:new{}
   
   local mark = function (mark_name) return default_marks[mark_name] end
 
-  body:extend(create_equal_contributors_block(meta.authors, mark) or {})
-  body:extend(create_affiliations_blocks(meta.affiliations) or {})
-  body:extend(create_correspondence_blocks(meta.authors, mark) or {})
+  -- Style name used for the inserted block in docx output.
+-- Can be overridden via `authors-block-style` in YAML metadata.
+local style_name = 'AuthorsBlock'
+if meta['authors-block-style'] ~= nil then
+  style_name = stringify(meta['authors-block-style'])
+end
+
+body:extend(style_inserted_blocks(create_equal_contributors_block(meta.authors, mark), style_name) or {})
+body:extend(style_inserted_blocks(create_affiliations_blocks(meta.affiliations), style_name) or {})
+body:extend(style_inserted_blocks(create_correspondence_blocks(meta.authors, mark), style_name) or {})
   body:extend(doc.blocks)
   
   for _i, author in ipairs(meta.authors) do
