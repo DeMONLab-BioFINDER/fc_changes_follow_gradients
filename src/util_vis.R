@@ -73,6 +73,404 @@ make_gradient_plots <- function(gradient_data,
   return(gradient_plots)
 }
 
+prepare_longitudinal_and_window_analysis <- function(long_df,
+                                                     run_windowing = FALSE,
+                                                     processed_dir = "data/processed_and_cleaned",
+                                                     mod_formula = formula(paste0("FC ~ age_bl + time + pathΔ + path_bl + sex + rsqa__MeanFD + (1 | sid)")),
+                                                     cache_path = file.path(processed_dir, "longitudinal_window_analysis_data.rds"),
+                                                     use_cache = FALSE,
+                                                     save_cache = FALSE,
+                                                     b_size = 7) {
+  library(tidyverse)
+  
+  if (use_cache && file.exists(cache_path)) {
+    return(readRDS(cache_path))
+  }
+  
+  long_bf_ <- long_df
+  
+  bf_longitudinal <- plot_gradient_relationships(
+    long_bf_,
+    gradient_data = grad_df %>% filter(study == "biofinder"),
+    gradients = c(1, 3),
+    empty_row_height = -0.2,
+    r_spin_size = 0.9,
+    gradient_colors = gradient_cols,
+    add_shade = TRUE,
+    shade_alpha = 0.1,
+    shade_size = 0.1,
+    point_size = 0.2,
+    point_alpha = 0.3,
+    rasterize = TRUE,
+    ggrastr_dpi = 300,
+    ggrastr_dev = "ragg",
+    r2_size = rel(3.2),
+    base_size_ = b_size,
+    list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
+    covariates = c("time", "sex", "rsqa__MeanFD"),
+    filter_criteria = quo(),
+    show_networks = FALSE,
+    plt_title = NULL,
+    tag_prefix = "",
+    tag_sep = "",
+    layout_construction = "horizontal",
+    include_gradient_plots = TRUE,
+    right_term_side = FALSE,
+    cache_runs = FALSE,
+    longitudinal = TRUE,
+    sub_id = "sid",
+    longitudinal_formula = formula(paste0("FC ~ time  + age_bl + path_bl + pathΔ + sex + rsqa__MeanFD + (1 | sid)"))
+  )
+  
+  num_bins <- 30
+  hist_map_data <- long_bf_ %>%
+    filter(fmri_bl) %>%
+    select(age_bl, path_bl) %>%
+    mutate(
+      age_bin = cut(age_bl, breaks = num_bins, include.lowest = TRUE, labels = FALSE),
+      path_bin = cut(path_bl, breaks = num_bins, include.lowest = TRUE, labels = FALSE)
+    ) %>%
+    mutate(
+      age_mid = min(age_bl) + (age_bin - 0.5) * (max(age_bl) - min(age_bl)) / num_bins,
+      path_mid = min(path_bl) + (path_bin - 0.5) * (max(path_bl) - min(path_bl)) / num_bins
+    ) %>%
+    group_by(age_mid, path_mid) %>%
+    summarise(n = n(), .groups = "drop")
+  
+  age_df <- long_bf_ %>% filter(fmri_bl) %>% select(age_bl)
+  age_win_size <- 25
+  frames <- data.frame(
+    win_n = seq(min(age_df$age_bl) %>% round(), max(age_df$age_bl) %>% round() - age_win_size, by = 1)
+  ) %>%
+    mutate(
+      window_min = win_n,
+      window_max = win_n + age_win_size
+    ) %>%
+    rowwise() %>%
+    mutate(
+      sample_size = sum(age_df$age_bl >= window_min & age_df$age_bl <= window_max),
+      mean_age = mean(age_df$age_bl[age_df$age_bl >= window_min & age_df$age_bl <= window_max])
+    ) %>%
+    ungroup() %>%
+    mutate(window_range = paste0("[", window_min, ", ", window_max, "]"))
+  
+  if (run_windowing) {
+    sliding_window_results <- data.frame()
+    for (win_n in frames$win_n) {
+      window_df <- long_bf_ %>% filter((age_bl >= win_n), (age_bl <= age_win_size + win_n))
+      ests_window <- nodal_lmm_ests(window_df, fc_measures_bf$affinity, roi_names = rois, model_formula = mod_formula)
+      ests_window$window <- win_n
+      sliding_window_results <- rbind(sliding_window_results, ests_window)
+    }
+    write_rds(sliding_window_results, file.path(processed_dir, "sliding_window_age_res.rds"))
+  } else {
+    sliding_window_results <- readRDS(file.path(processed_dir, "sliding_window_age_res.rds"))
+  }
+  
+  grad_cor_age <- sliding_window_results %>%
+    filter(!(term %in% c("(Intercept)", "time", "rsqa__MeanFD", "sex"))) %>%
+    group_by(window, term, n) %>%
+    summarise(
+      Gradient1 = cor(grad_df %>% filter(study == "biofinder") %>% pull(gradient1), statistic),
+      Gradient3 = cor(grad_df %>% filter(study == "biofinder") %>% pull(gradient3), statistic),
+      .groups = "drop"
+    ) %>%
+    inner_join(frames, join_by(window == win_n))
+  
+  path_df <- long_bf_ %>% filter(fmri_bl) %>% select(path_bl)
+  path_win_size <- 0.35
+  steps <- seq(min(path_df$path_bl) %>% round(), (max(path_df$path_bl) %>% round() - path_win_size) + 0.01, by = 0.015)
+  frames_path <- data.frame(win_n = steps) %>%
+    mutate(
+      window_min = win_n,
+      window_max = win_n + path_win_size
+    ) %>%
+    rowwise() %>%
+    mutate(
+      sample_size = sum(path_df$path_bl >= window_min & path_df$path_bl <= window_max),
+      mean_path = mean(path_df$path_bl[path_df$path_bl >= window_min & path_df$path_bl <= window_max])
+    ) %>%
+    ungroup() %>%
+    mutate(window_range = paste0("[", window_min, ", ", window_max, "]"))
+  
+  if (run_windowing) {
+    sliding_window_results_path <- data.frame()
+    for (win_n in frames_path$win_n) {
+      window_df <- long_bf_ %>% filter((path_bl >= win_n), (path_bl <= path_win_size + win_n))
+      ests_window <- nodal_lmm_ests(window_df, fc_measures_bf$affinity, roi_names = rois, model_formula = mod_formula)
+      ests_window$window <- win_n
+      sliding_window_results_path <- rbind(sliding_window_results_path, ests_window)
+    }
+    write_rds(sliding_window_results_path, file.path(processed_dir, "sliding_window_path_res.rds"))
+  } else {
+    sliding_window_results_path <- readRDS(file.path(processed_dir, "sliding_window_path_res.rds"))
+  }
+  
+  grad_cor_path <- sliding_window_results_path %>%
+    filter(!(term %in% c("(Intercept)", "time", "rsqa__MeanFD", "sex"))) %>%
+    group_by(window, term, n) %>%
+    summarise(
+      Gradient1 = cor(grad_df %>% filter(study == "biofinder") %>% pull(gradient1), statistic),
+      Gradient3 = cor(grad_df %>% filter(study == "biofinder") %>% pull(gradient3), statistic),
+      .groups = "drop"
+    ) %>%
+    inner_join(frames_path, join_by(window == win_n))
+  
+  analysis_data <- list(
+    bf_longitudinal = bf_longitudinal,
+    n_long = bf_longitudinal$n %>% as.numeric(),
+    hist_map_data = hist_map_data,
+    frames = frames,
+    frames_path = frames_path,
+    grad_cor_age = grad_cor_age,
+    grad_cor_path = grad_cor_path
+  )
+  
+  if (save_cache) {
+    dir.create(dirname(cache_path), recursive = TRUE, showWarnings = FALSE)
+    write_rds(analysis_data, cache_path)
+  }
+  
+  analysis_data
+}
+
+plot_longitudinal_and_window_analysis <- function(analysis_data,
+                                                  b_size = 7,
+                                                  label_size = b_size * 1.2,
+                                                  title_size = 8,
+                                                  subtitle_size = 6,
+                                                  annotation_size = 5,
+                                                  axis_title_rel = 1,
+                                                  axis_text_rel = 1,
+                                                  strip_size_rel = 1,
+                                                  plot_linewidth = 0.75,
+                                                  struct_linewidth = 0.5,
+                                                  point_size = 0.7) {
+  library(cowplot)
+  library(tidyverse)
+  library(ggside)
+  
+  old <- theme_set(theme_bw(base_size = b_size))
+  on.exit(theme_set(old), add = TRUE)
+  theme_update(
+    panel.background = element_rect(fill = "transparent", colour = NA),
+    plot.background = element_rect(fill = "transparent", colour = NA),
+    legend.background = element_rect(fill = "transparent", colour = NA),
+    legend.box.background = element_rect(fill = "transparent", colour = NA)
+  )
+  
+  compact_theme <- theme(
+    axis.title = element_text(size = rel(axis_title_rel)),
+    axis.text = element_text(size = rel(axis_text_rel)),
+    strip.text = element_text(size = rel(1)),
+    legend.text = element_text(size = rel(1)),
+    legend.title = element_text(size = rel(1))
+  )
+  
+  bf_longitudinal <- analysis_data$bf_longitudinal
+  n_long <- analysis_data$n_long
+  hist_map_data <- analysis_data$hist_map_data
+  frames <- analysis_data$frames
+  frames_path <- analysis_data$frames_path
+  grad_cor_age <- analysis_data$grad_cor_age
+  grad_cor_path <- analysis_data$grad_cor_path
+  
+  p_bf_long <- bf_longitudinal$plot +
+    plot_annotation(
+      title = waiver(),
+      subtitle = waiver(),
+      theme = theme(
+        plot.background = element_rect(color = "black", linewidth = struct_linewidth),
+        plot.subtitle = element_text(size = rel(0.7), hjust = 0, vjust = -0.05, margin = margin(l = 0.05, unit = "npc")),
+        plot.title = element_text(size = rel(0.8), hjust = 0, margin = margin(l = 0.05, unit = "npc"))
+      )
+    ) &
+    #compact_theme &
+    theme(plot.tag = element_blank(), plot.title = element_text(size = rel(1)))
+  
+  p_bf_long[[1]] <- p_bf_long[[1]] + theme(plot.title = element_text(vjust = -2))
+  p_bf_long[[2]] <- p_bf_long[[2]] + theme(plot.title = element_text(vjust = -2))
+  p_bf_long[[3]] <- p_bf_long[[3]] + labs(title = "Age BL") + theme(plot.title = element_text(vjust = 0))
+  p_bf_long[[4]] <- p_bf_long[[4]] + labs(title = "Pathology BL") + theme(plot.title = element_text(vjust = 0))
+  p_bf_long[[5]] <- p_bf_long[[5]] + labs(title = bquote(Delta * "Pathology" ~ (t[i] - t[0]))) + theme(plot.title = element_text(vjust = -0.3))
+  
+  hist_map <- hist_map_data %>%
+    ggplot() +
+    geom_tile(aes(x = age_mid, y = path_mid, fill = n), color = "black", linewidth = 0.05) +
+    annotate("rect", xmin = 18.5, xmax = 88, ymin = 0, ymax = 0.35, fill = NA, color = "black", linewidth = struct_linewidth*0.5) +
+    annotate("rect", xmin = 19, xmax = 88.5, ymin = 0.015, ymax = 0.365, fill = NA, linetype = 2, color = "black", linewidth = struct_linewidth*0.5) +
+    annotate("rect", xmin = 20, xmax = 45, ymin = -0.025, ymax = 1, fill = NA, color = "black", linewidth = struct_linewidth*0.5) +
+    annotate("rect", xmin = 21, xmax = 46, ymin = -0.015, ymax = 1.01, fill = NA, linetype = 2, color = "black", linewidth = struct_linewidth*0.5) +
+    annotate("curve", x = 90, y = 0.20, xend = 90, yend = 0.365, arrow = arrow(length = unit(0.05, "inches")), linewidth = struct_linewidth) +
+    annotate("curve", x = 35, y = 1.025, xend = 46, yend = 1.025, arrow = arrow(length = unit(0.05, "inches")), curvature = -0.3, linewidth = struct_linewidth) +
+    annotate("text", x = 40, y = 1.1, label = "1 Year", size = annotation_size) +
+    annotate("text", x = 95, y = 0.305, label = "0.015 Path", angle = -90, size = annotation_size) +
+    theme_gray(base_size = b_size) +
+    scale_x_continuous("Age BL") +
+    scale_y_continuous("Pathology BL", breaks = c(0.0, 0.25, 0.5, 0.75, 1.0)) +
+    scale_fill_continuous("Count", breaks = c(2, 5, 8)) +
+    compact_theme +
+    theme(
+      legend.position = "top",
+      legend.box.margin = margin(-7, -0, -7, -7),
+      legend.key.height = unit(0.01, "npc"),
+      legend.key.width = unit(0.03, "npc"),
+      legend.justification = "right",
+      legend.title = element_text(vjust = 0),
+      legend.text.position = "top",
+      legend.text = element_text(vjust = -1),
+      legend.background = element_rect(fill = NA),
+      plot.background = element_blank(),
+      panel.border = element_rect(linewidth = struct_linewidth, color = "black", fill = NA)
+    )
+  
+  make_window_plot <- function(grad_cor, frames_df, x_lab, label_step, include_legend = FALSE, supp = FALSE) {
+    grad_cor %>%
+      pivot_longer(starts_with("Grad"), names_to = "gradient", values_to = "grad_corr") %>%
+      { if (!supp) filter(., (gradient == "Gradient3" & term == "age_bl") | (gradient == "Gradient1" & term == "path_bl") | (gradient == "Gradient1" & term == "pathΔ")) else . } %>%
+      mutate(term = case_when(
+        term == "age_bl" ~ "Age~at~baseline",
+        term == "path_bl" ~ "Pathology~at~baseline",
+        term == "pathΔ" ~ "Delta*Pathology~(t[i]-t[0])",
+        TRUE ~ term
+      ) |> factor(levels = c("Age~at~baseline", "Pathology~at~baseline", "Delta*Pathology~(t[i]-t[0])"))) %>%
+      ggplot(aes(window, grad_corr, color = gradient, fill = gradient)) +
+      geom_point(aes(alpha = n), size = point_size, show.legend = FALSE) +
+      geom_smooth(method = "gam", formula = y ~ s(x, k = 5, bs = "cs"), linewidth = plot_linewidth) +
+      geom_hline(aes(yintercept = 0), linetype = 2, alpha = 0.5, linewidth = struct_linewidth) +
+      facet_wrap(~term, nrow = 1, labeller = label_parsed) +
+      theme_bw(base_size = b_size) +
+      scale_x_continuous(
+        labels = frames_df$window_range[seq(1, length(frames_df$win_n), by = label_step)],
+        breaks = frames_df$win_n[seq(1, length(frames_df$win_n), by = label_step)],
+        guide = guide_axis(check.overlap = TRUE)
+      ) +
+      labs(y = "Gradient corr (r)", x = x_lab) +
+      geom_xsidecol(aes(y = if (supp && x_lab == "Baseline Pathology Window") sample_size / 2 else sample_size, fill = NULL, color = NULL), linewidth = 0.05) +
+      ggside(x.pos = "bottom") +
+      scale_xsidey_continuous(breaks = c(0, 250)) +
+      scale_color_manual(values = c(Gradient3 = "#8A6081", Gradient1 = "#D38A4E")) +
+      scale_fill_manual(values = c(Gradient3 = "#8A6081", Gradient1 = "#D38A4E")) +
+      scale_alpha_continuous(range = c(0.3, 1)) +
+     # compact_theme +
+      theme(
+        legend.position = if (include_legend) "inside" else "",
+        legend.position.inside = if (include_legend) c(0.12, -0.36) else NULL,
+        legend.direction = "horizontal",
+        legend.text = element_text(size = rel(1), margin = margin(r = 8, l = 4, unit = "pt")),
+        legend.key.size = unit(0.35, "cm"),
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.background = element_rect(fill = "transparent", color = NA),
+        strip.text = element_text(size = rel(strip_size_rel)),
+        axis.title = element_text(size = rel(axis_title_rel)),
+        legend.title = element_blank(),
+        ggside.panel.scale = 0.2,
+        axis.text.x = element_text(angle = -30, hjust = 0, size = rel(1))
+      )
+  }
+  
+  grad_cor_p_age <- make_window_plot(grad_cor_age, frames, "Baseline Age Window", label_step = 5)
+  grad_cor_p_path <- make_window_plot(grad_cor_path, frames_path, "Baseline Pathology Window", label_step = 10, include_legend = TRUE)
+  
+  window_plots <- wrap_plots(list(grad_cor_p_age, grad_cor_p_path), nrow = 2) +
+    plot_annotation(theme = theme(plot.background = element_rect(color = "black", linewidth = struct_linewidth)))
+  
+  get_net_legend <- function() {
+    x <- grad_df %>%
+      filter(study == "biofinder") %>%
+      ggplot(aes(gradient1, gradient3, color = name)) +
+      geom_point(alpha = 0.5, size = point_size) +
+      labs(color = "Yeo Network") +
+      guides(color = guide_legend(label.hjust = 0, byrow = TRUE, nrow = 2, reverse = TRUE, override.aes = list(size = point_size * 1.5))) +
+      scale_color_manual(values = net_names %>% select(name, col) %>% deframe) +
+      theme(
+        legend.position = "bottom",
+        legend.key.spacing.x = unit(0, "cm"),
+        legend.key.spacing.y = unit(-0.8, "cm"),
+        legend.direction = "horizontal",
+        legend.text.position = "right",
+        legend.title = element_blank(),
+        legend.text = element_text(size = rel(0.8), margin = margin(l = -4, r = 0, unit = "pt")),
+        legend.background = element_blank()
+      )
+    ggpubr::as_ggplot(ggpubr::get_legend(x))
+  }
+  
+  net_legend <- get_net_legend()
+  
+  p_bf_long_cp <- ggdraw() +
+    draw_plot(p_bf_long) +
+    draw_plot(net_legend, x = 0.1, y = 0.025, width = 0.25, height = 0.065) +
+    draw_plot_label("A", size = label_size) +
+    draw_label(paste0("BioFINDER Longitudinal", " (N=", n_long, ")"), x = 0.045, y = 0.965, hjust = 0, size = title_size) +
+    draw_label("FCS ~ age_bl + path_bl + Delta path +\ntime + sex + motion + (1|sub)", x = 0.015, y = 0.89, hjust = 0, size = subtitle_size)
+  
+  window_plots_cp <- ggdraw() +
+    draw_plot(window_plots) +
+    draw_plot_label("C", size = label_size)
+  
+  lmm_tab <- magick::image_read("paper/figures/conceptual_plot/LMM_table.png")
+  
+  slide_meth <- ggdraw() +
+    draw_plot(hist_map, x = 0.01, y = 0.3, width = 0.98, height = 0.7) +
+    draw_plot(p_bf_long[[5]] + labs(title = expression(Delta * Path)) + theme(plot.title = element_text(vjust = 0)), x = 0.39, y = 0.02, width = 0.3, height = 0.3) +
+    draw_plot(p_bf_long[[1]] + theme(plot.title = element_text(vjust = 0)), x = 0.69, y = 0.025, width = 0.29, height = 0.29) +
+    draw_image(lmm_tab, x = 0.02, y = 0.00, width = 0.35, height = 0.25) +
+    draw_plot_label("B", size = label_size) +
+    annotate("curve", x = 0.54, y = 0.09, xend = 0.83, yend = 0.09, linewidth = struct_linewidth, arrow = arrow(length = unit(0.06, "inches"), ends = "both")) +
+    annotate("segment", x = 0.33, y = 0.425, xend = 0.225, yend = 0.22, linewidth = struct_linewidth, arrow = arrow(length = unit(0.06, "inches"))) +
+    annotate("label", label = "Parcel-wise LMM\nin age window", x = 0.25, y = 0.3, size = annotation_size) +
+    annotate("text", label = "Pearson Correlation", x = 0.7, y = 0.02, size = annotation_size) +
+    annotate("segment", x = 0.38, y = 0.145, xend = 0.43, yend = 0.145, arrow = arrow(length = unit(0.06, "inches")), linewidth = struct_linewidth) +
+    theme(plot.background = element_rect(color = "black", linewidth = struct_linewidth))
+  
+  final_fig <- ggdraw() +
+    draw_plot(p_bf_long_cp, x = 0, y = 0.51, width = 0.645, height = 0.49) +
+    draw_plot(slide_meth, x = 0.655, y = 0.51, width = 0.345, height = 0.49) +
+    draw_plot(window_plots_cp, x = 0, y = 0.0, width = 1, height = 0.5) +
+    annotate("curve", x = 0.89, y = 0.5105, xend = 0.702, yend = 0.408, linewidth = 1.2, color = "white", curvature = 0.29) +
+    annotate("curve", x = 0.89, y = 0.5105, xend = 0.702, yend = 0.408, linewidth = struct_linewidth, arrow = arrow(length = unit(0.06, "inches")), curvature = 0.29)
+  
+  grad_cor_p_path_supp <- make_window_plot(grad_cor_path, frames_path, "Baseline Pathology Window", label_step = 10, include_legend = TRUE, supp = TRUE)
+  grad_cor_p_age_supp <- make_window_plot(grad_cor_age, frames, "Baseline Age Window", label_step = 5, supp = TRUE)
+  
+  window_plots_both_G <- wrap_plots(list(grad_cor_p_age_supp, grad_cor_p_path_supp), nrow = 2) +
+    plot_annotation(theme = theme(plot.background = element_rect(color = "black", linewidth = struct_linewidth)))
+  
+  list(main_fig = final_fig, supp_fig = window_plots_both_G)
+}
+
+longitudinal_and_window_analysis <- function(long_df,
+                                             b_size = 7,
+                                             run_windowing = FALSE,
+                                             processed_dir = "data/processed_and_cleaned",
+                                             mod_formula = formula(paste0("FC ~ age_bl + time + pathΔ + path_bl + sex + rsqa__MeanFD + (1 | sid)")),
+                                             analysis_data = NULL,
+                                             use_analysis_cache = FALSE,
+                                             save_analysis_cache = FALSE,
+                                             analysis_cache_path = file.path(processed_dir, "longitudinal_window_analysis_data.rds"),
+                                             ...) {
+  if (is.null(analysis_data)) {
+    analysis_data <- prepare_longitudinal_and_window_analysis(
+      long_df = long_df,
+      run_windowing = run_windowing,
+      processed_dir = processed_dir,
+      mod_formula = mod_formula,
+      cache_path = analysis_cache_path,
+      use_cache = use_analysis_cache,
+      save_cache = save_analysis_cache,
+      b_size = b_size
+    )
+  }
+  
+  figs <- plot_longitudinal_and_window_analysis(
+    analysis_data = analysis_data,
+    b_size = b_size,
+    ...
+  )
+  
+  c(figs, list(analysis_data = analysis_data))
+}
 
 
 figure_one <- function(subject_data,
@@ -326,16 +724,19 @@ figure_one <- function(subject_data,
             axis.title = element_text(size = rel(axes_title_size))
       )
     
-    p_health_cog <- p_health_cog + plot_annotation(title = paste0("Cognitively unimpaired w/o APOE ε4 (Aβ-)", " (N=", n_health, ")"), 
-                                                   subtitle = expression(italic(FCS[parcel] ~ "~" ~ age * "×" * "-mPACC" ~ + ~ "AD pathology" ~ + ~ sex ~ + ~ motion)),
-                                                   theme = theme(plot.subtitle = element_text(size = rel(0.9),
-                                                                                              hjust = 0, 
-                                                                                              vjust = -0.05, 
-                                                                                              family = "mono",
-                                                                                              face = "italic",
-                                                                                              margin = margin(l = health_l_marg, unit = "npc")), 
-                                                                 plot.title.position = "plot",
-                                                                 plot.title = element_text(size = rel(1), hjust =0, margin = margin(l = health_l_marg, unit = "npc")))
+    p_health_cog <- p_health_cog + plot_annotation(title = bquote(
+      "Cognitively unimpaired w/o APOE " * epsilon * 4 ~
+        "(A" * beta^"-" * ") (N=" * .(n_health) * ")"
+    ), 
+    subtitle = expression(italic(FCS[parcel] ~ "~" ~ age * "×" * "-mPACC" ~ + ~ "AD pathology" ~ + ~ sex ~ + ~ motion)),
+    theme = theme(plot.subtitle = element_text(size = rel(0.9),
+                                               hjust = 0, 
+                                               vjust = -0.05, 
+                                               family = "mono",
+                                               face = "italic",
+                                               margin = margin(l = health_l_marg, unit = "npc")), 
+                  plot.title.position = "plot",
+                  plot.title = element_text(size = rel(1), hjust =0, margin = margin(l = health_l_marg, unit = "npc")))
     )
     
     plt_idx <- 3:6
@@ -391,7 +792,7 @@ figure_one <- function(subject_data,
             axis.title = element_text(size = rel(axes_title_size))
       )
     
-    p_clinical_cog <- p_clinical_cog + plot_annotation(title = paste0("Diagnosed MCI/AD (Aβ+)", " (N=", n_clin, ")"), 
+    p_clinical_cog <- p_clinical_cog + plot_annotation(title = bquote("Diagnosed MCI/AD (A" * beta^"+" * ") (N=" * .(n_clin) * ")"),#paste0("Diagnosed MCI/AD (Aβ+)", " (N=", n_clin, ")"), 
                                                        subtitle = expression(italic(FCS[parcel] ~ "~" ~ age ~ + ~ "AD pathology" ~ + ~ "-mPACC" ~ + ~ sex ~ + ~ motion)),
                                                        theme = theme(plot.subtitle = element_text(size = rel(0.9), 
                                                                                                   hjust = 0, 
@@ -465,19 +866,20 @@ figure_one <- function(subject_data,
         byrow = TRUE,
         nrow = 2, 
         reverse = FALSE,
-        override.aes = list(size = rel(2))
+        override.aes = list(size = rel(1))
       )) +
       scale_color_manual(values = net_names %>% select(name, col) %>% deframe) +
       theme(
         legend.position = "bottom",
         #legend.key.size = unit(0.0, "cm"),
         legend.key.spacing.x = unit(0, "cm"),
-        legend.key.spacing.y = unit(-1.35, "cm"),
+        legend.key.spacing.y = unit(-0.8, "cm"),
         legend.direction = "horizontal",
         #legend.title.position = "",
         legend.text.position = "right",
         legend.title = element_blank(),
-        legend.text = element_text(size = rel(0.8), margin = margin(l = 2, r = 10, unit = "pt")),
+        legend.key = element_rect(fill = NA),
+        legend.text = element_text(size = rel(0.7), margin = margin(l = -3, r = 0, unit = "pt")),
         legend.background = element_blank()
       )
     
@@ -515,13 +917,13 @@ figure_one <- function(subject_data,
       fig_one_two[[2]] <- ggdraw() +
         draw_plot(figure2_org$p_health_cog, x = 0.0, y = 0.05, width = 0.6, height = 0.95) +
         draw_plot(figure2_org$p_clinical_cog, x = 0.5, y = 0.05, width = 0.49, height = 0.95) +
-        draw_plot(net_legend2, x = 0.4,  y = 0.025, width = 0.4, height = 0.015) +
+        draw_plot(net_legend2, x = 0.2,  y = 0.025, width = 0.4, height = 0.015) +
         theme(plot.background = element_rect(color = "black"))
     } else {
       fig_one_two[[2]] <- ggdraw() +
         draw_plot(figure2_org$p_health_cog, x = 0.0, y = 0.00, width = 0.6, height = 1) +
         draw_plot(figure2_org$p_clinical_cog, x = 0.5, y = 0.00, width = 0.49, height = 1) +
-        draw_plot(net_legend2, x = 0.02,  y = 0.035, width = 0.2, height = 0.015) 
+        draw_plot(net_legend2, x = 0.01,  y = 0.035, width = 0.2, height = 0.015) 
     }
     
     return(list(fig_one_two, tmaps = list(fig1 = figure1_org$tmaps, fig2 = figure2_org$tmaps)))
@@ -1187,11 +1589,11 @@ plot_grads_over_params <- function(connectome_list,
 
 
 
-longitudinal_and_window_analysis <- function(long_df, 
-                                             b_size = 18,
-                                             run_windowing = FALSE,
-                                             processed_dir = "data/processed_and_cleaned",
-                                             mod_formula = formula(paste0("FC ~ age_bl + time + pathΔ + path_bl + sex + rsqa__MeanFD + (1 | sid)"))) {
+longitudinal_and_window_analysis_legacy <- function(long_df, 
+                                                    b_size = 18,
+                                                    run_windowing = FALSE,
+                                                    processed_dir = "data/processed_and_cleaned",
+                                                    mod_formula = formula(paste0("FC ~ age_bl + time + pathΔ + path_bl + sex + rsqa__MeanFD + (1 | sid)"))) {
   
   
   library(cowplot)
@@ -1219,6 +1621,9 @@ longitudinal_and_window_analysis <- function(long_df,
                                                   add_shade = TRUE, 
                                                   shade_alpha = 0.0075,
                                                   shade_size = 0.001,
+                                                  rasterize = TRUE,
+                                                  ggrastr_dpi = 300,
+                                                  ggrastr_dev = "ragg",
                                                   r2_size = rel(3.8),
                                                   base_size_ = b_size,
                                                   list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
@@ -1678,5 +2083,3 @@ longitudinal_and_window_analysis <- function(long_df,
   list(main_fig = final_fig, supp_fig = window_plots_both_G)
   
 }
-
-
