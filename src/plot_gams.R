@@ -144,18 +144,156 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
     legend.title = element_text(size = rel(legend_text_rel))
   )
   
+  source_data <- list()
   
   legend_labs <-  c("Ab42/40", "Braak12", "Braak34", "Braak56")
-  biof_path_plot <- biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |> 
+  biof_path_scaled <- biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |> 
     select(pathology_ad, ab_ratio, 
            starts_with("braak"), starts_with("cho")) |> 
     mutate(across(where(is.numeric) & !pathology_ad, scale)) 
-  ab_mean <- attr(biof_path_plot$ab_ratio, c("scaled:center"))
-  ab_sd <- attr(biof_path_plot$ab_ratio, c("scaled:scale"))
+  ab_mean <- attr(biof_path_scaled$ab_ratio, c("scaled:center"))
+  ab_sd <- attr(biof_path_scaled$ab_ratio, c("scaled:scale"))
   ab_pos <- (0.08 - ab_mean)/ab_sd
   
-  biof_path_plot <- biof_path_plot  |> 
-    pivot_longer(-pathology_ad, names_to = "scaled_pat_measures", values_to = "value") %>% 
+  biof_path_source <- biof_path_scaled  |> 
+    pivot_longer(-pathology_ad, names_to = "scaled_pat_measures", values_to = "value") |>
+    mutate(
+      pathology_label = dplyr::recode(
+        scaled_pat_measures,
+        ab_ratio = legend_labs[1],
+        braak12 = legend_labs[2],
+        braak_12 = legend_labs[2],
+        braak34 = legend_labs[3],
+        braak_34 = legend_labs[3],
+        braak56 = legend_labs[4],
+        braak_56 = legend_labs[4],
+        .default = scaled_pat_measures
+      ),
+      ab_positive_scaled_cutoff = ab_pos
+    )
+  
+  source_data$pathology_plot <- biof_path_source
+  
+  gradient_source <- grad_df |>
+    select(any_of(c("study", "region", "name", "gradient1", "gradient2", "gradient3"))) |>
+    distinct()
+  
+  source_data$gradient_maps <- gradient_source
+  
+  pat_quartile_source <- gam_predictions$pat_derivs |>
+    pivot_longer(starts_with("7Networks"), names_to = "region", values_to = "fcs_slope") |>
+    mutate(
+      predictor = "pathology_ad",
+      predictor_value = pathology_ad,
+      predictor_quartile = cut(pathology_ad, 4)
+    ) |>
+    group_by(predictor, predictor_quartile, region) |>
+    summarise(
+      mean_predictor_value = mean(predictor_value, na.rm = TRUE),
+      fcs_slope = mean(fcs_slope, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    inner_join(gradient_source, by = "region")
+  
+  age_quartile_source <- gam_predictions$age_derivs |>
+    pivot_longer(starts_with("7Networks"), names_to = "region", values_to = "fcs_slope") |>
+    mutate(
+      predictor = "age",
+      predictor_value = age,
+      predictor_quartile = cut(age, 4)
+    ) |>
+    group_by(predictor, predictor_quartile, region) |>
+    summarise(
+      mean_predictor_value = mean(predictor_value, na.rm = TRUE),
+      fcs_slope = mean(fcs_slope, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    inner_join(gradient_source, by = "region")
+  
+  source_data$quartile_fcs_slopes <- bind_rows(
+    pat_quartile_source,
+    age_quartile_source
+  )
+  
+  pat_pred_source <- gam_predictions$pat_pred |>
+    pivot_longer(starts_with("7Networks"), names_to = "region", values_to = "predicted_fc") |>
+    inner_join(gradient_source |> select(region, any_of(c("study", "name", "gradient1", "gradient3"))), by = "region") |>
+    mutate(
+      predictor = "pathology_ad",
+      predictor_value = pathology_ad,
+      plotted_gradient = "gradient1",
+      plotted_gradient_value = gradient1,
+      grad_grp = cut(gradient1, breaks = quantile(gradient1, probs = seq(0, 1, length.out = 21)))
+    )
+  
+  age_pred_source <- gam_predictions$age_pred |>
+    pivot_longer(starts_with("7Networks"), names_to = "region", values_to = "predicted_fc") |>
+    inner_join(gradient_source |> select(region, any_of(c("study", "name", "gradient1", "gradient3"))), by = "region") |>
+    mutate(
+      predictor = "age",
+      predictor_value = age,
+      plotted_gradient = "gradient3",
+      plotted_gradient_value = gradient3,
+      grad_grp = cut(gradient3, breaks = quantile(gradient3, probs = seq(0, 1, length.out = 21)))
+    )
+  
+  pred_source <- bind_rows(pat_pred_source, age_pred_source)
+  
+  pred_ventile_source <- pred_source |>
+    group_by(predictor, predictor_value, plotted_gradient, grad_grp) |>
+    summarise(
+      mean_predicted_fc = mean(predicted_fc, na.rm = TRUE),
+      mean_gradient_value = mean(plotted_gradient_value, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  pat_corr_source <- gam_predictions$pat_derivs |>
+    pivot_longer(starts_with("7Networks"), names_to = "region", values_to = "fcs_slope") |>
+    inner_join(gradient_source |> select(region, any_of(c("gradient1", "gradient3"))), by = "region") |>
+    group_by(pathology_ad) |>
+    summarise(
+      predictor = "pathology_ad",
+      predictor_value = pathology_ad[1],
+      plotted_gradient = "gradient1",
+      gradient_correlation = cor(fcs_slope, gradient1),
+      .groups = "drop"
+    )
+  
+  age_corr_source <- gam_predictions$age_derivs |>
+    pivot_longer(starts_with("7Networks"), names_to = "region", values_to = "fcs_slope") |>
+    inner_join(gradient_source |> select(region, any_of(c("gradient1", "gradient3"))), by = "region") |>
+    group_by(age) |>
+    summarise(
+      predictor = "age",
+      predictor_value = age[1],
+      plotted_gradient = "gradient3",
+      gradient_correlation = cor(fcs_slope, gradient3),
+      .groups = "drop"
+    )
+  
+  gradient_corr_source <- bind_rows(pat_corr_source, age_corr_source)
+  
+  source_data$predicted_fcs_and_gradient_correlations <- pred_source |>
+    left_join(
+      gradient_corr_source,
+      by = c("predictor", "predictor_value", "plotted_gradient")
+    )
+  
+  source_data$ventile_mean_predicted_fcs <- pred_ventile_source |>
+    left_join(
+      gradient_corr_source,
+      by = c("predictor", "predictor_value", "plotted_gradient")
+    )
+  
+  source_data$gradient_correlations <- gradient_corr_source |>
+    select(
+      predictor,
+      predictor_value,
+      plotted_gradient,
+      gradient_correlation
+    )
+  
+  biof_path_plot <- biof_path_source %>% 
     ggplot(aes(pathology_ad, value, color = scaled_pat_measures)) +
     geom_smooth(linewidth = plot_linewidth) +
     guides(color = guide_legend(
@@ -882,7 +1020,10 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
       linetype = 2,
       linewidth = struct_linewidth
     )
-  nonlin_p
+  list(
+    plot = nonlin_p,
+    source_data = source_data
+  )
 }
 
 plot_gams_v1_legacy <- function(...) {
@@ -905,7 +1046,12 @@ plot_gams_v1_legacy <- function(...) {
   if (is.null(args$net_legend_height)) args$net_legend_height <- 0.1
   if (is.null(args$canvas_text_size)) args$canvas_text_size <- 11
   if (is.null(args$figure_label_size)) args$figure_label_size <- 14
-  do.call(plot_gams_v1, args)
+  out <- do.call(plot_gams_v1, args)
+  if (is.list(out) && all(c("plot", "source_data") %in% names(out))) {
+    out$plot
+  } else {
+    out
+  }
 }
 
 plot_gams_legacy <- plot_gams_v1_legacy
