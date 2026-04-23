@@ -71,6 +71,20 @@ make_gradient_plots <- function(gradient_data,
 }
 
 
+make_shade_raster_df <- function(shade_sf, atlas_sf, nx = 1000, ny = 1000,
+                                 fun = "sum", background = NA) {
+  atlas_v <- terra::vect(atlas_sf)
+  
+  shade_sf$w <- 1
+  shade_v <- terra::vect(shade_sf)
+  r <- terra::rast(terra::ext(atlas_v), ncols = nx, nrows = ny, crs = terra::crs(atlas_v))
+  shade_r <- terra::rasterize(shade_v, r, field = "w", fun = "sum", background = background)
+  
+  shade_r <- terra::mask(shade_r, atlas_v)
+  
+  as.data.frame(shade_r, xy = TRUE, na.rm = TRUE)
+}
+
 plot_gradient_relationships <- function(subject_data,
                                         gradient_data,
                                         list_of_parcel_data, 
@@ -93,7 +107,12 @@ plot_gradient_relationships <- function(subject_data,
                                         r_spin_size = 0.75,
                                         spintest = TRUE,
                                         rectangle = FALSE,
-                                        l_width = 0.1,
+                                        rasterize = FALSE,
+                                        ggrastr_dev = "ragg",
+                                        ggrastr_dpi = NULL,
+                                        raster_scale_atlas = 1,
+                                        raster_scale_shade = 1,
+                                        l_width = 0.05,
                                         perms = readRDS("data/atlas_data/permutations_1000_hungarian.rds"),
                                         id_var = "image_file",
                                         mod_formula = formula(paste0("FC ~ age")),
@@ -104,6 +123,7 @@ plot_gradient_relationships <- function(subject_data,
                                         brain_subtitle_vjust = 0,
                                         plt_subtitle = FALSE,
                                         subtit_lookup = c(pathology_ad = "AD pathology", rsqa__MeanFD = "motion"),
+                                        label_gradient_score = "Gradient Score",
                                         group_n_title = FALSE,
                                         brain_names = NULL,
                                         tag_sep = "",
@@ -131,6 +151,15 @@ plot_gradient_relationships <- function(subject_data,
   require(ggpmisc)
   require(sf)
   require(ggtext)
+  
+  options("ggrastr.default.dpi" = ggrastr_dpi)
+  
+  shade_df <- make_shade_raster_df(
+    shade_sf = atlas_geometry$shade,
+    atlas_sf = atlas_geometry$atlas,
+    nx = 1200, ny = 1200,
+    fun = "sum"
+  )
   
   
   old <- theme_set(theme_bw(base_size = base_size_))
@@ -270,6 +299,112 @@ plot_gradient_relationships <- function(subject_data,
     group_sizes <- get_factor_group_sizes(mod_formula, data = subject_data)  
   }
   
+  # shade_layer <- rasterise(
+  #   geom_raster(
+  #     data = shade_df,
+  #     aes(x = x, y = y),
+  #     inherit.aes = FALSE,
+  #     interpolate = TRUE
+  #   ),
+  #   dev = ggrastr_dev,
+  #   scale = raster_scale_shade
+  # )
+  
+  # shade_layer <- rasterise(
+  #   geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha),
+  #   dev = ggrastr_dev,
+  #   scale = raster_scale_shade
+  # )
+  
+  library(png)
+  library(ragg)
+  
+  make_raster_overlay <- function(plot, bbox,
+                                  width_px = 3000,
+                                  height_px = 3000,
+                                  dpi = 300,
+                                  bg = "transparent") {
+    tf <- tempfile(fileext = ".png")
+    
+    ggsave(
+      filename = tf,
+      plot = plot,
+      width = width_px / dpi,
+      height = height_px / dpi,
+      dpi = dpi,
+      bg = bg,
+      device = ragg::agg_png
+    )
+    
+    img <- png::readPNG(tf)
+    unlink(tf)
+    
+    annotation_raster(
+      raster = as.raster(img),
+      xmin = bbox["xmin"],
+      xmax = bbox["xmax"],
+      ymin = bbox["ymin"],
+      ymax = bbox["ymax"]
+    )
+  }
+  
+  make_atlas_raster_layer <- function(atlas_sf,
+                                      shade_sf = NULL,
+                                      shade_size = 0.0005,
+                                      shade_alpha = 0.005,
+                                      width_px = 3000,
+                                      dpi = 300,
+                                      fill_limits = NULL,
+                                      fill_scale = scale_fill_gradient2(
+                                        low = scales::muted("blue"),
+                                        mid = "white",
+                                        high = scales::muted("red"),
+                                        limits = fill_limits
+                                      )) {
+    bbox <- st_bbox(atlas_sf)
+    
+    ratio <- as.numeric((bbox["xmax"] - bbox["xmin"]) / (bbox["ymax"] - bbox["ymin"]))
+    height_px <- max(1, round(width_px / ratio))
+    
+    p_raster <- ggplot() +
+      geom_sf(
+        data = atlas_sf,
+        aes(fill = statistic, geometry = geometry),
+        linewidth = 0.25,
+        show.legend = FALSE
+      ) +
+      coord_sf(
+        xlim = c(bbox["xmin"], bbox["xmax"]),
+        ylim = c(bbox["ymin"], bbox["ymax"]),
+        expand = FALSE
+      ) +
+      theme_void() +
+      theme(
+        panel.background = element_rect(fill = "transparent", colour = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA)
+      ) +
+      fill_scale
+      
+    
+    if (!is.null(shade_sf)) {
+      p_raster <- p_raster +
+        geom_sf(
+          data = shade_sf,
+          size = shade_size,
+          alpha = shade_alpha,
+          show.legend = FALSE
+        )
+    }
+    
+    make_raster_overlay(
+      plot = p_raster,
+      bbox = bbox,
+      width_px = width_px,
+      height_px = height_px,
+      dpi = dpi
+    )
+  }
+  
   plot_brain_ests <- function(ests, tag = "a") {
     parcel_line_size = 0.1
     #bsize = 16
@@ -288,35 +423,144 @@ plot_gradient_relationships <- function(subject_data,
         }
       }
       
-      p <-  ests %>%
+      
+      ####### From here is new 
+      
+      atlas_plot_df <- ests %>%
         filter(term == term_of_i) %>%
-        right_join(atlas_geometry$atlas, by = "region") %>%
-        ggplot() +
-        geom_sf(aes(
-          fill = statistic,
-          geometry = geometry), linewidth= l_width,
-          show.legend = FALSE) +
-        (if (add_shade)
-          geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
-         else NULL) +
-        theme_void(base_size = base_size_)+
-        labs(fill = 't', title = str_to_title(str_replace(term_of_i, "_", " ")),
-             subtitle = if(group_n_title) plot_sub  else waiver()
-             #tag = tag_labs[i]
-             ) +
-        theme(#legend.position = "",
+        right_join(atlas_geometry$atlas, by = "region")%>%
+        sf::st_as_sf()
+      
+      fill_limits <- range(atlas_plot_df$statistic, na.rm = TRUE)
+      
+      bbox <- sf::st_bbox(atlas_geometry$atlas)
+      
+      raster_layer <- NULL
+      if (rasterize) {
+        raster_layer <- make_atlas_raster_layer(
+          atlas_sf = atlas_plot_df,
+          shade_sf = if (add_shade) atlas_geometry$shade else NULL,
+          shade_size = shade_size,
+          shade_alpha = shade_alpha,
+          width_px = 1500,   # increase if needed
+          dpi = 300,
+          fill_limits = fill_limits
+        )
+      }
+      
+      p <- ggplot() +
+        (
+          if (rasterize) {
+            raster_layer
+          } else {
+            geom_sf(
+              data = atlas_plot_df,
+              aes(fill = statistic, geometry = geometry),
+              linewidth = l_width,
+              show.legend = FALSE
+            )
+          }
+        ) +
+        (
+          if (!rasterize && add_shade) {
+            geom_sf(
+              data = atlas_geometry$shade,
+              size = shade_size,
+              alpha = shade_alpha
+            )
+          } else {
+            NULL
+          }
+        ) +
+        # (
+        #   if (rasterize) {
+        #     geom_sf(
+        #       data = atlas_plot_df,
+        #       aes(geometry = geometry),
+        #       fill = NA,
+        #       colour = "black",
+        #       linewidth = l_width,
+        #       show.legend = FALSE
+        #     )
+        #   } else {
+        #     NULL
+        #   }
+        # ) +
+        coord_sf(
+          xlim = c(bbox["xmin"], bbox["xmax"]),
+          ylim = c(bbox["ymin"], bbox["ymax"]),
+          expand = FALSE
+        ) +
+        theme_void(base_size = base_size_) +
+        labs(
+          fill = "t",
+          title = stringr::str_to_title(stringr::str_replace(term_of_i, "_", " ")),
+          subtitle = if (group_n_title) plot_sub else waiver()
+        ) +
+        theme(
           panel.background = element_rect(fill = "transparent", colour = NA),
           plot.background = element_rect(fill = "transparent", colour = NA),
           legend.background = element_rect(fill = "transparent", colour = NA),
           legend.box.background = element_rect(fill = "transparent", colour = NA),
           plot.title = element_text(color = "black", hjust = 0.5, vjust = brain_title_vjust),
-          plot.subtitle = element_text(hjust = 0.5, size = rel(0.7), vjust = brain_subtitle_vjust),
+          plot.subtitle = element_text(hjust = 0.5, size = rel(0.7), vjust = brain_subtitle_vjust)
         ) +
         scale_fill_gradient2(
-          low = muted("blue"),
+          low = scales::muted("blue"),
           mid = "white",
-          high = muted("red") 
+          high = scales::muted("red"),
+          limits = fill_limits
         )
+      
+      # p <-  ests %>%
+      #   filter(term == term_of_i) %>%
+      #   right_join(atlas_geometry$atlas, by = "region") %>%
+      #   ggplot() +
+      #   (if (rasterize) 
+      #     rasterise(
+      #       geom_sf(aes(
+      #         fill = statistic,
+      #         geometry = geometry), linewidth= l_width,
+      #         show.legend = FALSE),
+      #       dev = ggrastr_dev,
+      #       scale = raster_scale_atlas
+      #     )
+      #     else 
+      #     geom_sf(aes(
+      #       fill = statistic,
+      #       geometry = geometry), linewidth= l_width,
+      #       show.legend = FALSE)
+      #   ) +
+      #   (if (add_shade)
+      #     (if (rasterize) 
+      #       shade_layer
+      #       # rasterise(
+      #       #   geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha),
+      #       #   dev = ggrastr_dev,
+      #       #   scale = raster_scale_shade
+      #       # )
+      #      else 
+      #        geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
+      #     )
+      #    else NULL) +
+      #   theme_void(base_size = base_size_)+
+      #   labs(fill = 't', title = str_to_title(str_replace(term_of_i, "_", " ")),
+      #        subtitle = if(group_n_title) plot_sub  else waiver()
+      #        #tag = tag_labs[i]
+      #        ) +
+      #   theme(#legend.position = "",
+      #     panel.background = element_rect(fill = "transparent", colour = NA),
+      #     plot.background = element_rect(fill = "transparent", colour = NA),
+      #     legend.background = element_rect(fill = "transparent", colour = NA),
+      #     legend.box.background = element_rect(fill = "transparent", colour = NA),
+      #     plot.title = element_text(color = "black", hjust = 0.5, vjust = brain_title_vjust),
+      #     plot.subtitle = element_text(hjust = 0.5, size = rel(0.7), vjust = brain_subtitle_vjust),
+      #   ) +
+      #   scale_fill_gradient2(
+      #     low = muted("blue"),
+      #     mid = "white",
+      #     high = muted("red") 
+      #   )
       
       if(!is.null(brain_names)) {
         if(!is.na(brain_names[i])) {
@@ -354,49 +598,176 @@ plot_gradient_relationships <- function(subject_data,
     for (grad in grad_char) {
       
       if (include_gradient_plots) {
-        gradient_plots[[paste0(stud,"_", grad)]] <- gradient_data %>% filter(study==stud) %>% 
-          right_join(atlas_geometry$atlas, by = "region") %>%
+        
+        
+        atlas_plot_df <- atlas_geometry$atlas %>%
+          left_join(
+            gradient_data %>% filter(study == stud),
+            by = "region"
+          ) %>%
+          sf::st_as_sf()
+        
+        bbox <- sf::st_bbox(atlas_geometry$atlas)
+        
+        fill_limits <- range(atlas_plot_df[[grad]], na.rm = TRUE)
+        
+        raster_layer <- NULL
+        if (rasterize) {
+          raster_layer <- make_atlas_raster_layer(
+            atlas_sf = atlas_plot_df %>%
+              dplyr::rename(statistic = !!rlang::sym(grad)),
+            shade_sf = if (add_shade) atlas_geometry$shade else NULL,
+            shade_size = shade_size,
+            shade_alpha = shade_alpha,
+            width_px = 1500,
+            dpi = 300,
+            fill_limits = fill_limits,
+            fill_scale = scale_fill_gradient2(
+              low = gradient_colors[[grad]][1],
+              mid = "white",
+              high = gradient_colors[[grad]][2],
+              limits = fill_limits
+            )
+          )
+        }
+        
+        gradient_plots[[paste0(stud, "_", grad)]] <-
           ggplot() +
-          geom_sf(aes(
-            fill = .data[[grad]],
-            geometry = geometry), linewidth= l_width,
-            show.legend = FALSE)+
-          (if (add_shade)
-            geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
-           else NULL) +
-          theme_void(base_size = base_size_)+
-          labs(fill = "", title = str_to_title(str_replace(paste0("_", grad), "_", " ")),
-               #tag = tag_labs[i]
-          ) + 
-          (if (grad_name)
-            labs(title = case_when(
-              grad == "gradient1" ~ "Sens-Assoc",
-              grad == "gradient2" ~ "Vis-Mot",
-              grad == "gradient3" ~ "Rep-Exec",
-              TRUE ~ grad
-            ))  else NULL) +
-          theme(legend.position = "",
-                panel.background = element_rect(fill = "transparent", colour = NA),
-                plot.background = element_rect(fill = "transparent", colour = NA),
-                legend.background = element_rect(fill = "transparent", colour = NA),
-                legend.box.background = element_rect(fill = "transparent", colour = NA),
-                plot.title = element_text(color = "black", hjust = 0.5, vjust = -3)
+          (
+            if (rasterize) {
+              raster_layer
+            } else {
+              geom_sf(
+                data = atlas_plot_df,
+                aes(fill = .data[[grad]], geometry = geometry),
+                linewidth = l_width,
+                show.legend = FALSE
+              )
+            }
           ) +
-          scale_fill_gradient2(
-            low = gradient_colors[[grad]][1],
-            mid = "white",
-            high = gradient_colors[[grad]][2] 
+          (
+            if (!rasterize && add_shade) {
+              geom_sf(
+                data = atlas_geometry$shade,
+                size = shade_size,
+                alpha = shade_alpha
+              )
+            } else {
+              NULL
+            }
+          ) +
+          # (
+          #   if (rasterize) {
+          #     geom_sf(
+          #       data = atlas_plot_df,
+          #       aes(geometry = geometry),
+          #       fill = NA,
+          #       colour = "black",
+          #       linewidth = l_width,
+          #       show.legend = FALSE
+          #     )
+          #   } else {
+          #     NULL
+          #   }
+          # ) +
+          coord_sf(
+            xlim = c(bbox["xmin"], bbox["xmax"]),
+            ylim = c(bbox["ymin"], bbox["ymax"]),
+            expand = FALSE
+          ) +
+          theme_void(base_size = base_size_) +
+          labs(
+            fill = "",
+            title = stringr::str_to_title(stringr::str_replace(paste0("_", grad), "_", " "))
+          ) +
+          (
+            if (grad_name) {
+              labs(title = dplyr::case_when(
+                grad == "gradient1" ~ "Sens-Assoc",
+                grad == "gradient2" ~ "Vis-Mot",
+                grad == "gradient3" ~ "Rep-Exec",
+                TRUE ~ grad
+              ))
+            } else {
+              NULL
+            }
+          ) +
+          theme(
+            legend.position = "",
+            panel.background = element_rect(fill = "transparent", colour = NA),
+            plot.background = element_rect(fill = "transparent", colour = NA),
+            legend.background = element_rect(fill = "transparent", colour = NA),
+            legend.box.background = element_rect(fill = "transparent", colour = NA),
+            plot.title = element_text(color = "black", hjust = 0.5, vjust = -3)
           ) 
+        
+        
+        
+        # gradient_plots[[paste0(stud,"_", grad)]] <- gradient_data %>% filter(study==stud) %>% 
+        #   right_join(atlas_geometry$atlas, by = "region") %>%
+        #   ggplot() +
+        #   (if (rasterize) 
+        #     rasterise(
+        #       geom_sf(aes(
+        #         fill = .data[[grad]],
+        #         geometry = geometry), linewidth= l_width,
+        #         show.legend = FALSE),
+        #       dev = ggrastr_dev,
+        #       scale = raster_scale_atlas
+        #     )
+        #    else
+        #      geom_sf(aes(
+        #        fill = .data[[grad]],
+        #        geometry = geometry), linewidth= l_width,
+        #        show.legend = FALSE)
+        #   ) + 
+        #   (if (add_shade)
+        #     (if (rasterize) 
+        #       shade_layer
+        #      # rasterise(
+        #      #   geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha),
+        #      #   dev = ggrastr_dev,
+        #      #   scale = raster_scale_shade
+        #      # )
+        #      else 
+        #        geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
+        #     )
+        #    else NULL) +
+        #   theme_void(base_size = base_size_)+
+        #   labs(fill = "", title = str_to_title(str_replace(paste0("_", grad), "_", " ")),
+        #        #tag = tag_labs[i]
+        #   ) + 
+        #   (if (grad_name)
+        #     labs(title = case_when(
+        #       grad == "gradient1" ~ "Sens-Assoc",
+        #       grad == "gradient2" ~ "Vis-Mot",
+        #       grad == "gradient3" ~ "Rep-Exec",
+        #       TRUE ~ grad
+        #     ))  else NULL) +
+        #   theme(legend.position = "",
+        #         panel.background = element_rect(fill = "transparent", colour = NA),
+        #         plot.background = element_rect(fill = "transparent", colour = NA),
+        #         legend.background = element_rect(fill = "transparent", colour = NA),
+        #         legend.box.background = element_rect(fill = "transparent", colour = NA),
+        #         plot.title = element_text(color = "black", hjust = 0.5, vjust = -3)
+        #   ) +
+        #   scale_fill_gradient2(
+        #     low = gradient_colors[[grad]][1],
+        #     mid = "white",
+        #     high = gradient_colors[[grad]][2] 
+        #   ) 
         
         i = i +1
       } else {
         gradient_plots[[paste0(stud,"_", grad)]] <- gradient_data %>% filter(study==stud) %>% 
           inner_join(atlas_geometry$atlas, by = "region") %>%
           ggplot() +
+          rasterise(
           geom_sf(aes(
             fill = .data[[grad]],
             geometry = geometry), alpha = 0, linewidth= l_width, color = NA,
-            show.legend = FALSE)+
+            show.legend = FALSE)
+          )+
           theme_void(base_size = base_size_)+
           labs(fill = "", title = str_to_title(str_replace(paste0("_", grad), "_", " ")),
                #tag = tag_labs[i]
@@ -458,8 +829,8 @@ plot_gradient_relationships <- function(subject_data,
           j <- t
         }
         
-        lab_grad <- "Gradient score"
-        lab_term <- paste(str_to_title(str_replace(t, "_", " ")), "t-value")
+        lab_grad <- label_gradient_score
+        lab_term <- str_to_sentence(paste(str_replace(t, "_", " "), "t-value"))
         
         if (layout_construction == "horizontal") {
           x_lab <- lab_term
@@ -482,9 +853,18 @@ plot_gradient_relationships <- function(subject_data,
         p <- plot_data %>% 
           ggplot(aes(x = .data[[i]], y =.data[[j]],
                      color = if (!gray_out) name else "gray")) +
-          geom_point(alpha = ifelse(gray_out, 0.05, point_alpha), 
-                     size = point_size) +
+          (if (rasterize) 
+            ggrastr::rasterise(
+              geom_point(alpha = ifelse(gray_out, 0.05, point_alpha), 
+                         size = point_size) ,
+              dev = ggrastr_dev
+              )
+           else 
+             geom_point(alpha = ifelse(gray_out, 0.05, point_alpha), 
+                        size = point_size)
+          )+
           stat_poly_line(se = FALSE, 
+                         linewidth = 0.5,
                          color = ifelse(gray_out, "#808080", "#323232")) +
           labs(#title = term_,
             x = x_lab,
@@ -508,15 +888,36 @@ plot_gradient_relationships <- function(subject_data,
           r <- cor(plot_data[[i]], plot_data[[j]], method = "pearson")
           p_val <- perm_sphere_p(plot_data[[i]], plot_data[[j]], perm.id = perms, corr.type='pearson')
           
-          #p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("italic(p[spin]) < ", "italic(p[spin]) == ", "italic(p[spin]) > "))(p_val)
-          #label_corr <- paste0("italic(r) == ", r |> round(2),"*','~", p_lab)
-          p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("<i>p<sub>spin</sub></i> &lt; ", "<i>p<sub>spin</sub></i> = ", "<i>p<sub>spin</sub></i> &gt; "))(p_val)
-          label_corr <- paste0("<i>r</i> = ", r |> round(2), " ,&#8203;&nbsp;" , p_lab)
+
+          # p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("<i>p<sub>spin</sub></i> &lt; ", "<i>p<sub>spin</sub></i> = ", "<i>p<sub>spin</sub></i> &gt; "))(p_val)
+          # label_corr <- paste0("<i>r</i> = ", r |> round(2), " ,&#8203;&nbsp;" , p_lab)
+          # 
+          # 
+          # p <- p + labs(subtitle = label_corr) +
+          #   theme(plot.subtitle = element_markdown(size = rel(r_spin_size), hjust = 0.95, margin = margin(b = 3),
+          #                                          color = ifelse(gray_out, scales::alpha("black", 0.2), "black")))
           
+          
+          p_lab <- scales::label_pvalue(
+            accuracy = 0.001,
+            prefix = c(
+              "<i>p<sub>spin</sub></i> &lt; ",
+              "<i>p<sub>spin</sub></i> = ",
+              "<i>p<sub>spin</sub></i> &gt; "
+            )
+          )(p_val)
+          
+          label_corr <- paste0("<i>r</i> = ", round(r, 2), ", ", p_lab)
           
           p <- p + labs(subtitle = label_corr) +
-            theme(plot.subtitle = element_markdown(size = rel(r_spin_size), hjust = 0.95, margin = margin(b = 3),
-                                                   color = ifelse(gray_out, scales::alpha("black", 0.2), "black")))
+            theme(
+              plot.subtitle = element_markdown(
+                size = rel(r_spin_size),
+                hjust = 0.95,
+                margin = margin(b = 3),
+                color = ifelse(gray_out, scales::alpha("black", 0.2), "black")
+              )
+            )
             
           #   subtitle = label = label_corr, alpha = ifelse(gray_out, 0.2, 1)
           # p <- p + ggpp::annotate(geom = "text_npc", label = label_corr,
@@ -781,7 +1182,7 @@ plot_gradient_relationships <- function(subject_data,
           )
   
   if (rectangle) {
-    p <- p + plot_annotation(theme = theme(plot.background = element_rect(color = "black", fill = NA)))
+    p <- p + plot_annotation(theme = theme(plot.background = element_rect(color = "black", fill = NA, linewidth = 0.5)))
   }
   
   list(plot = p, n = ests %>% pull(n) %>% unique(), model_formula = ests %>% pull(model_formula) %>% unique(), tmaps = ests)
@@ -1082,7 +1483,7 @@ plot_gams_v1 <- function(gam_predictions, grad_df,
                          ) +
       labs(
         color = "Network",
-        x = "FCS averaged over age quartiles", 
+        x = "FCS slopes averaged over age quartiles", 
         y = "") +
       scale_color_manual(values = net_names %>% select(name, col) %>% deframe()) +
       theme(axis.title.y = element_blank(),
@@ -1407,7 +1808,12 @@ figure_one <- function(subject_data,
                        fig1_formula_bf = formula(" ~ age + pathology_ad + sex + rsqa__MeanFD"),
                        fig1_formula_ad = formula(" ~ age + pathology_ad + sex + rsqa__MeanFD"),
                        brain_plot_names_f1 = NULL,
+                       raster = FALSE,
+                       ggrastr_dpi = NULL,
+                       rast_scale_atlas = 1,
+                       rast_scale_shade = 1,
                        tag_size = 21,
+                       p_size = 1,
                        draw_size = 18,
                        shade = FALSE,
                        shade_a = 0.01,
@@ -1453,12 +1859,17 @@ figure_one <- function(subject_data,
                                          add_shade = shade,
                                          shade_alpha = shade_a,
                                          shade_size = shade_s,
+                                         point_size = p_size,
                                          vect = TRUE,
                                          mod_formula = fig1_formula_bf,
                                          covariates = c("sex", "rsqa__MeanFD"),
                                          r2_size = rel(r2_sizing1),
                                          filter_criteria = quo(),
                                          show_networks = FALSE,
+                                         rasterize = raster,
+                                         ggrastr_dpi = ggrastr_dpi,
+                                         raster_scale_atlas = rast_scale_atlas,
+                                         raster_scale_shade = rast_scale_shade,
                                          tag_prefix = "",
                                          tag_sep = "",
                                          layout_construction = "horizontal",
@@ -1508,7 +1919,9 @@ figure_one <- function(subject_data,
       draw_plot_label("A", x = l_marg-l_marg, size = tag_size) 
     #draw_label("BioFINDER", x = (1/3.1/2), y = 0.75, hjust = 0.5, size =  draw_size)
     
-    if (boxed) p_bf <- p_bf + theme(plot.background = element_rect(color = "black", linewidth = 1))
+    rect_linewidth = 0.5
+    
+    if (boxed) p_bf <- p_bf + theme(plot.background = element_rect(color = "black", linewidth = rect_linewidth))
     
     
     adni_p <-  plot_gradient_relationships(subject_data_replication, 
@@ -1523,11 +1936,16 @@ figure_one <- function(subject_data,
                                            add_shade = shade,
                                            shade_alpha = shade_a,
                                            shade_size = shade_s,
+                                           point_size = p_size,
                                            r2_size = rel(r2_sizing1),
                                            covariates = c("sex", "rsqa__MeanFD"),
                                            id_var = "file_func",
                                            filter_criteria = quo(),
                                            show_networks = FALSE,
+                                           rasterize = raster,
+                                           ggrastr_dpi = ggrastr_dpi,
+                                           raster_scale_atlas = rast_scale_atlas,
+                                           raster_scale_shade = rast_scale_shade,
                                            tag_prefix = "",
                                            layout_construction = "horizontal",
                                            include_gradient_plots = TRUE,
@@ -1576,8 +1994,8 @@ figure_one <- function(subject_data,
       draw_plot_label("B", x = l_marg-l_marg, size = tag_size) 
     #draw_label("ADNI", x = (1/3.1/2), y = 0.75, hjust = 0.5, size =  draw_size)
     
-    if (boxed) p_a <- p_a + theme(plot.background = element_rect(color = "black", linewidth = 1))
-    return(list(p_bf = p_bf, p_a = p_a))
+    if (boxed) p_a <- p_a + theme(plot.background = element_rect(color = "black", linewidth = rect_linewidth))
+    return(list(p_bf = p_bf, p_a = p_a, tmaps = list(bf = bf_p$tmaps, adni = adni_p$tmaps)))
   }
   
 
@@ -1608,9 +2026,14 @@ figure_one <- function(subject_data,
                                                add_shade = shade,
                                                shade_alpha = shade_a,
                                                shade_size = shade_s,
+                                               point_size = p_size,
                                                covariates = c("sex", "rsqa__MeanFD"),
                                                filter_criteria = quo(),
                                                show_networks = FALSE,
+                                               rasterize = raster,
+                                               ggrastr_dpi = ggrastr_dpi,
+                                               raster_scale_atlas = rast_scale_atlas,
+                                               raster_scale_shade = rast_scale_shade,
                                                tag_prefix = "",
                                                tag_sep = "",
                                                layout_construction = "horizontal",
@@ -1667,11 +2090,16 @@ figure_one <- function(subject_data,
                                                  add_shade = shade,
                                                  shade_alpha = shade_a,
                                                  shade_size = shade_s,
+                                                 point_size = p_size,
                                                  mod_formula = formula(paste0(" ~ age + pathology_ad + `-mPACC_v1` +  sex + rsqa__MeanFD")),
                                                  logistic_fit = FALSE,
                                                  covariates = c("sex", "rsqa__MeanFD"),
                                                  filter_criteria = quo(),
                                                  show_networks = FALSE,
+                                                 rasterize = raster,
+                                                 ggrastr_dpi = ggrastr_dpi,
+                                                 raster_scale_atlas = rast_scale_atlas,
+                                                 raster_scale_shade = rast_scale_shade,
                                                  tag_prefix = "",
                                                  tag_sep = "",
                                                  layout_construction = "horizontal",
@@ -1708,7 +2136,7 @@ figure_one <- function(subject_data,
     p_clinical_cog[[plt_idx[3]]] <- p_clinical_cog[[plt_idx[3]]] + labs(title = "-mPACC", subtitle = "(Inverted cognition)") + theme(plot.subtitle = element_text(hjust = 0.5, size = rel(0.6)))
     
     p_clinical_cog <- ggdraw() + draw_plot(p_clinical_cog) + draw_plot_label(ifelse(split, "B", "D"), x = clin_l_marg-l_marg, size = tag_size)
-    return(list(p_health_cog = p_health_cog, p_clinical_cog = p_clinical_cog))
+    return(list(p_health_cog = p_health_cog, p_clinical_cog = p_clinical_cog, tmaps = list(health = health_cog$tmaps, clin = clinical_cog$tmaps)))
   }
   
   
@@ -1727,18 +2155,19 @@ figure_one <- function(subject_data,
         label.hjust=0,
         byrow = TRUE,
         nrow = 1, 
-        override.aes = list(size = rel(3))
+        override.aes = list(size = rel(1.3))
       )) +
       scale_color_manual(values = net_names %>% select(name, col) %>% deframe) +
       theme(
         legend.position = "bottom",
         #legend.key.size = unit(0.0, "cm"),
-        legend.key.spacing.x = unit(0.75, "cm"),
+        legend.key.spacing.x = unit(0.15, "cm"),
+        legend.key = element_rect(fill = "transparent", color = NA),
         legend.direction = "horizontal",
         #legend.title.position = "",
         legend.text.position = "right",
         legend.title = element_blank(),
-        legend.text = element_text(size = rel(0.8), margin = margin(l = 4, r = 6, unit = "pt")),
+        legend.text = element_text(size = rel(0.8), margin = margin(l = 0.5, r = 0.75, unit = "pt")),
         legend.background = element_blank()
       )
     
@@ -1762,7 +2191,7 @@ figure_one <- function(subject_data,
         byrow = TRUE,
         nrow = 2, 
         reverse = FALSE,
-        override.aes = list(size = rel(3))
+        override.aes = list(size = rel(2))
       )) +
       scale_color_manual(values = net_names %>% select(name, col) %>% deframe) +
       theme(
@@ -1821,7 +2250,7 @@ figure_one <- function(subject_data,
         draw_plot(net_legend2, x = 0.02,  y = 0.035, width = 0.2, height = 0.015) 
     }
     
-    return(fig_one_two)
+    return(list(fig_one_two, tmaps = list(fig1 = figure1_org$tmaps, fig2 = figure2_org$tmaps)))
     
   } else if (split & !is.null(fig)) { 
     
@@ -1845,10 +2274,10 @@ figure_one <- function(subject_data,
           draw_plot(net_legend1, x = 0.4,  y = 0.025, width = 0.3, height = 0.015)
       }
       
-      return(x)
+      return(list(x, tmaps = figure1_org$tmaps))
     }
     
-    if (fig == 1) {
+    if (fig == 2) {
       figure2_org <- fig2()
       
       if (boxed) {
@@ -1864,7 +2293,7 @@ figure_one <- function(subject_data,
           draw_plot(net_legend2, x = 0.03,  y = 0.035, width = 0.2, height = 0.015) 
       }
       
-      return(x)
+      return(list(x, tmaps = figure2_org$tmaps))
     }
     
   }  else {
@@ -1899,7 +2328,7 @@ figure_one <- function(subject_data,
   
     
     
-    figure1
+    list(figure1, tmaps = list(fig1 =figure1_org$tmaps, fig2 = figure2_org$tmaps))
     
   }
   
