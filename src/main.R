@@ -41,6 +41,8 @@ real_data <- as.logical(Sys.getenv("REAL_DATA", "TRUE"))
 
 figure_path <- "paper/figures"
 dir.create(figure_path, showWarnings = FALSE)
+source_figure_path <- "paper/figures_source_data"
+dir.create(source_figure_path, showWarnings = FALSE)
 table_path <- "paper/tables"
 dir.create(table_path, showWarnings = FALSE)
 
@@ -875,8 +877,7 @@ source("src/util_vis.R")
 # These parameters set the final figure width, and the scaling to use to 
 # get elements and font sizes aligned
 img_width <-  180 / 25.4
-scaling_factor <-  3
-magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
+scaling_factor <-  1
 
 ################
 # FIGURE 1
@@ -890,12 +891,16 @@ fig_one <- figure_one(subject_data = biofinder_df,
                       gradients_df = grad_df |> filter(study == "biofinder"),
                       gradients_df_replication = grad_df |> filter(study == "adni"),
                       shade = TRUE,
-                      shade_a = 0.0075,
-                      shade_s = 0.001,
+                      shade_a = 0.1,
+                      shade_s = 0.1,
+                      tag_size = 10,
+                      p_size = 0.3,
+                      raster = TRUE,
+                      ggrastr_dpi = 300,
                       selected_gradients = c(1, 3), 
                       empt_row_height = -0.15,
-                      b_size = 24,
-                      draw_size = 24,
+                      b_size = 7,
+                      draw_size = 7,
                       plot_title_size = 0.9,
                       axes_title_size = 0.9,
                       boxed = TRUE,
@@ -906,12 +911,16 @@ fig_one <- figure_one(subject_data = biofinder_df,
                       brain_plot_names_f1 = c(NA, "AD Pathology"))
 
 
-p_name <- "figure1.png"
-ggsave(file.path(figure_path, p_name), fig_one,
-       width = img_width*scaling_factor, height = img_width*0.5*scaling_factor, units = "in", dpi = 300, device = "png", bg = "transparent")
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+p_name <- "figure1.pdf"
+ggsave(file.path(figure_path, p_name), fig_one[[1]],
+       width = img_width*scaling_factor, height = img_width*0.5*scaling_factor, units = "in", dpi = 300, device = "pdf", bg = "transparent")
+
+source_data <- fig_one$tmaps$bf |> mutate(study = "biofinder") |> 
+  bind_rows(fig_one$tmaps$adni |> mutate(study = "adni")) |> 
+  select(-n, -model_formula) |> 
+  left_join(grad_df |> filter(study %in% c("adni", "biofinder")) |> 
+              select(region, study, starts_with("gradient")))
+write_csv(source_data, file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), ".csv")))
 
 
 ###########################
@@ -930,26 +939,54 @@ gam_preds_affinity <- gam_pred_nodes(biofinder_df |> filter(fmri_bl),
                                      print_ticker = TRUE,
                                      model_formula = formula("FC ~ s(age) + s(pathology_ad) + sex + rsqa__MeanFD"))
 
-nonlin_p <- plot_gams_v1(gam_predictions = gam_preds_affinity, 
-                         grad_df = grad_df |> filter(study == "biofinder"),
-                         biofinder_data = biofinder_df |> filter(fmri_bl), scale_fac = 3,
-                         add_shade = TRUE,
-                         shade_alpha = 0.01,
-                         shade_size = 0.01)
+
+source("src/util_vis.R")
+nonlin_p <- plot_gams_v1(
+  gam_predictions = gam_preds_affinity,
+  grad_df = grad_df |> filter(study == "biofinder"),
+  biofinder_data = biofinder_df |> filter(fmri_bl),
+  b_size = 7,
+  corr_label_size = 1.2,
+  legend_key_height = 0.4,
+  legend_key_width = 0.01,
+  pathology_legend_width = 0.10,
+  pathology_legend_height = 0.06,
+  pathology_label_size = 1.75,
+  net_legend_text_rel = 0.5,
+  net_legend_point_size = 0.75,
+  net_legend_width = 0.07,
+  net_legend_height = 0.04,
+  add_shade = TRUE,
+  shade_alpha = 0.1,
+  shade_size = 0.1,
+  point_size = 0.075,
+  point_alpha = 0.5,
+  struct_linewidth = 0.2,
+  plot_linewidth = 0.3,
+  scatter_raster_dpi = 300,
+  rasterize_brains = TRUE,
+  rasterize_scatters = TRUE,
+  canvas_text_size = 5
+)
+
 
 p_name <- "figure2.png"
-img_width <- 90/25.4
-scale_factor = 3
-magick_geom_scaling <- paste0(100*0.66, "%x", 100*0.66, "%")
-ggsave(file.path(figure_path, p_name), nonlin_p, 
-       width = img_width*scale_factor, 
-       height = img_width*scale_factor*1.3, 
-       units = "in", dpi = 300,
-       bg = "white")
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+ggsave(
+  file.path(figure_path, p_name ),
+  nonlin_p$plot,
+  width = 88,
+  height = 88*1.3,
+  units = "mm",
+  device = "pdf",
+  bg = "white"
+)
 
+# Write source data
+write_csv(nonlin_p$source_data$pathology_plot |> 
+            mutate(value = as.vector(value)), file.path(source_figure_path, paste0("figure2_pathology_plot", ".csv")))
+write_csv(nonlin_p$source_data$quartile_fcs_slopes, file.path(source_figure_path, paste0("figure2_quartile_fcs_slopes", ".csv")))
+write_csv(nonlin_p$source_data$ventile_mean_predicted_fcs, file.path(source_figure_path, paste0("figure2_ventile_mean_predicted_fcs", ".csv")))
+write_csv(nonlin_p$source_data$gradient_correlations, file.path(source_figure_path, paste0("figure2_gradient_correlations", ".csv")))
 
 
 #######################################
@@ -996,6 +1033,9 @@ bf_longitudinal <-  plot_gradient_relationships(long_bf_ |> mutate(yearly_path =
                                                 gradients = c(1, 3),
                                                 empty_row_height = -0.1,
                                                 gradient_colors = gradient_cols,
+                                                base_size_ = 7,
+                                                rasterize = TRUE,
+                                                ggrastr_dpi = 300,
                                                 add_shade = TRUE, 
                                                 shade_alpha = 0.0075,
                                                 shade_size = 0.001,
@@ -1017,33 +1057,55 @@ bf_longitudinal <-  plot_gradient_relationships(long_bf_ |> mutate(yearly_path =
 
 
 # Very case specific function for creating figure 3
-longitudindal_figs <- longitudinal_and_window_analysis(long_df = long_bf_, 
-                                                       b_size = 18,
-                                                       run_windowing = 
-                                                         ifelse(from_start & 
-                                                                !file.exists("data/processed_and_cleaned/sliding_window_age_res.rds") &
-                                                                !file.exists("data/processed_and_cleaned/sliding_window_path_res.rds"), 
-                                                              TRUE, FALSE) 
-                                                       )
 
-img_width = 180 / 25.4
-scaling_factor <- 2
-magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
+longitudindal_figs <- longitudinal_and_window_analysis(
+  long_df = long_bf_,
+  b_size = 7,
+  run_windowing = 
+    ifelse(from_start & 
+             !file.exists("data/processed_and_cleaned/sliding_window_age_res.rds") &
+             !file.exists("data/processed_and_cleaned/sliding_window_path_res.rds"), 
+           TRUE, FALSE) 
+)
 
-p_name <- "figure3.png"
-ggsave(file.path(figure_path, p_name), longitudindal_figs[["main_fig"]],
-       width = img_width*scaling_factor, height = img_width*1*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+source("src/util_vis.R")
+analysis_data <- longitudindal_figs$analysis_data
+# longitudindal_figs2 <- plot_longitudinal_and_window_analysis(
+#   analysis_data = analysis_data,
+#   b_size = 7,
+#   label_size = 10,
+#   title_size = 7,
+#   annotation_size = 3,
+#   strip_size_rel = 1.2,
+#   axis_title_rel = 1.2
+# )
+
+img_width = 180
+scaling_factor <- 1
+
+p_name <- "figure3.pdf"
+ggsave(file.path(figure_path, p_name), longitudindal_figs2[["main_fig"]],
+       width = img_width*scaling_factor, height = img_width*1*scaling_factor, units = "mm", dpi = 300, device = "pdf")
+
+write_csv(analysis_data$bf_longitudinal$tmaps |> 
+            inner_join(grad_df |> filter(study == "biofinder") |> 
+                         select(region, starts_with("gradient"))), 
+          file.path(source_figure_path, paste0("figure3_longitudinal_estimates", ".csv")))
+
+write_csv(analysis_data$hist_map_data, 
+          file.path(source_figure_path, paste0("figure3_2D_histogram", ".csv")))
+
+write_csv(analysis_data$grad_cor_age, 
+          file.path(source_figure_path, paste0("figure3_windowing_age", ".csv")))
+
+write_csv(analysis_data$grad_cor_path, 
+          file.path(source_figure_path, paste0("figure3_windowing_path", ".csv")))
 
 
-p_name <- "supplementary_windowing.png"
+p_name <- "supplementary_windowing.pdf"
 ggsave(file.path(figure_path, p_name), longitudindal_figs[["supp_fig"]],
-       width = img_width*scaling_factor, height = img_width*0.5*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+       width = img_width*scaling_factor, height = img_width*0.5*scaling_factor, units = "mm", dpi = 300, device = "pdf", bg = "white")
+
 
 
 ######################
@@ -1052,9 +1114,8 @@ magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
 
 source("src/util_vis.R")
 
-img_width = 180 / 25.4
-scaling_factor <-  4
-magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
+img_width = 180 
+scaling_factor <-  1
 
 fig4 <- figure_one(subject_data = biofinder_df,
                    subject_data_replication = adni_df |> filter(fmri_bl),
@@ -1064,23 +1125,35 @@ fig4 <- figure_one(subject_data = biofinder_df,
                    gradients_df_replication = grad_df |> filter(study == "adni"),
                    selected_gradients = c(1, 3), 
                    empt_row_height = -0.15,
-                   b_size = 24,
-                   draw_size = 24,
                    shade = TRUE,
-                   shade_a = 0.0075,
-                   shade_s = 0.001,
+                   shade_a = 0.1,
+                   shade_s = 0.1,
+                   tag_size = 9,
+                   p_size = 0.2,
+                   raster = TRUE,
+                   ggrastr_dpi = 300,
+                   b_size = 7,
+                   draw_size = 7,
                    plot_title_size = 0.85,
                    axes_title_size = 0.85,
                    r2_sizing2 = 4.4,
                    boxed = FALSE,
-                   split = TRUE)
+                   split = TRUE,
+                   fig = 2)
 
-p_name <- "figure4.png"
-ggsave(file.path(figure_path, p_name), fig4[[2]], 
-       width = img_width*scaling_factor, height = img_width*0.4*scaling_factor, units = "in", dpi = 300, device = "png", bg = "transparent")
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+p_name <- "figure4.pdf"
+ggsave(file.path(figure_path, p_name), fig4[[1]], 
+       width = img_width*scaling_factor, height = img_width*0.4*scaling_factor, units = "mm", dpi = 300, device = "pdf", bg = "transparent")
+
+
+source_data <- fig4$tmaps$health |> mutate(plot = "healthy") |> 
+  bind_rows(fig4$tmaps$clin |> mutate(plot = "clinical")) |> 
+  select(-n, -model_formula) |> 
+  left_join(grad_df |> filter(study %in% c("biofinder")) |> 
+              select(region, study, starts_with("gradient")))
+write_csv(source_data, file.path(source_figure_path, paste0("figure4_estimates", ".csv")))
+
+
 
 
  ######  ##     ## ########  ########  ##       ######## ##     ## ######## ##    ## ########    ###    ########  ##    ## 
