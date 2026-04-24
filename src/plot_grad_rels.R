@@ -1,3 +1,40 @@
+
+get_net_legend <- function(b_size){
+  #scale_factor <- 5
+  x <- grad_df %>% filter(study == "biofinder") %>% 
+    mutate(name = factor(name, levels = c("DorsAttn", "SomMot", "SalVentAttn", "Default", "Limbic", "Cont", "Vis"))) %>% 
+    ggplot(aes(gradient1, gradient3, color = name)) +
+    geom_point(alpha = 0.5) +
+    theme_bw(base_size = b_size) +
+    labs(color = "Yeo Network") +
+    guides(color = guide_legend(
+      label.hjust=0,
+      byrow = TRUE,
+      nrow = 2, 
+      reverse = FALSE,
+      override.aes = list(size = rel(0.85))
+    )) +
+    scale_color_manual(values = net_names %>% select(name, col) %>% deframe) +
+    theme(
+      legend.position = "bottom",
+      #legend.key.size = unit(0.0, "cm"),
+      legend.key.spacing.x = unit(0, "cm"),
+      legend.key.spacing.y = unit(-0.8, "cm"),
+      legend.direction = "horizontal",
+      #legend.title.position = "",
+      legend.text.position = "right",
+      legend.title = element_blank(),
+      legend.key = element_rect(fill = NA),
+      legend.text = element_text(size = rel(0.65), margin = margin(l = -4, r = 0, unit = "pt")),
+      legend.background = element_blank()
+    )
+  
+  leg <- ggpubr::get_legend(x)
+  leg <- ggpubr::as_ggplot(leg)
+  leg 
+}
+
+
 plot_gradient_relationships <- function(subject_data,
                                         gradient_data,
                                         list_of_parcel_data, 
@@ -32,8 +69,12 @@ plot_gradient_relationships <- function(subject_data,
                                         covariates = c("sex", "rsqa__MeanFD"),
                                         filter_criteria = quo(),
                                         plt_title = NULL,
+                                        brain_title_size = rel(1),
+                                        axis_text_size = rel(1),
+                                        axis_title_size = rel(1),
                                         brain_title_vjust = 0,
                                         brain_subtitle_vjust = 0,
+                                        scatter_title_vjust = 0,
                                         plt_subtitle = FALSE,
                                         subtit_lookup = c(pathology_ad = "AD pathology", rsqa__MeanFD = "motion"),
                                         label_gradient_score = "Gradient Score",
@@ -49,6 +90,9 @@ plot_gradient_relationships <- function(subject_data,
                                         plot_spacing = 0.3,
                                         show_networks = FALSE,
                                         network_geometry = NULL,
+                                        plot_net_legend = FALSE,
+                                        net_legend_x = 0.075,
+                                        net_legend_y = 0.01,
                                         cache_runs = FALSE,
                                         longitudinal = FALSE,
                                         logistic_fit = FALSE,
@@ -64,15 +108,9 @@ plot_gradient_relationships <- function(subject_data,
   require(ggpmisc)
   require(sf)
   require(ggtext)
+  require(ggrastr)
   
   options("ggrastr.default.dpi" = ggrastr_dpi)
-  
-  shade_df <- make_shade_raster_df(
-    shade_sf = atlas_geometry$shade,
-    atlas_sf = atlas_geometry$atlas,
-    nx = 1200, ny = 1200,
-    fun = "sum"
-  )
   
   
   old <- theme_set(theme_bw(base_size = base_size_))
@@ -415,7 +453,7 @@ plot_gradient_relationships <- function(subject_data,
           plot.background = element_rect(fill = "transparent", colour = NA),
           legend.background = element_rect(fill = "transparent", colour = NA),
           legend.box.background = element_rect(fill = "transparent", colour = NA),
-          plot.title = element_text(color = "black", hjust = 0.5, vjust = brain_title_vjust),
+          plot.title = element_text(color = "black", hjust = 0.5, vjust = brain_title_vjust, size = brain_title_size),
           plot.subtitle = element_text(hjust = 0.5, size = rel(0.7), vjust = brain_subtitle_vjust)
         ) +
         scale_fill_gradient2(
@@ -611,7 +649,7 @@ plot_gradient_relationships <- function(subject_data,
             plot.background = element_rect(fill = "transparent", colour = NA),
             legend.background = element_rect(fill = "transparent", colour = NA),
             legend.box.background = element_rect(fill = "transparent", colour = NA),
-            plot.title = element_text(color = "black", hjust = 0.5, vjust = -3)
+            plot.title = element_text(color = "black", hjust = 0.5, vjust = -3, size = brain_title_size)
           ) 
         
         
@@ -690,7 +728,7 @@ plot_gradient_relationships <- function(subject_data,
                 plot.background = element_rect(fill = "transparent", colour = NA),
                 legend.background = element_rect(fill = "transparent", colour = NA),
                 legend.box.background = element_rect(fill = "transparent", colour = NA),
-                plot.title = element_text(color = NA, hjust = 0.5)
+                plot.title = element_text(color = NA, hjust = 0.5, size = brain_title_size)
           ) +
           scale_fill_gradient2(
             low = gradient_colors[[grad]][1],
@@ -743,7 +781,7 @@ plot_gradient_relationships <- function(subject_data,
         }
         
         lab_grad <- label_gradient_score
-        lab_term <- str_to_sentence(paste(str_replace(t, "_", " "), "t-value"))
+        lab_term <- str_to_sentence(paste(str_replace_all(t, "_", " "), "t-value"))
         
         if (layout_construction == "horizontal") {
           x_lab <- lab_term
@@ -792,7 +830,8 @@ plot_gradient_relationships <- function(subject_data,
             plot.background = element_rect(fill = "transparent", colour = NA),
             legend.background = element_rect(fill = "transparent", color = NA),
             legend.box.background = element_rect(fill = "transparent", colour = NA),
-            #axis.title = element_text(size = rel(1.2))
+            axis.text = element_text(size = axis_text_size),
+            axis.title = element_text(size = axis_title_size)
           ) +
           scale_color_manual(values = net_names %>% select(name, col) %>% deframe()) +
           scale_y_continuous(limits = c(y_min, y_max), position = ifelse(right_term_side, "right", "left"))
@@ -827,7 +866,7 @@ plot_gradient_relationships <- function(subject_data,
               plot.subtitle = element_markdown(
                 size = rel(r_spin_size),
                 hjust = 0.95,
-                margin = margin(b = 3),
+                margin = margin(b = scatter_title_vjust),
                 color = ifelse(gray_out, scales::alpha("black", 0.2), "black")
               )
             )
@@ -1096,6 +1135,13 @@ plot_gradient_relationships <- function(subject_data,
   
   if (rectangle) {
     p <- p + plot_annotation(theme = theme(plot.background = element_rect(color = "black", fill = NA, linewidth = 0.5)))
+  }
+  
+  if (plot_net_legend) {
+    net_legend <- get_net_legend(b_size = base_size_)
+    p <- ggdraw() +
+      draw_plot(p) +
+      draw_plot(net_legend, x = net_legend_x, y = net_legend_y, width = 0.1, height = 0.05)
   }
   
   list(plot = p, n = ests %>% pull(n) %>% unique(), model_formula = ests %>% pull(model_formula) %>% unique(), tmaps = ests)
