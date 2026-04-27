@@ -876,7 +876,7 @@ source("src/util_vis.R")
 
 # These parameters set the final figure width, and the scaling to use to 
 # get elements and font sizes aligned
-img_width <-  180 / 25.4
+img_width <-  180 
 scaling_factor <-  1
 
 ################
@@ -913,7 +913,7 @@ fig_one <- figure_one(subject_data = biofinder_df,
 
 p_name <- "figure1.pdf"
 ggsave(file.path(figure_path, p_name), fig_one[[1]],
-       width = img_width*scaling_factor, height = img_width*0.5*scaling_factor, units = "in", dpi = 300, device = "pdf", bg = "transparent")
+       width = img_width*scaling_factor, height = img_width*0.5*scaling_factor, units = "mm", dpi = 300, device = "pdf", bg = "transparent")
 
 source_data <- fig_one$tmaps$bf |> mutate(study = "biofinder") |> 
   bind_rows(fig_one$tmaps$adni |> mutate(study = "adni")) |> 
@@ -1310,7 +1310,8 @@ source_data <- within_supp$tmaps$fig1$bf |> mutate(panel = "A") |>
   bind_rows(within_supp$tmaps$fig2$clin |> mutate(panel = "D")) |> 
   select(-n) |> 
   left_join(grad_df |> filter(study %in% c("adni", "biofinder")) |> 
-              select(region, study, starts_with("gradient")))
+              select(region, study, starts_with("gradient")) |>
+              pivot_wider(values_from = starts_with("gradient"), names_from = "study", names_sep = "_"))
   
 write_csv(source_data, file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), ".csv")))
 
@@ -1327,26 +1328,44 @@ between_supp <- figure_one(subject_data = biofinder_df,
                            gradients_df = grad_df |> filter(study == "biofinder"),
                            gradients_df_replication = grad_df |> filter(study == "adni"),
                            selected_gradients = c(1, 3),
-                           tag_size = 18,
-                           draw_size = 18,
-                           empt_row_height = -0.1,
-                           b_size = 18,
-                           plot_title_size = 0.90,
-                           axes_title_size = 0.85,
-                           r2_sizing2 = 4.5,
-                           r2_sizing1 = 6,
+                           shade = TRUE,
+                           shade_a = 0.1,
+                           shade_s = 0.1,
+                           tag_size = 10,
+                           p_size = 0.3,
+                           raster = TRUE,
+                           ggrastr_dpi = 300,
+                           empt_row_height = -0.15,
+                           b_size = 7,
+                           draw_size = 7,
+                           plot_title_size = 0.95,
+                           axes_title_size = 0.9,
+                           r2_sizing2 = rel(0.7),
+                           r2_sizing1 = rel(0.9),
+                           ax_txt_size = 5,
                            boxed = TRUE,
                            split = FALSE,
-                           shade = TRUE,
-                           shade_a = 0.0075,
-                           shade_s = 0.001,
                            brain_plot_names_f1 = c(NA, "AD Pathology"))
 
-p_name <- "between_supplementary.png"
-ggsave(file.path(figure_path, p_name), between_supp, width = img_width*scaling_factor, height = img_width*0.8*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+p_name <- "between_supplementary.pdf"
+ggsave(file.path(figure_path, p_name), between_supp[[1]], 
+       width = img_width*scaling_factor, 
+       height = img_width*0.8*scaling_factor,
+       units = "mm", dpi = 300, device = "pdf")
+
+
+source_data <- between_supp$tmaps$fig1$bf |> mutate(panel = "A") |> 
+  bind_rows(between_supp$tmaps$fig1$adni |> mutate(panel = "B")) |> 
+  bind_rows(between_supp$tmaps$fig2$health |> mutate(panel = "C")) |> 
+  bind_rows(between_supp$tmaps$fig2$clin |> mutate(panel = "D")) |> 
+  select(-n) |> 
+  left_join(grad_df |> filter(study %in% c("adni", "biofinder")) |> 
+              select(region, study, starts_with("gradient")) |>
+              pivot_wider(values_from = starts_with("gradient"), names_from = "study", names_sep = "_"))
+
+write_csv(source_data, file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), ".csv")))
+
+
 
 
 
@@ -1362,26 +1381,42 @@ strength_supp <- figure_one(subject_data = biofinder_df,
                             gradients_df = grad_df |> filter(study == "biofinder"),
                             gradients_df_replication = grad_df |> filter(study == "adni"),
                             selected_gradients = c(1, 3),
-                            tag_size = 18,
-                            draw_size = 18,
-                            empt_row_height = -0.1,
-                            b_size = 18,
-                            plot_title_size = 0.90,
-                            axes_title_size = 0.85,
-                            r2_sizing2 = 4.5,
-                            r2_sizing1 = 6,
+                            shade = TRUE,
+                            shade_a = 0.1,
+                            shade_s = 0.1,
+                            tag_size = 10,
+                            p_size = 0.3,
+                            raster = TRUE,
+                            ggrastr_dpi = 300,
+                            empt_row_height = -0.15,
+                            b_size = 7,
+                            draw_size = 7,
+                            plot_title_size = 0.95,
+                            axes_title_size = 0.9,
+                            r2_sizing2 = rel(0.7),
+                            r2_sizing1 = rel(0.9),
+                            ax_txt_size = 5,
                             boxed = TRUE,
                             split = FALSE,
-                            shade = TRUE,
-                            shade_a = 0.0075,
-                            shade_s = 0.001,
                             brain_plot_names_f1 = c(NA, "AD Pathology"))
 
-p_name <- "supplementary_strength.png"
-ggsave(file.path(figure_path, p_name), strength_supp, width = img_width*scaling_factor, height = img_width*0.8*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+p_name <- "supplementary_strength.pdf"
+ggsave(file.path(figure_path, p_name), between_supp[[1]], 
+       width = img_width*scaling_factor, 
+       height = img_width*0.8*scaling_factor,
+       units = "mm", dpi = 300, device = "pdf")
+
+
+source_data <- between_supp$tmaps$fig1$bf |> mutate(panel = "A") |> 
+  bind_rows(between_supp$tmaps$fig1$adni |> mutate(panel = "B")) |> 
+  bind_rows(between_supp$tmaps$fig2$health |> mutate(panel = "C")) |> 
+  bind_rows(between_supp$tmaps$fig2$clin |> mutate(panel = "D")) |> 
+  select(-n) |> 
+  left_join(grad_df |> filter(study %in% c("adni", "biofinder")) |> 
+              select(region, study, starts_with("gradient")) |>
+              pivot_wider(values_from = starts_with("gradient"), names_from = "study", names_sep = "_"))
+
+write_csv(source_data, file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), ".csv")))
 
 
 ########################################################
@@ -1395,26 +1430,43 @@ aff_no_thresh <- figure_one(subject_data = biofinder_df,
                             gradients_df = grad_df |> filter(study == "biofinder"),
                             gradients_df_replication = grad_df |> filter(study == "adni"),
                             selected_gradients = c(1, 3),
-                            tag_size = 18,
-                            draw_size = 18,
-                            empt_row_height = -0.1,
-                            b_size = 18,
-                            plot_title_size = 0.90,
-                            axes_title_size = 0.85,
-                            r2_sizing2 = 4.5,
-                            r2_sizing1 = 6,
+                            shade = TRUE,
+                            shade_a = 0.1,
+                            shade_s = 0.1,
+                            tag_size = 10,
+                            p_size = 0.3,
+                            raster = TRUE,
+                            ggrastr_dpi = 300,
+                            empt_row_height = -0.15,
+                            b_size = 7,
+                            draw_size = 7,
+                            plot_title_size = 0.95,
+                            axes_title_size = 0.9,
+                            r2_sizing2 = rel(0.7),
+                            r2_sizing1 = rel(0.9),
+                            ax_txt_size = 5,
                             boxed = TRUE,
                             split = FALSE,
-                            shade = TRUE,
-                            shade_a = 0.0075,
-                            shade_s = 0.001,
                             brain_plot_names_f1 = c(NA, "AD Pathology"))
 
-p_name <- "supplementary_affinity_no_thresh_correlation.png"
-ggsave(file.path(figure_path, p_name), aff_no_thresh, width = img_width*scaling_factor, height = img_width*0.8*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+p_name <- "supplementary_affinity_no_thresh_correlation.pdf"
+ggsave(file.path(figure_path, p_name), aff_no_thresh[[1]], 
+       width = img_width*scaling_factor, 
+       height = img_width*0.8*scaling_factor,
+       units = "mm", dpi = 300, device = "pdf")
+
+
+source_data <- aff_no_thresh$tmaps$fig1$bf |> mutate(panel = "A") |> 
+  bind_rows(aff_no_thresh$tmaps$fig1$adni |> mutate(panel = "B")) |> 
+  bind_rows(aff_no_thresh$tmaps$fig2$health |> mutate(panel = "C")) |> 
+  bind_rows(aff_no_thresh$tmaps$fig2$clin |> mutate(panel = "D")) |> 
+  select(-n) |> 
+  left_join(grad_df |> filter(study %in% c("adni", "biofinder")) |> 
+              select(region, study, starts_with("gradient")) |>
+              pivot_wider(values_from = starts_with("gradient"), names_from = "study", names_sep = "_"))
+
+write_csv(source_data, file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), ".csv")))
+
 
 
 ######################################################################
@@ -1429,50 +1481,40 @@ clinical_cog_int <-  plot_gradient_relationships(biofinder_df |> filter(fmri_bl,
                                                  gradient_colors = gradient_cols,
                                                  list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
                                                  mod_formula = formula(paste0(" ~ age + scale(pathology_ad)* scale(-mPACC_v1)  + sex + rsqa__MeanFD")),
-                                                 logistic_fit = FALSE,
                                                  covariates = c("sex", "rsqa__MeanFD"),
-                                                 filter_criteria = quo(),
-                                                 r2_size = 5,
+                                                 empty_row_height = -0.15,
+                                                 brain_title_size = 6,
+                                                 axis_text_size = 5,
+                                                 axis_title_size = 6,
+                                                 scatter_title_vjust = 0,
+                                                 base_size_ = 7,
+                                                 rasterize = TRUE,
+                                                 ggrastr_dpi = 300,
                                                  add_shade = TRUE, 
-                                                 shade_alpha = 0.01,
-                                                 shade_size = 0.01,
-                                                 show_networks = FALSE,
-                                                 tag_prefix = "",
-                                                 tag_sep = "",
-                                                 layout_construction = "horizontal",
-                                                 include_gradient_plots = TRUE,
-                                                 right_term_side = FALSE,
-                                                 plt_title = "",
-                                                 cache_runs = FALSE)
+                                                 shade_alpha = 0.1,
+                                                 shade_size = 0.1,
+                                                 r_spin_size = 0.75,
+                                                 point_size = 0.05,
+                                                 point_alpha = 0.3,
+                                                 rectangle = TRUE,
+                                                 plt_title = c("Diagnosed MCI/AD (Ab+)"),
+                                                 plt_subtitle = TRUE,
+                                                 plot_net_legend = TRUE,
+                                                 brain_names = c("Age", "AD Pathology", "-mPACC", "AD Pathology × -mPACC"),
+                                                 net_legend_x = 0.1,
+                                                 net_legend_y = 0.01)
 
-n_clin <- clinical_cog_int$n
-clin_l_marg = 0
-p_clinical_cog <-
-  clinical_cog_int$plot + plot_annotation(title = paste0("Diagnosed MCI/AD (Ab+)", " (N=", n_clin, ")"), subtitle = expression(FC[parcel] ~ "~" ~ age + pathology ~ "× -mPACC" + sex + motion),
-                                          theme = theme(plot.subtitle = element_text(hjust = 0, vjust = -0.05,
-                                                                                     family = "mono",
-                                                                                     margin = margin(l = clin_l_marg, unit = "npc")), 
-                                                        plot.title.position = "plot",
-                                                        plot.title = element_text( hjust =0, margin = margin(l = clin_l_marg, unit = "npc"))
-                                          )
-  ) &
-  theme(plot.tag = element_blank(),
-        text = element_text(size = 16)
-  )
+img_width = 140 
+p_name <- "supplementary_clin_int.pdf"
+ggsave(file.path(figure_path, p_name), clinical_cog_int$plot, width = img_width*scaling_factor, 
+       height = img_width*0.6*scaling_factor, units = "mm", dpi = 300, device = "pdf", bg = "white")
 
-plt_idx <- 4:6
-p_clinical_cog[[plt_idx[1]]] <- p_clinical_cog[[plt_idx[1]]] + labs(title = "AD Pathology")
-p_clinical_cog[[plt_idx[2]]] <- p_clinical_cog[[plt_idx[2]]] + labs(title = "-mPACC", subtitle = "(Inverted cognition)") + theme(plot.subtitle = element_text(hjust = 0.5))
-p_clinical_cog[[plt_idx[3]]] <- p_clinical_cog[[plt_idx[3]]] + labs(title = "AD Pathology × -mPACC") + theme(plot.subtitle = element_text(hjust = 0.5))
+source_data <- clinical_cog_int$tmaps |> 
+  select(-n, -model_formula) |> 
+  left_join(grad_df |> filter(study %in% c("biofinder")) |> 
+              select(region, study, starts_with("gradient")))
+write_csv(source_data, file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), ".csv")))
 
-
-img_width = 140 / 25.4
-p_name <- "supplementary_clin_int.png"
-ggsave(file.path(figure_path, p_name), p_clinical_cog, width = img_width*scaling_factor, 
-       height = img_width*0.6*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
 
 ######################################################################
 # Supplementary figure for analysis in clinical group without mPACC
@@ -1480,54 +1522,49 @@ magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
 
 clinical_wo_cog <-  plot_gradient_relationships(biofinder_df |> filter(fmri_bl, diagnosis=="MCI" | diagnosis=="AD", !is.na(mPACC_v1)) |> 
                                                    mutate(`-mPACC_v1` = -mPACC_v1), 
-                                                 gradient_data = grad_df |> filter(study=="biofinder"), 
-                                                 gradients = c(1, 3),
-                                                 vect = TRUE,
-                                                 gradient_colors = gradient_cols,
-                                                 list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
-                                                 mod_formula = formula(paste0(" ~ age + pathology_ad + sex + rsqa__MeanFD")),
-                                                 logistic_fit = FALSE,
+                                                gradient_data = grad_df |> filter(study=="biofinder"), 
+                                                gradients = c(1, 3),
+                                                vect = TRUE,
+                                                gradient_colors = gradient_cols,
+                                                list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
+                                                mod_formula = formula(paste0(" ~ age + pathology_ad + sex + rsqa__MeanFD")),
+                                                covariates = c("sex", "rsqa__MeanFD"),
+                                                empty_row_height = -0.15,
+                                                brain_title_size = 6,
+                                                axis_text_size = 5,
+                                                axis_title_size = 6,
+                                                scatter_title_vjust = 0,
+                                                base_size_ = 7,
+                                                rasterize = TRUE,
+                                                ggrastr_dpi = 300,
                                                 add_shade = TRUE, 
-                                                shade_alpha = 0.01,
-                                                shade_size = 0.01,
-                                                 covariates = c("sex", "rsqa__MeanFD"),
-                                                 filter_criteria = quo(),
-                                                 r2_size = 6,
-                                                 show_networks = FALSE,
-                                                 tag_prefix = "",
-                                                 tag_sep = "",
-                                                 layout_construction = "horizontal",
-                                                 include_gradient_plots = TRUE,
-                                                 right_term_side = FALSE,
-                                                 plt_title = "",
-                                                 cache_runs = FALSE)
+                                                shade_alpha = 0.1,
+                                                shade_size = 0.1,
+                                                r_spin_size = 0.75,
+                                                point_size = 0.05,
+                                                point_alpha = 0.3,
+                                                rectangle = TRUE,
+                                                plt_title = c("Diagnosed MCI/AD (Ab+)"),
+                                                plt_subtitle = TRUE,
+                                                plot_net_legend = TRUE,
+                                                brain_names = c("Age", "AD Pathology"),
+                                                net_legend_x = 0.2,
+                                                net_legend_y = 0.01)
 
-n_clin <- clinical_wo_cog$n
-clin_l_marg = 0
-p_clinical_wo_cog <-
-  clinical_wo_cog$plot + plot_annotation(title = paste0("Diagnosed MCI/AD (Ab+)", " (N=", n_clin, ")"), 
-                                          subtitle = expression(FC[parcel] ~ "~" ~ age + pathology + sex + motion),
-                                          theme = theme(plot.subtitle = element_text(hjust = 0, vjust = -0.05,
-                                                                                     family = "mono",
-                                                                                     margin = margin(l = clin_l_marg, unit = "npc")), 
-                                                        plot.title.position = "plot",
-                                                        plot.title = element_text( hjust =0, margin = margin(l = clin_l_marg, unit = "npc"))
-                                          )
-  ) &
-  theme(plot.tag = element_blank(),
-        text = element_text(size = 14)
-  )
 
-plt_idx <- 3:4
-p_clinical_wo_cog[[plt_idx[1]]] <- p_clinical_wo_cog[[plt_idx[1]]] + labs(title = "Age")
-p_clinical_wo_cog[[plt_idx[2]]] <- p_clinical_wo_cog[[plt_idx[2]]] + labs(title = "AD Pathology")
 
-img_width = 90 / 25.4
-p_name <- "supplementary_clin_without_cognition.png"
-ggsave(file.path(figure_path, p_name), p_clinical_wo_cog, width = img_width*scaling_factor, height = img_width*0.85*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+img_width = 90 
+p_name <- "supplementary_clin_without_cognition.pdf"
+ggsave(file.path(figure_path, p_name), clinical_wo_cog$plot, 
+       width = img_width*scaling_factor, 
+       height = img_width*0.85*scaling_factor, 
+       units = "mm", dpi = 300, device = "pdf", bg = "white")
+
+source_data <- clinical_wo_cog$tmaps |> 
+  select(-n, -model_formula) |> 
+  left_join(grad_df |> filter(study %in% c("biofinder")) |> 
+              select(region, study, starts_with("gradient")))
+write_csv(source_data, file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), ".csv")))
 
 
 ##############################################################################
@@ -1539,46 +1576,49 @@ health_cog_no_interact <-  plot_gradient_relationships(biofinder_df |> filter(fm
                                                        gradient_data = grad_df |> filter(study == "biofinder"), 
                                                        gradients = c(1, 3),
                                                        gradient_colors = gradient_cols,
-                                                       r2_size = rel(7),
-                                                       base_size_ = 18,
                                                        list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
-                                                       vect = TRUE,
-                                                       add_shade = TRUE, 
-                                                       shade_alpha = 0.01,
-                                                       shade_size = 0.01,
                                                        mod_formula = formula(paste0(" ~ age + `-mPACC_v1` + pathology_ad + sex + rsqa__MeanFD")),
-                                                       logistic_fit = FALSE,
-                                                       covariates = c("sex", "rsqa__MeanFD"),
-                                                       filter_criteria = quo(),
-                                                       show_networks = FALSE,
-                                                       tag_prefix = "",
-                                                       tag_sep = "",
-                                                       layout_construction = "horizontal",
-                                                       plot_spacing = 0.2,
-                                                       include_gradient_plots = TRUE,
-                                                       right_term_side = FALSE,
-                                                       plt_title = "",
-                                                       cache_runs = FALSE)
+                                                       empty_row_height = -0.15,
+                                                       brain_title_size = 6,
+                                                       axis_text_size = 5,
+                                                       axis_title_size = 6,
+                                                       scatter_title_vjust = 0,
+                                                       base_size_ = 7,
+                                                       rasterize = TRUE,
+                                                       ggrastr_dpi = 300,
+                                                       add_shade = TRUE, 
+                                                       shade_alpha = 0.1,
+                                                       shade_size = 0.1,
+                                                       r_spin_size = 0.75,
+                                                       point_size = 0.05,
+                                                       point_alpha = 0.3,
+                                                       rectangle = FALSE,
+                                                       plt_title = c("Cognitively unimpaired w/o APOE e4 (Ab-)"),
+                                                       plt_subtitle = FALSE,
+                                                       plot_net_legend = FALSE,
+                                                       brain_names = c("Age", "-mPACC", "AD Pathology"),
+                                                       net_legend_x = 0.2,
+                                                       net_legend_y = 0.01)
 
 n_health <- health_cog_no_interact$n
 health_l_marg <- 0
-p_health_cog_no_interact <- health_cog_no_interact$plot &
-  theme(plot.tag = element_blank(),
-        title  = element_text(size = rel(0.8))) 
+p_health_cog_no_interact <- health_cog_no_interact$plot 
 
 p_health_cog_no_interact <- p_health_cog_no_interact + 
-  plot_annotation(title = paste0("Cognitively unimpaired, no APOE e4, Ab-", 
-                                 " (N=", n_health, ")"), 
-                  subtitle = expression(FC[parcel] ~ "~" ~ age + "-mPACC" + pathology + sex + motion),
-                  theme = theme(plot.subtitle = element_text(size = rel(1),
-                                                             family = "mono",
-                                                             face = "italic",
-                                                             hjust = 0, 
-                                                             vjust = -0.05, 
-                                                             margin = margin(l = health_l_marg, unit = "npc")), 
-                                plot.title = element_text(size = rel(1.2), 
-                                                          hjust =0, 
-                                                          margin = margin(l = health_l_marg, unit = "npc")))) 
+  plot_annotation(title = bquote(
+    "Cognitively unimpaired w/o APOE " * epsilon * 4 ~
+      "(A" * beta^"-" * ") (N=" * .(n_health) * ")"
+  ), 
+  subtitle = expression(FC[parcel] ~ "~" ~ age + "-mPACC" + pathology + sex + motion),
+  theme = theme(plot.subtitle = element_text(size = rel(0.9),
+                                             family = "mono",
+                                             face = "italic",
+                                             hjust = 0, 
+                                             vjust = -0.05, 
+                                             margin = margin(l = health_l_marg, unit = "npc")), 
+                plot.title = element_text(size = rel(1), 
+                                          hjust =0, 
+                                          margin = margin(l = health_l_marg, unit = "npc")))) 
 
 
 plt_idx <- 3:5
@@ -1587,12 +1627,18 @@ p_health_cog_no_interact[[plt_idx[1]]] <- p_health_cog_no_interact[[plt_idx[1]]]
 p_health_cog_no_interact[[plt_idx[2]]] <- p_health_cog_no_interact[[plt_idx[2]]] + labs(title = "-mPACC", subtitle = "(Inverted cognition)") + theme(plot.subtitle = element_text(hjust = 0.5))
 p_health_cog_no_interact[[plt_idx[3]]] <- p_health_cog_no_interact[[plt_idx[3]]] + labs(title = "AD pathology")
 
-img_width = 150 / 25.4
-p_name <- "supplementary_health_no_interaction.png"
-ggsave(file.path(figure_path, p_name), p_health_cog_no_interact, width = img_width*scaling_factor, height = img_width*0.6*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+img_width = 90
+p_name <- "supplementary_health_no_interaction.pdf"
+ggsave(file.path(figure_path, p_name), p_health_cog_no_interact, 
+       width = img_width*scaling_factor, 
+       height = img_width*0.8*scaling_factor, 
+       units = "mm", dpi = 300, device = "pdf", bg = "white")
+
+source_data <- health_cog_no_interact$tmaps |> 
+  select(-n, -model_formula) |> 
+  left_join(grad_df |> filter(study %in% c("biofinder")) |> 
+              select(region, study, starts_with("gradient")))
+write_csv(source_data, file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), ".csv")))
 
 
 ##############################################################################
@@ -1604,46 +1650,51 @@ health_cog <-  plot_gradient_relationships(biofinder_df |> filter(fmri_bl, diagn
                                            gradient_data = grad_df |> filter(study == "biofinder"), 
                                            gradients = c(1, 3),
                                            gradient_colors = gradient_cols,
-                                           r2_size = rel(6),
-                                           base_size_ = 18,
                                            list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
                                            vect = TRUE,
-                                           add_shade = TRUE, 
-                                           shade_alpha = 0.01,
-                                           shade_size = 0.01,
                                            mod_formula = formula(paste0(" ~ scale(age) * scale(-mPACC_v1) + sex + rsqa__MeanFD")),
-                                           logistic_fit = FALSE,
                                            covariates = c("sex", "rsqa__MeanFD"),
-                                           filter_criteria = quo(),
-                                           show_networks = FALSE,
-                                           tag_prefix = "",
-                                           tag_sep = "",
-                                           layout_construction = "horizontal",
-                                           plot_spacing = 0.2,
-                                           include_gradient_plots = TRUE,
-                                           right_term_side = FALSE,
-                                           plt_title = "",
-                                           cache_runs = FALSE)
+                                           empty_row_height = -0.15,
+                                           brain_title_size = 6,
+                                           axis_text_size = 5,
+                                           axis_title_size = 6,
+                                           scatter_title_vjust = 0,
+                                           base_size_ = 7,
+                                           rasterize = TRUE,
+                                           ggrastr_dpi = 300,
+                                           add_shade = TRUE, 
+                                           shade_alpha = 0.1,
+                                           shade_size = 0.1,
+                                           r_spin_size = 0.75,
+                                           point_size = 0.05,
+                                           point_alpha = 0.3,
+                                           rectangle = FALSE,
+                                           #plt_title = c("Cognitively unimpaired w/o APOE e4 (Ab-)"),
+                                           plt_subtitle = FALSE,
+                                           plot_net_legend = FALSE,
+                                           brain_names = c("Age", "-mPACC", "AD Pathology"),
+                                           net_legend_x = 0.2,
+                                           net_legend_y = 0.01)
 
 n_health <- health_cog$n
 health_l_marg <- 0
-p_health_cog <- health_cog$plot &
-  theme(plot.tag = element_blank(),
-        title  = element_text(size = rel(0.8))) 
+p_health_cog <- health_cog$plot 
 
 p_health_cog <- p_health_cog + 
-  plot_annotation(title = paste0("Cognitively unimpaired, no APOE e4, Ab-", 
-                                 " (N=", n_health, ")"), 
-                  subtitle = expression(FC[parcel] ~ "~" ~ age * "×" * "-mPACC" + sex + motion),
-                  theme = theme(plot.subtitle = element_text(size = rel(1.2),
-                                                             family = "mono",
-                                                             face = "italic",
-                                                             hjust = 0, 
-                                                             vjust = -0.05, 
-                                                             margin = margin(l = health_l_marg, unit = "npc")), 
-                                plot.title = element_text(size = rel(1.2), 
-                                                          hjust =0, 
-                                                          margin = margin(l = health_l_marg, unit = "npc")))) 
+  plot_annotation(title = bquote(
+    "Cognitively unimpaired w/o APOE " * epsilon * 4 ~
+      "(A" * beta^"-" * ") (N=" * .(n_health) * ")"
+  ), 
+  subtitle = expression(FC[parcel] ~ "~" ~ age * "×" * "-mPACC" + sex + motion),
+  theme = theme(plot.subtitle = element_text(size = rel(1),
+                                             family = "mono",
+                                             face = "italic",
+                                             hjust = 0, 
+                                             vjust = -0.05, 
+                                             margin = margin(l = health_l_marg, unit = "npc")), 
+                plot.title = element_text(size = rel(1), 
+                                          hjust =0, 
+                                          margin = margin(l = health_l_marg, unit = "npc")))) 
 
 
 plt_idx <- 3:5
@@ -1661,26 +1712,26 @@ tau_in_health <- biofinder_df |> filter(fmri_bl, diagnosis %in% c("Normal", "SCD
     region == "cho56" ~ "Braak56"
   )) |> 
   ggplot(aes(`Tau PET SUVR`, fill = region)) +
-  geom_density( alpha = 0.5) +
+  geom_density( alpha = 0.5, linewidth = 0.2) +
   labs(fill = "", y = "Density") +
-  theme_bw(base_size = 18) +
+  theme_bw(base_size = 7) +
   theme(legend.position = "bottom",
-        plot.margin = unit(c(1, 1, 1, 1), "cm")) +
+        plot.margin = unit(c(5, 5, 5, 5), "mm")) +
   ggsci::scale_fill_nejm()
 
 library(cowplot)
 health_no_pat <- ggdraw() +
-  draw_plot(p_health_cog, x = 0, y = 0, height = 0.95, width = 0.7) +
-  draw_plot_label("A", size = 21) +
-  draw_plot(tau_in_health, x = 0.7, y = 0, height = 0.85, width = 0.3) +
-  draw_plot_label("B", x = 0.7, size = 21)
+  draw_plot(p_health_cog, x = 0, y = 0, height = 0.95, width = 0.6) +
+  draw_plot_label("A", size = 7) +
+  draw_plot(tau_in_health, x = 0.6, y = 0, height = 0.85, width = 0.4) +
+  draw_plot_label("B", x = 0.6, size = 7)
 
-img_width = 180 / 25.4
-p_name <- "supplementary_health_no_pat_adj.png"
-ggsave(file.path(figure_path, p_name), health_no_pat, width = img_width*scaling_factor, height = img_width*0.45*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
+img_width = 180
+p_name <- "supplementary_health_no_pat_adj.pdf"
+ggsave(file.path(figure_path, p_name), health_no_pat, 
+       width = img_width*scaling_factor, 
+       height = img_width*0.45*scaling_factor, units = "mm", 
+       dpi = 300, device = "pdf", bg = "white")
 
 
 
