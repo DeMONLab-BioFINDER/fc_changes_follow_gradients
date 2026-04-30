@@ -1177,7 +1177,7 @@ bf_dx <-  plot_gradient_relationships(biofinder_df %>%
                                         mutate(diagnosis=factor(diagnosis, levels = c("CN/SCD", "MCI", "AD"))), 
                                       gradient_data = grad_df %>% filter(study=="biofinder"), 
                                       gradients = c(1, 2, 3),
-                                      empty_row_height = -0.25,
+                                      empty_row_height = -0.15,
                                       brain_title_size = 6,
                                       axis_text_size = 5,
                                       axis_title_size = 6,
@@ -1194,7 +1194,7 @@ bf_dx <-  plot_gradient_relationships(biofinder_df %>%
                                       point_alpha = 0.3,
                                       rectangle = TRUE,
                                       plot_net_legend = TRUE,
-                                      net_legend_x = 0.2,
+                                      net_legend_x = 0.075,
                                       net_legend_y = 0.01,
                                       gradient_colors = gradient_cols,
                                       list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
@@ -1208,11 +1208,11 @@ bf_dx <-  plot_gradient_relationships(biofinder_df %>%
 
 
 
-img_width <- 88
+img_width <- 180
 
 p_name <- "supplementary_diagnosis.pdf"
 ggsave(file.path(figure_path, p_name), bf_dx$plot, width = img_width, 
-       bg = "white", height = img_width*0.9, units = "mm", dpi = 300, device = "pdf")
+       bg = "white", height = img_width*0.75, units = "mm", dpi = 300)
 
 source_data <- bf_dx$tmaps |> 
   select(-n, -model_formula) |> 
@@ -1253,7 +1253,8 @@ scaling_factor <-  1
 
 p_name <- "supplementary_gradient2.pdf"
 ggsave(file.path(figure_path, p_name), fig_one[[1]],
-       width = img_width*scaling_factor, height = img_width*0.35*scaling_factor, units = "mm", dpi = 300, device = "pdf", bg = "white")
+       width = img_width*scaling_factor, height = img_width*0.35*scaling_factor, 
+       units = "mm", dpi = 300,  bg = "white")
 
 source_data <- fig_one$tmaps$bf |> mutate(study = "biofinder") |> 
   bind_rows(fig_one$tmaps$adni |> mutate(study = "adni")) |> 
@@ -1507,7 +1508,8 @@ clinical_cog_int <-  plot_gradient_relationships(biofinder_df |> filter(fmri_bl,
 img_width = 140 
 p_name <- "supplementary_clin_int.pdf"
 ggsave(file.path(figure_path, p_name), clinical_cog_int$plot, width = img_width*scaling_factor, 
-       height = img_width*0.6*scaling_factor, units = "mm", dpi = 300, device = "pdf", bg = "white")
+       height = img_width*0.6*scaling_factor, units = "mm", dpi = 300, #device = "pdf",
+       bg = "white")
 
 source_data <- clinical_cog_int$tmaps |> 
   select(-n, -model_formula) |> 
@@ -1558,7 +1560,8 @@ p_name <- "supplementary_clin_without_cognition.pdf"
 ggsave(file.path(figure_path, p_name), clinical_wo_cog$plot, 
        width = img_width*scaling_factor, 
        height = img_width*0.85*scaling_factor, 
-       units = "mm", dpi = 300, device = "pdf", bg = "white")
+       units = "mm", dpi = 300, #device = "pdf", 
+       bg = "white")
 
 source_data <- clinical_wo_cog$tmaps |> 
   select(-n, -model_formula) |> 
@@ -1589,7 +1592,7 @@ health_cog_no_interact <-  plot_gradient_relationships(biofinder_df |> filter(fm
                                                        add_shade = TRUE, 
                                                        shade_alpha = 0.1,
                                                        shade_size = 0.1,
-                                                       r_spin_size = 0.75,
+                                                       r_spin_size = 0.65,
                                                        point_size = 0.05,
                                                        point_alpha = 0.3,
                                                        rectangle = FALSE,
@@ -1632,7 +1635,8 @@ p_name <- "supplementary_health_no_interaction.pdf"
 ggsave(file.path(figure_path, p_name), p_health_cog_no_interact, 
        width = img_width*scaling_factor, 
        height = img_width*0.8*scaling_factor, 
-       units = "mm", dpi = 300, device = "pdf", bg = "white")
+       units = "mm", dpi = 300, #device = "pdf", 
+       bg = "white")
 
 source_data <- health_cog_no_interact$tmaps |> 
   select(-n, -model_formula) |> 
@@ -1731,9 +1735,24 @@ p_name <- "supplementary_health_no_pat_adj.pdf"
 ggsave(file.path(figure_path, p_name), health_no_pat, 
        width = img_width*scaling_factor, 
        height = img_width*0.45*scaling_factor, units = "mm", 
-       dpi = 300, device = "pdf", bg = "white")
+       dpi = 300, #device = "pdf",
+       bg = "white")
 
 
+source_data <- health_cog$tmaps |> 
+  select(-n, -model_formula) |> 
+  left_join(grad_df |> filter(study %in% c("biofinder")) |> 
+              select(region, study, starts_with("gradient")))
+write_csv(source_data, file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), "_panelA.csv")))
+
+biofinder_df |> filter(fmri_bl, diagnosis %in% c("Normal", "SCD"), abnorm_ab==0, !apoe4) |> 
+  pivot_longer(starts_with("cho"), values_to = "Tau PET SUVR", names_to = "region") |> 
+  mutate(region = case_when(
+    region == "cho12" ~ "Braak12",
+    region == "cho34" ~ "Braak34",
+    region == "cho56" ~ "Braak56"
+  )) |> select(diagnosis, `Tau PET SUVR`, region) |> 
+  write_csv(file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), "_panelB.csv")))
 
 
 
@@ -1741,23 +1760,23 @@ ggsave(file.path(figure_path, p_name), health_no_pat,
 # Pathology_score
 #################
 
-scale_factor <- 4
-old <- theme_set(theme_bw(base_size = 5*scale_factor))
+scale_factor <- 1
+old <- theme_set(theme_bw(base_size = 7))
 theme_update(panel.background = element_rect(fill = "transparent", colour = NA),
              plot.background = element_rect(fill = "transparent", colour = NA),
              legend.background = element_rect(fill = "transparent", colour = NA),
              legend.box.background = element_rect(fill = "transparent", colour = NA))
 
 legend_labs <-  c("Ab42/40", "Braak12", "Braak34", "Braak56")
-biof_path_plot <- biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |> 
+biof_path_data <- biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |> 
   select(pathology_ad, ab_ratio, 
          starts_with("braak"), starts_with("cho")) |> 
   mutate(across(where(is.numeric) & !pathology_ad, scale)) 
-ab_mean <- attr(biof_path_plot$ab_ratio, c("scaled:center"))
-ab_sd <- attr(biof_path_plot$ab_ratio, c("scaled:scale"))
+ab_mean <- attr(biof_path_data$ab_ratio, c("scaled:center"))
+ab_sd <- attr(biof_path_data$ab_ratio, c("scaled:scale"))
 ab_pos <- (0.08 - ab_mean)/ab_sd
 
-biof_path_plot <- biof_path_plot |> 
+biof_path_plot <- biof_path_data |> 
   pivot_longer(-pathology_ad, names_to = "scaled_pat_measures", values_to = "value") %>% 
   ggplot(aes(pathology_ad, value, color = scaled_pat_measures)) +
   geom_smooth() +
@@ -1770,12 +1789,14 @@ biof_path_plot <- biof_path_plot |>
   geom_text(inherit.aes = FALSE, 
             data = data.frame(x = 0.85, y = ab_pos),
             aes(x = x, y = y),
-            label = "Aβ+", nudge_y = 0.5, size = 5) +
+            label = expression("A" * beta^"+"), 
+            parse = TRUE,
+            nudge_y = 0.5, size = 5) +
   labs(x = "Pathology score", y = "Scaled value")+
   ggsci::scale_color_nejm(name = "Pathology", labels = legend_labs) +
   theme(legend.position = "bottom",
-        legend.margin = margin(-8, 20, 0, 0),
-        legend.box.margin = margin(-8, 20, 0, 0),
+        legend.margin = margin(-4, 20, 0, 0),
+        legend.box.margin = margin(-4, 20, 0, 0),
         #ggside.panel.scale = 0.2,
         legend.text = element_text(size = rel(0.6)),
         legend.title = element_text(size = rel(0.8)))  
@@ -1795,37 +1816,53 @@ dens <- biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |>
     #                            )
   ))) +
   theme(legend.position = "bottom", 
-        legend.margin = margin(-8, 0, 0, 0),
-        legend.box.margin = margin(-8, 0, 0, 0))
+        legend.margin = margin(-4, 0, 0, 0),
+        legend.box.margin = margin(-4, 0, 0, 0))
 
 path_plot <- biof_path_plot + dens + plot_layout(axis_titles = "collect") 
 
 # path_plot <- path_plot &
 #   theme(text = element_text(size = 15))
 
-img_width <- 80/25.4
-ggsave(file.path(figure_path, "path_plot_bf.png"), path_plot, width = img_width*scale_factor, height = img_width/2.4*scale_factor, bg = "transparent")
+img_width <- 180
+p_name <- "path_plot_bf.pdf"
+ggsave(file.path(figure_path, p_name), path_plot,
+       width = img_width*scale_factor, height = img_width/2.4*scale_factor, device = "pdf", units = "mm", bg = "transparent")
+
+biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |> 
+  mutate(Diagnosis = ifelse(diagnosis == "Normal", "CN", diagnosis) |> factor(levels = c("CN", "SCD", "MCI", "AD")) ) |> 
+  select(Diagnosis, pathology_ad) |> 
+  write_csv(file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), "_panelB.csv")))
+
+
+biof_path_data |> 
+  pivot_longer(-pathology_ad, names_to = "scaled_pat_measures", values_to = "value")  |> 
+  mutate(value = as.vector(value)) |> 
+  select(scaled_pat_measures, value, pathology_ad) |> 
+  write_csv(file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), "_panelA.csv")))
+
 
 ################
 # Main overlaid
 ################
 
 source("src/util_vis.R")
-img_width = 120 / 25.4
-scaling_factor <-  3
-magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
+img_width = 120 
+scaling_factor <-  1
+net_main_res <- overlaid_main_results(subject_data = biofinder_df |> filter(fmri_bl), 
+                                      fc_matrix = fc_measures_bf$affinity,
+                                      parc_width = 0.05,
+                                      net_width = 0.3,
+                                      leg_size = 0.2,
+                                      leg_text_size = 0.9) 
 
-net_main_res <- overlaid_main_results(biofinder_df |> filter(fmri_bl), fc_measures_bf$affinity) 
 
+p_name <- "main_res_with_overlaid_nets.pdf"
+ggsave(file.path(figure_path, p_name), net_main_res$plot,
+       width = img_width*scaling_factor, height = img_width*0.7*scaling_factor, units = "mm", dpi = 300, device = "pdf")
 
-p_name <- "main_res_with_overlaid_nets.png"
-ggsave(file.path(figure_path, p_name), net_main_res,
-       width = img_width*scaling_factor, height = img_width*0.7*scaling_factor, units = "in", dpi = 300, device = "png", bg = "white")
-
-img <- magick::image_read(file.path(figure_path, p_name))
-img_resized <- magick::image_resize(img, magick_geom_scaling)
-magick::image_write(img_resized, file.path(figure_path, p_name), density = 300)
-
+net_main_res$source_data |> 
+  write_csv(file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), ".csv")))
 
 
 ########    ###    ########  ##       ########  ######  

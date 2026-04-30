@@ -81,7 +81,7 @@ plot_mediation_gradients <- function(subject_data, treatments, outcomes, covaria
       scale_fill_gradient2(low = muted("blue"), high = muted("red"))
     
     med_plot <- ggdraw() +
-      draw_label(ifelse(n_lab_size != 0, paste0("n = ", n), ""), x = 0.0, y = 0.975, hjust = 0, size = n_lab_size) +
+      draw_label(ifelse(n_lab_size != 0, paste0("n = ", n), ""), x = -0.2, y = 0.975, hjust = 0, size = n_lab_size) +
       draw_plot(med_str, x = 0, y = 0.8, width = 1, height = 0.2) +
       draw_plot(brain_plot,  x = 0, y = 0, width = 1, height = 0.8)
     
@@ -345,11 +345,14 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
                                      n_lab_size = 14,
                                      add_shade = TRUE,
                                      shade_size = 0.1, 
-                                     shade_alpha = 0.02,
-                                     rectangle = FALSE) {
+                                      shade_alpha = 0.02,
+                                     rectangle = FALSE,
+                                     rasterize = FALSE) {
   require(ggtext)
   require(patchwork)
   require(scales)
+  require(png)
+  require(ragg)
   
   if (length(treatments) != length(outcomes) & length(outcomes) !=1 ) stop("Must have the same number of treatments as outcomes")
   if (length(outcomes) == 1) outcomes <- rep(outcomes, length(treatments))
@@ -357,8 +360,6 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
   net_names <- data.frame(name = c('Vis', 'SomMot', 'DorsAttn','SalVentAttn','Limbic', 'Cont', 'Default'),
                           col = c("#781286", "#4682B4", "#00760E", "#C43AFA", "#c7cc7a", "#E69422", "#CD3E4E"), #"#DCF8A4"
                           label = c(1:7))
-  
-  
   
   ests <- tibble()
   for (i in 1:length(treatments)) {
@@ -384,6 +385,91 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
   
   atlas_geometry = readRDS("data/atlas_data/schaef_ggseg2.rds")
   perms = readRDS("data/atlas_data/permutations_1000_hungarian.rds")
+
+  make_raster_overlay <- function(plot, bbox,
+                                  width_px = 3000,
+                                  height_px = 3000,
+                                  dpi = 300,
+                                  bg = "transparent") {
+    tf <- tempfile(fileext = ".png")
+    
+    ggsave(
+      filename = tf,
+      plot = plot,
+      width = width_px / dpi,
+      height = height_px / dpi,
+      dpi = dpi,
+      bg = bg,
+      device = ragg::agg_png
+    )
+    
+    img <- png::readPNG(tf)
+    unlink(tf)
+    
+    annotation_raster(
+      raster = as.raster(img),
+      xmin = bbox["xmin"],
+      xmax = bbox["xmax"],
+      ymin = bbox["ymin"],
+      ymax = bbox["ymax"]
+    )
+  }
+  
+  make_atlas_raster_layer <- function(atlas_sf,
+                                      shade_sf = NULL,
+                                      shade_size = 0.0005,
+                                      shade_alpha = 0.005,
+                                      width_px = 3000,
+                                      dpi = 300,
+                                      fill_limits = NULL,
+                                      fill_scale = scale_fill_gradient2(
+                                        low = scales::muted("blue"),
+                                        mid = "white",
+                                        high = scales::muted("red"),
+                                        limits = fill_limits
+                                      )) {
+    bbox <- sf::st_bbox(atlas_sf)
+    
+    ratio <- as.numeric((bbox["xmax"] - bbox["xmin"]) / (bbox["ymax"] - bbox["ymin"]))
+    height_px <- max(1, round(width_px / ratio))
+    
+    p_raster <- ggplot() +
+      geom_sf(
+        data = atlas_sf,
+        aes(fill = indirect, geometry = geometry),
+        linewidth = l_width,
+        show.legend = FALSE
+      ) +
+      coord_sf(
+        xlim = c(bbox["xmin"], bbox["xmax"]),
+        ylim = c(bbox["ymin"], bbox["ymax"]),
+        expand = FALSE
+      ) +
+      theme_void() +
+      theme(
+        panel.background = element_rect(fill = "transparent", colour = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA)
+      ) +
+      fill_scale
+    
+    if (!is.null(shade_sf)) {
+      p_raster <- p_raster +
+        geom_sf(
+          data = shade_sf,
+          size = shade_size,
+          alpha = shade_alpha,
+          show.legend = FALSE
+        )
+    }
+    
+    make_raster_overlay(
+      plot = p_raster,
+      bbox = bbox,
+      width_px = width_px,
+      height_px = height_px,
+      dpi = dpi
+    )
+  }
   
   
   est_plots <- list()
@@ -401,15 +487,57 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
     
     n <- subject_data |> drop_na(all_of(c(treatments[i], outcomes[i], covariates[[i]]))) |> count() |> deframe()
     
-    brain_plot <- plot_ests |> 
-      right_join(schaef1k$atlas) |> 
-      ggplot() +
-      geom_sf(aes(geometry = geometry, fill = indirect), linewidth = l_width, show.legend = FALSE) +
-      (if (add_shade)
-        geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
-       else NULL) +
+    atlas_plot_df <- plot_ests |>
+      right_join(atlas_geometry$atlas, by = "region") |>
+      sf::st_as_sf()
+    
+    fill_limits <- range(atlas_plot_df$indirect, na.rm = TRUE)
+    bbox <- sf::st_bbox(atlas_geometry$atlas)
+    
+    raster_layer <- NULL
+    if (rasterize) {
+      raster_layer <- make_atlas_raster_layer(
+        atlas_sf = atlas_plot_df,
+        shade_sf = if (add_shade) atlas_geometry$shade else NULL,
+        shade_size = shade_size,
+        shade_alpha = shade_alpha,
+        width_px = 1500,
+        dpi = 300,
+        fill_limits = fill_limits
+      )
+    }
+    
+    brain_plot <- ggplot() +
+      (
+        if (rasterize) {
+          raster_layer
+        } else {
+          geom_sf(
+            data = atlas_plot_df,
+            aes(geometry = geometry, fill = indirect),
+            linewidth = l_width,
+            show.legend = FALSE
+          )
+        }
+      ) +
+      (
+        if (!rasterize && add_shade) {
+          geom_sf(data = atlas_geometry$shade, size = shade_size, alpha = shade_alpha)
+        } else {
+          NULL
+        }
+      ) +
+      coord_sf(
+        xlim = c(bbox["xmin"], bbox["xmax"]),
+        ylim = c(bbox["ymin"], bbox["ymax"]),
+        expand = FALSE
+      ) +
       theme_void(base_size = base_size_) +
-      scale_fill_gradient2(low = muted("blue"), high = muted("red"))
+      theme(
+        panel.background = element_rect(fill = "transparent", colour = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA)
+      ) +
+      scale_fill_gradient2(low = muted("blue"), high = muted("red"), limits = fill_limits)
     
     med_plot <- ggdraw() +
       draw_label(ifelse(n_lab_size != 0, paste0("n = ", n), ""), x = 0.0, y = 0.975, hjust = 0, size = n_lab_size) +
@@ -489,8 +617,11 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
       p <- plot_data %>% 
         ggplot(aes(y = .data[["indirect"]], 
                    x =.data[[j]],
-                   color = name)) +
-        geom_col(alpha =  point_alpha, show.legend = FALSE) +
+                   fill = name)) +
+        geom_col(alpha =  0.6,
+                 color = NA,
+                 show.legend = FALSE, 
+                 width = 0.55) +
         # stat_poly_line(se = FALSE,
         #                color = "#323232") +
         # stat_poly_line(data = plot_data |> filter(.data[[j]] > 0),
@@ -512,10 +643,12 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
           plot.background = element_rect(fill = "transparent", colour = NA),
           legend.background = element_rect(fill = "transparent", color = NA),
           legend.box.background = element_rect(fill = "transparent", colour = NA),
-          axis.title.x = element_text(size = rel(0.95))
+          axis.title = element_text(size = rel(0.85)),
+          axis.text = element_text(size = rel(0.75))
         ) +
         #coord_flip() +
-        scale_color_manual(values = net_names %>% select(name, col) %>% deframe())  
+        scale_fill_manual(values = net_names %>% select(name, col) %>% deframe())  +
+        ggnewscale::new_scale_fill() 
         #scale_y_continuous(limits = c(y_min, y_max), position = "left")
       
       # # r <- cor(plot_data[["indirect"]], plot_data[[j]], method = "pearson")
@@ -580,51 +713,70 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
     }
  # }
   
-  plot_data  <- gradient_data %>% inner_join(ests %>% filter(grepl("age", term)), by = "region") |> 
+  age_corr_data  <- gradient_data %>% inner_join(ests %>% filter(grepl("age", term)), by = "region") |> 
     select(all_of(colnames(gradient_data)), indirect, outcome)
-  wide_data <- plot_data |> pivot_wider(names_from = "outcome", values_from = "indirect") 
+  wide_data <- age_corr_data |> pivot_wider(names_from = "outcome", values_from = "indirect") 
+  
+  # r <- cor(wide_data$memory, wide_data$executive, method = "pearson")
+  # p_val <- perm_sphere_p(wide_data$memory, wide_data$executive, perm.id = perms, corr.type='pearson')
+  # 
+  # # p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("italic(p[spin]) < ", "italic(p[spin]) == ", "italic(p[spin]) > "))(p_val)
+  # # label_corr <- paste0("italic(r) == ", r |> round(2),"*','~", p_lab)
+  # p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("<i>p<sub>spin</sub></i> &lt; ", "<i>p<sub>spin</sub></i> = ", "<i>p<sub>spin</sub></i> &gt; "))(p_val)
+  # label_corr <- paste0("italic(r) == ", r |> round(2),"*','~", p_lab)
   
   r <- cor(wide_data$memory, wide_data$executive, method = "pearson")
   p_val <- perm_sphere_p(wide_data$memory, wide_data$executive, perm.id = perms, corr.type='pearson')
+  p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("italic(p[spin]) < ", "italic(p[spin]) == ", "italic(p[spin]) > "))(p_val)
+  label_corr <- paste0("italic(r) == ", r |> round(2),"*','~", p_lab)
   
-  # p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("italic(p[spin]) < ", "italic(p[spin]) == ", "italic(p[spin]) > "))(p_val)
-  # label_corr <- paste0("italic(r) == ", r |> round(2),"*','~", p_lab)
-  p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("<i>p<sub>spin</sub></i> &lt; ", "<i>p<sub>spin</sub></i> = ", "<i>p<sub>spin</sub></i> &gt; "))(p_val)
-  label_corr <- paste0("<i>r</i> = ", r |> round(2), " ,&#8203;&nbsp;" , p_lab)
   
   age_corr <- wide_data |> 
     ggplot(aes(memory, executive, color = name)) +
-    geom_point(alpha = 0.5, show.legend = FALSE) +
-    stat_poly_line(se = FALSE, color = "#323232") +
+    geom_point(alpha = 0.5, show.legend = FALSE, size = 0.2) +
+    stat_poly_line(se = FALSE, color = "#323232", linewidth = 0.3) +
+    ggpp::annotate(geom = "text_npc", label = label_corr,
+                   size = 2,
+                   npcx = "right", npcy = "top",
+                   family = "sans",
+                   parse = TRUE) +
     scale_color_manual(values = net_names %>% select(name, col) %>% deframe())  +
-    labs(subtitle = label_corr,
+    labs(#subtitle = label_corr,
          x = paste0("Age", "→", "FCS" , "→", "Mem"),
          y = paste0("Age", "→", "FCS" , "→", "Exec")) +
-    theme(plot.subtitle = element_markdown(size = rel(1), hjust = 0.95, margin = margin(b = 3),
-                                           color = "black"))
+    theme(axis.title = element_text(size = rel(0.9)))
   
   
   
-  plot_data  <- gradient_data %>% inner_join(ests %>% filter(grepl("pathology", term)), by = "region") |> 
+  pathology_corr_data  <- gradient_data %>% inner_join(ests %>% filter(grepl("pathology", term)), by = "region") |> 
     select(all_of(colnames(gradient_data)), indirect, outcome)
-  wide_data <- plot_data |> pivot_wider(names_from = "outcome", values_from = "indirect") 
+  wide_data <- pathology_corr_data |> pivot_wider(names_from = "outcome", values_from = "indirect") 
+  
+  # r <- cor(wide_data$memory, wide_data$executive, method = "pearson")
+  # p_val <- perm_sphere_p(wide_data$memory, wide_data$executive, perm.id = perms, corr.type='pearson')
+  # 
+  # p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("<i>p<sub>spin</sub></i> &lt; ", "<i>p<sub>spin</sub></i> = ", "<i>p<sub>spin</sub></i> &gt; "))(p_val)
+  # label_corr <- paste0("<i>r</i> = ", r |> round(2), " ,&#8203;&nbsp;" , p_lab)
   
   r <- cor(wide_data$memory, wide_data$executive, method = "pearson")
   p_val <- perm_sphere_p(wide_data$memory, wide_data$executive, perm.id = perms, corr.type='pearson')
-
-  p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("<i>p<sub>spin</sub></i> &lt; ", "<i>p<sub>spin</sub></i> = ", "<i>p<sub>spin</sub></i> &gt; "))(p_val)
-  label_corr <- paste0("<i>r</i> = ", r |> round(2), " ,&#8203;&nbsp;" , p_lab)
+  p_lab <- scales::label_pvalue(accuracy = 0.001, prefix = c("italic(p[spin]) < ", "italic(p[spin]) == ", "italic(p[spin]) > "))(p_val)
+  label_corr <- paste0("italic(r) == ", r |> round(2),"*','~", p_lab)
   
   pathology_corr <- wide_data |> 
     ggplot(aes(memory, executive, color = name)) +
-    geom_point(alpha = 0.5, show.legend = FALSE) +
-    stat_poly_line(se = FALSE, color = "#323232") +
+    geom_point(alpha = 0.5, show.legend = FALSE, size = 0.2) +
+    stat_poly_line(se = FALSE, color = "#323232", linewidth = 0.3) +
+    ggpp::annotate(geom = "text_npc", label = label_corr,
+                   size = 2,
+                   npcx = "right", npcy = "top",
+                   family = "sans",
+                   parse = TRUE) +
     scale_color_manual(values = net_names %>% select(name, col) %>% deframe())  +
-    labs(subtitle = label_corr,
+    labs(#subtitle = label_corr,
          x = paste0("ADpath", "→", "FCS" , "→", "Mem"),
          y = paste0("ADpath", "→", "FCS" , "→", "Exec")) +
-    theme(plot.subtitle = element_markdown(size = rel(1), hjust = 0.95, margin = margin(b = 3),
-                                           color = "black"))
+    theme(axis.title = element_text(size = rel(0.9)))
   
   plots_to_include <- c(est_plots, plots, list(age_corr, pathology_corr))
 
@@ -640,7 +792,9 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
                                                                 hjust = 0),
                                                               plot.background = element_rect(color = "black")
                                                             )) +
-    plot_layout(design =  lo, axis_titles = "collect", axes = "collect", guides = "collect",
+    plot_layout(design =  lo, axis_titles = "collect", 
+                axes = "collect",
+                guides = "collect",
                 # widths = col_widths,
                 # heights = row_heights
     ) 
@@ -649,7 +803,14 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
     big_plot  <-  big_plot  + plot_annotation(
       theme = theme(plot.background = element_rect(color = "black", fill = NA)))
   }
-  big_plot 
+  
+  source_data <- gradient_data %>%
+    inner_join(ests, by = "region")
+  
+  list(
+    plot = big_plot,
+    data = source_data
+  )
 }
 
 fast_mediation_all <- function(parcel_names, data, treat, outcome, covars = NULL) {
@@ -851,10 +1012,10 @@ plot_mediation_structure <- function(treat, mediator, outcome,
         end_cap = label_rect(node2.name, fontsize = lab_size*(1/0.352777778)),
         start_cap = label_rect(node1.name, fontsize = lab_size*(1/0.352777778))
       ),
-      linewidth = 0.2,
+      linewidth = 0.1,
       angle_calc = "along",
-      label_dodge = unit(2, "mm"),
-      arrow = arrow(angle = 15, length = unit(0.15, "cm"), type = "closed"),
+      label_dodge = unit(0.25, "mm"),
+      arrow = arrow(angle = 20, length = unit(0.075, "cm"), type = "closed"),
       color = "black"
     ) +
     

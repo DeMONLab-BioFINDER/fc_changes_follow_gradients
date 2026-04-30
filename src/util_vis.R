@@ -993,7 +993,7 @@ figure_one <- function(subject_data,
         draw_plot(figure2_org$p_health_cog, x = 0.0, y = 0.0, width = 0.6, height = 1) +
         draw_plot(figure2_org$p_clinical_cog, x = 0.5, y = 0.0, width = 0.49, height = 1) +
         draw_plot(net_legend2, x = 0.03,  y = 0.025, width = 0.2, height = 0.015) +
-        theme(plot.background = element_rect(color = "black", linewidth = 1))
+        theme(plot.background = element_rect(color = "black"))
       
       figure1 <- ggdraw() +
         draw_plot(figure1_org$p_bf, x = 0, y = 0.505, width = 0.495, height = 0.495) +
@@ -1056,9 +1056,15 @@ net_names_plot <- function(net_names, text_size = 3.8, vertical = TRUE, tile_hei
 
 
 overlaid_main_results <- function(subject_data, fc_matrix, 
-                                  atlas_geometry = readRDS("data/atlas_data/schaef_ggseg2.rds"),
-                                  network_geometry = readRDS("data/atlas_data/Schaefer2018_1000Parcels_geometry.rds"),
-                                  base_size_ = 21){
+                                  atlas_geometry = readRDS("data/atlas_data/Schaefer2018_1000Parcels_geometry.rds"),
+                                  network_geometry = readRDS("data/atlas_data/Yeo2011_7_geometry.rds"),
+                                  base_size_ = 7,
+                                  net_width = 0.5,
+                                  parc_width = 0.1,
+                                  leg_size = 1,
+                                  leg_text_size = 1){
+  require(scales)
+  require(ggside)
   
   x <- nodal_regression_fits(subject_data %>% filter(fmri_bl),
                              fc_matrix,
@@ -1073,11 +1079,11 @@ overlaid_main_results <- function(subject_data, fc_matrix,
   
   p_age <-  est %>%
     filter(term == "age") %>%
-    inner_join(atlas_geometry$atlas, by = "region") %>%
+    inner_join(atlas_geometry, by = "region") %>%
     ggplot() +
     geom_sf(aes(
       fill = statistic,
-      geometry = geometry), linewidth= 0.5,
+      geometry = geometry), linewidth = parc_width,
       show.legend = FALSE)+
     theme_void(base_size = base_size_)+
     labs(fill = "T-value", title = "Age"
@@ -1089,8 +1095,8 @@ overlaid_main_results <- function(subject_data, fc_matrix,
           legend.background = element_rect(fill = "transparent", colour = NA),
           legend.box.background = element_rect(fill = "transparent", colour = NA),
           plot.title = element_text(color = "black", hjust = 0.5),
-          legend.key.width = unit(1, "null"),
-          plot.margin = margin(1,1,1,1, "cm")
+          #legend.key.width = unit(1, "null"),
+          plot.margin = margin(4,4,4,4, "mm")
     ) +
     #guides(color = guide_legend(override.aes = list(size = 1))) +
     scale_fill_gradient2(
@@ -1103,7 +1109,7 @@ overlaid_main_results <- function(subject_data, fc_matrix,
               #fill = region,
               color = name,
               geometry = geometry
-            ), alpha = 0, linewidth = 1, fill = NA,
+            ), alpha = 0, linewidth = net_width, fill = NA,
             show.legend = FALSE) +
     scale_color_manual(
       values = net_names %>% select(name, col) %>% deframe(),
@@ -1123,11 +1129,14 @@ overlaid_main_results <- function(subject_data, fc_matrix,
     geom_col(show.legend = FALSE) +
     scale_fill_manual(values = net_names %>% select(name, col) %>% deframe()) +
     labs(y = "T-value", x = "Parcels") +
+    theme_gray(base_size = base_size_) +
     theme(
       axis.text.x = element_blank(),
       axis.ticks.x = element_blank(),
       legend.position = "bottom",
-      ggside.panel.scale = 0.05
+      ggside.panel.scale = 0.05,
+      panel.background = element_rect(fill = "gray80", color = NA),
+      panel.border = element_rect(color = "black", fill = NA, linewidth = 0.35)  
     ) +
     ggnewscale::new_scale_fill() +
     geom_xsidetile(aes(x = region, y = 0, fill = gradient3), show.legend = FALSE) +
@@ -1154,7 +1163,7 @@ overlaid_main_results <- function(subject_data, fc_matrix,
     ggplot() +
     geom_sf(aes(
       fill = statistic,
-      geometry = geometry), linewidth= 0.1,
+      geometry = geometry), linewidth= parc_width,
       show.legend = FALSE)+
     theme_void(base_size = base_size_)+
     labs(fill = "T-value", title = "AD pathology"
@@ -1166,8 +1175,8 @@ overlaid_main_results <- function(subject_data, fc_matrix,
           legend.background = element_rect(fill = "transparent", colour = NA),
           legend.box.background = element_rect(fill = "transparent", colour = NA),
           plot.title = element_text(color = "black", hjust = 0.5),
-          legend.key.width = unit(1, "null"),
-          plot.margin = margin(1,1,1,1, "cm")
+          #legend.key.width = unit(1, "null"),
+          plot.margin = margin(4,4,4,4, "mm")
     )  +
     scale_fill_gradient2(
       low = muted("blue"),
@@ -1178,7 +1187,7 @@ overlaid_main_results <- function(subject_data, fc_matrix,
                    #fill = region,
                    color = name,
                    geometry = geometry
-                 ), alpha = 0, linewidth = 1,
+                 ), alpha = 0, linewidth = net_width,
                  show.legend = FALSE) +
     scale_color_manual(
       values = net_names %>% select(name, col) %>% deframe(),
@@ -1198,11 +1207,14 @@ overlaid_main_results <- function(subject_data, fc_matrix,
     geom_col(show.legend = FALSE) +
     scale_fill_manual(values = net_names %>% select(name, col) %>% deframe()) +
     labs(y = "", x = "Parcels") +
+    theme_gray(base_size = base_size_) +
     theme(
       axis.text.x = element_blank(),
       axis.ticks.x = element_blank(),
       legend.position = "bottom",
-      ggside.panel.scale = 0.05
+      ggside.panel.scale = 0.05,
+      panel.background = element_rect(fill = "gray80", color = NA),
+      panel.border = element_rect(color = "black", fill = NA, linewidth = 0.35)  
     ) +
     ggnewscale::new_scale_fill() +
     geom_xsidetile(aes(x = region, y = 0, fill = gradient1), show.legend = FALSE) +
@@ -1228,26 +1240,27 @@ overlaid_main_results <- function(subject_data, fc_matrix,
               #fill = region,
               color = name,
               geometry = geometry
-            ), alpha = 0, linewidth = 1,
+            ), alpha = 0, linewidth = 0.5,
             show.legend = TRUE) +
     scale_color_manual(
       values = net_names %>% select(name, col) %>% deframe()
     ) +  
+    theme_bw(base_size = base_size_) +
     guides(color = guide_legend(
       label.hjust=0,
       byrow = TRUE,
       nrow = 1, 
-      override.aes = list(size = rel(3))
+      override.aes = list(size = rel(leg_size))
     )) +
     theme(
       legend.position = "bottom",
-      #legend.key.size = unit(0.0, "cm"),
-      legend.key.spacing.x = unit(0.75, "cm"),
+      legend.key.size = unit(0.2, "cm"),
+      legend.key.spacing.x = unit(0.1, "cm"),
       legend.direction = "horizontal",
       #legend.title.position = "",
       legend.text.position = "right",
       legend.title = element_blank(),
-      legend.text = element_text(size = rel(0.8), margin = margin(l = 4, r = 6, unit = "pt")),
+      legend.text = element_text(size = rel(leg_text_size), margin = margin(l = 2, r = 4, unit = "pt")),
       legend.background = element_blank()
     )
   
@@ -1255,13 +1268,22 @@ overlaid_main_results <- function(subject_data, fc_matrix,
   
   library(cowplot)
   
-  ggdraw() +
+  p <- ggdraw() +
     draw_plot(p_age, height = 0.6, width = 0.5, x = 0.025, y = 0.425) +
     draw_plot(p_path, height = 0.6, width = 0.5, x = 0.525, y = 0.425) + 
     draw_plot(hist_age, height = 0.35, width = 0.475, x = 0.01, y = 0.1) +
     draw_plot(hist_path, height = 0.35, width = 0.475, x = 0.51, y = 0.1) +
-    draw_plot(x, height = 0.1, width = 0.8, x = 0.1, y = 0)
+    draw_plot(x, height = 0.05, width = 0.33, x = 0.33, y = 0.025)
   
+  p <- p + theme(plot.background = element_rect(colour = "black", fill = NA, linewidth = 0.5))
+  
+  source_data <- est %>% filter(term %in% c("age", "pathology_ad")) %>% 
+    inner_join(grad_df %>% filter(study=="biofinder")) %>% 
+    select(statistic, region, gradient1) %>% 
+    inner_join(roi_data) %>% 
+    arrange(yeo_label)
+  
+  list(plot = p, source_data = source_data)
 }
 
 

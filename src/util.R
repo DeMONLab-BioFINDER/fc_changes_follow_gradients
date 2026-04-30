@@ -330,7 +330,7 @@ nodal_regression_fits_roiwise_pred <- function(subject_data,
   return(similarity_fits)
 }
 
-get_nodal_ests <- function(fit_list, roi_names = rois, vectorised = TRUE, recover_missing_contr = FALSE, mc = FALSE){
+get_nodal_ests <- function(fit_list, roi_names = rois, vectorised = TRUE, recover_missing_contr = FALSE, mc = FALSE, pbmc = TRUE){
   
   contrast_from_lmfit <- function(est, R, resvar, c_vec) {
     stopifnot(length(est) == length(c_vec),
@@ -376,7 +376,7 @@ get_nodal_ests <- function(fit_list, roi_names = rois, vectorised = TRUE, recove
     out
   }
  
-  tictoc::tic()
+  #tictoc::tic()
   
       if(vectorised) {
         
@@ -434,8 +434,8 @@ get_nodal_ests <- function(fit_list, roi_names = rois, vectorised = TRUE, recove
           roi_chunks <- split(roi_names, ceiling(seq_along(roi_names) / chunk_size))
           
           n_cores <- detectCores()-1
-          
-          res_chunks <- pbmclapply(roi_chunks, FUN = function(rois_subset) {
+          mclapply_fun <- if (isTRUE(pbmc)) pbmcapply::pbmclapply else parallel::mclapply
+          res_chunks <- mclapply_fun(roi_chunks, FUN = function(rois_subset) {
             
             chunk_results <- lapply(rois_subset, function(roi) {
               z <- fit_list[[roi]]
@@ -497,7 +497,7 @@ get_nodal_ests <- function(fit_list, roi_names = rois, vectorised = TRUE, recove
           fits_ests <- rbind(fits_ests, coeffs)
       }
       }
-  tictoc::toc()
+  #tictoc::toc()
   return(fits_ests)
 }
 

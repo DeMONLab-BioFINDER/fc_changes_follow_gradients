@@ -3,22 +3,7 @@ title: "Different functional connectivity gradients reflect aging and Alzheimer�
 author:
   - name: Jonathan Rittmo
     corresponding: true
-    email: jorittmo@proton.me
-    role:
-      - conceptualization
-      - data-curation
-      - formal-analysis
-      #- funding-acquisition
-      - investigation
-      - methodology
-      - project-administration
-      #- resources
-      - software
-      #- supervision
-      - validation
-      - visualization
-      - writing-original-draft
-      - writing-review-editing
+    email: jonathan.rittmo@med.lu.se
     affiliations:
       - ref: demon
   - name: Nicolai Franzmeier
@@ -26,309 +11,66 @@ author:
       - ref: nico1
       - ref: nico2
       - ref: nico3
-    role:
-      - data-curation
-      - writing-review-editing
   - name: Olof Strandberg
     affiliations:
       - ref: biof
-    role:
-      #- conceptualization
-      - data-curation
-      #- formal-analysis
-      #- funding-acquisition
-      #- investigation
-      #- methodology
-      #- project-administration
-      - resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Léa Chauveau
     affiliations:
       - ref: demon
-    role:
-      #- conceptualization
-      #- data-curation
-      #- formal-analysis
-      #- funding-acquisition
-      #- investigation
-      #- methodology
-      #- project-administration
-      #- resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Theodore D. Satterthwaite
     affiliations: 
       - ref: ted1
       - ref: ted2
       - ref: ted3
       - ref: ted4
-    role:
-      #- conceptualization
-      #- data-curation
-      #- formal-analysis
-      #- funding-acquisition
-      #- investigation
-      #- methodology
-      #- project-administration
-      #- resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Laura EM Wisse
     affiliations:
       - ref: dani1
-    role:
-      #- conceptualization
-      #- data-curation
-      #- formal-analysis
-      #- funding-acquisition
-      #- investigation
-      #- methodology
-      #- project-administration
-      #- resources
-      #- software
-      - supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Nicola Spotorno
     affiliations:
       - ref: biof
-    role:
-      #- conceptualization
-      #- data-curation
-      #- formal-analysis
-      #- funding-acquisition
-      #- investigation
-      #- methodology
-      #- project-administration
-      #- resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Harry H Behjat
     affiliations:
       - ref: biof
-    role:
-      #- conceptualization
-      #- data-curation
-      #- formal-analysis
-      #- funding-acquisition
-      #- investigation
-      #- methodology
-      #- project-administration
-      #- resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Amir Dehsarvi
     affiliations:
       - ref: nico1
-    role:
-      #- conceptualization
-      - data-curation
-      #- formal-analysis
-      #- funding-acquisition
-      #- investigation
-      #- methodology
-      #- project-administration
-      #- resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      #- writing-review-editing
   - name: Danielle van Westen
     affiliations:
       - ref: dani1
       - ref: dani2
-    role:
-      #- conceptualization
-      - data-curation
-      #- formal-analysis
-      #- funding-acquisition
-      - investigation
-      #- methodology
-      - project-administration
-      - resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Toomas Erik Anijärv
     affiliations:
       - ref: biof
-    role:
-      #- conceptualization
-      #- data-curation
-      #- formal-analysis
-      #- funding-acquisition
-      #- investigation
-      #- methodology
-      #- project-administration
-      #- resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
+  - name: for the Alzheimer's Disease Neuroimaging Initiative*
   - name: Sebastian Palmqvist
     affiliations:
       - ref: biof
       - ref: memoryclinic
-    role:
-      #- conceptualization
-      #- data-curation
-      #- formal-analysis
-      - funding-acquisition
-      - investigation
-      #- methodology
-      - project-administration
-      - resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Shorena Janelidze
     affiliations:
       - ref: biof
-    role:
-      #- conceptualization
-      - data-curation
-      #- formal-analysis
-      #- funding-acquisition
-      #- investigation
-      #- methodology
-      #- project-administration
-      #- resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Erik Stomrud
     affiliations:
       - ref: biof
       - ref: memoryclinic
-    role:
-      #- conceptualization
-      - data-curation
-      #- formal-analysis
-      - funding-acquisition
-      - investigation
-      #- methodology
-      - project-administration
-      - resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Rik Ossenkoppele
     affiliations:
       - ref: biof
       - ref: rik1
       - ref: rik2
-    role:
-      #- conceptualization
-      #- data-curation
-      #- formal-analysis
-      - funding-acquisition
-      - investigation
-      #- methodology
-      - project-administration
-      - resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Niklas Mattsson-Carlgren
     affiliations:
       - ref: biof
       - ref: memoryclinic
-    role:
-      #- conceptualization
-      #- data-curation
-      #- formal-analysis
-      - funding-acquisition
-      - investigation
-      #- methodology
-      - project-administration
-      #- resources
-      #- software
-      #- supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Oskar Hansson
     affiliations:
       - ref: biof
-    role:
-      #- conceptualization
-      #- data-curation
-      #- formal-analysis
-      - funding-acquisition
-      - investigation
-      #- methodology
-      - project-administration
-      - resources
-      #- software
-      - supervision
-      #- validation
-      #- visualization
-      #- writing-original-draft
-      - writing-review-editing
   - name: Jacob W Vogel
     corresponding: true
-    email: jacobwvogel@gmail.com
+    email: jacob.vogel@med.lu.se
     affiliations:
       - ref: demon
-    role:
-      - conceptualization
-      # - data-curation
-      - formal-analysis
-      - funding-acquisition
-      - investigation
-      - methodology
-      - project-administration
-      - resources
-      #- software
-      - supervision
-      - validation
-      #- visualization
-      - writing-original-draft
-      - writing-review-editing
-  - name: for the Alzheimer's Disease Neuroimaging Initiative*
 affiliations:
   - id: demon
     name: "Department of Clinical Sciences Malmö, SciLifeLab, Lund University, Lund, Sweden"
@@ -364,7 +106,7 @@ affiliations:
 # abstract:  "Aging and Alzheimer’s disease (AD) are associated with alterations in functional connectivity (FC), yet the spatial, temporal and clinical characteristics of the changes remain debated. Whole-cortex functional gradients, which organize regions along axes of functional similarity, are positioned here as a framework for understanding such alterations. Across two independent cohorts (BioFINDER-2, N=973; ADNI, N=129), we demonstrate that increases and decreases of FC across both healthy aging and biomarker-confirmed AD progression forms consistent spatial patterns that align with two distinct axes of brain organization. Using a combination of longitudinal and non-linear analyses, we show that the early stages of AD pathology accumulation is associated with functional alteration along the sensory-association (SA) axis, a pattern that vanishes in later stages of AD. However, functional alteration along the SA axis is associated with worse cognition in the clinically impaired population, and even in older adults without AD pathology, suggesting that these FC patterns may accompany cognitive difficulties or increased cognitive demands. Independently of AD, older age was associated with alterations instead along a representational-executive (RE) axis, a finding that was mostly consistent throughout the adult lifespan. These findings highlight the fundamental role of intrinsic functional organization in shaping how the brain responds to aging and to AD, helping to resolve previously reported discrepancies."
 # However, functional alteration along the SA axis is associated with worse cognition throughout the AD spectrum,
 bibliography: references.bib
-citeproc: false
+citeproc: true
 link-citations: true
 format: 
    docx:
@@ -372,20 +114,22 @@ format:
      filters:
       # Run Quarto's default filters first
       - quarto
-      - section-bibliographies
+#      - section-bibliographies
       - authors-block
       - filters/author-contributions.lua
       - at: post-quarto
         path: figure-collect
 figure-collect:
   figure-dir: figures_copy
+  source-data-dir: figures_source_data
+  copy-source-data: true
   figure-caption-section: figure-caption-section
   copy-figures: true
   keep-figures: false
-  figure-kinds: [fig, suppfig]
+  figure-kinds: [fig, extfig]
   clean-figure-dir: true
 theme: default
-reference-section-title: References
+# reference-section-title: References
 geometry:
   - left=.75in
   - right=.75in
@@ -402,6 +146,12 @@ crossref:
       reference-prefix: Figure S
       space-before-numbering: false
       latex-list-of-description: Supplementary Figure
+    - kind: float
+      key: extfig
+      latex-env: extfig
+      reference-prefix: Figure E
+      space-before-numbering: false
+      latex-list-of-description: Extended Data
     - kind: float
       key: supptbl
       latex-env: supptbl
@@ -577,7 +327,7 @@ Aging and Alzheimer’s disease (AD) are both associated with changes in functio
 
 FC changes in aging and AD have commonly been studied through two approaches. One approach focuses on regional connectivity changes, such as increases or decreases within or between specific regions or networks, or between regions of interest and the rest of the brain [@biswal2010; @buckner2013; @cole2010; @rubinov2010]. Although some consistent effects have been reported, such as reduced FC within the default mode network in healthy aging [@damoiseaux2017], the overall picture is more complex. Studies of aging, especially in the context of AD, frequently report mixed patterns of hyper- and hypoconnectivity [@berron2020; @berron2021; @chauveau2025; @damoiseaux2012; @dennis2014; @jockwitz2021; @ng2016; @palmqvist2017; @santillo2024; @schultz2017]. Such mixed findings may arise from several sources. Contributing factors include the predominantly cross-sectional nature of existing studies, unmeasured pathology, region- or network-specific analytical approaches that may miss broader spatial patterns, and small sample sizes that may not represent the broader population. An additional possibility is that the relationship between connectivity and age or disease progression is nonlinear – that is, hyper- may shift to hypoconnectivity (or vice versa) depending on age or disease severity. While initial hyperconnectivity is often attributed to adaptive cognitive compensation [@hillary2017; @jones2016], the relationship between connectivity and cognition remains unclear. The common regional approach of FC research allows for precise and granular analyses, but is inherently limited in providing a more holistic perspective on functional changes in healthy and (AD) pathological aging.
 
-The other common approach for studying FC changes in aging and AD adopts a more holistic view, analyzing connectivity patterns by decomposing connectivity matrices into components of variance often referred to as ‘gradients’ [@margulies2016]. These components organize brain regions along axes of functional similarity, representing whole-cortex patterns of brain organization. The primary components capture the largest variations in the data, arranging regions along a continuum that groups areas with similar brain activity together, while placing regions with the greatest dissimilarities at opposite ends. The sensory–association (SA) axis [@sydnor2021], which is often the primary variance component of FC [@margulies2016; @nenning2023], groups unimodal sensory and motor cortices (such as occipital, precentral, and postcentral regions) on one end, and spans toward transmodal association areas supporting higher-order cognition on the other( including the medial prefrontal cortex \[mPFC\], posterior cingulate and precuneus, angular and inferior parietal cortices, and lateral and anterior temporal regions). Typically, the second component spans visual to motor cortices (VM axis), while the third component tends to separate different transmodal systems. Specifically, the executive lateral fronto-parietal system lies on one end and parts of the default mode network, including mPFC and anterior temporal regions, lies on the other [@hardikar2024]. This latter axis has been referred to as a "representation-modulation" axis [@katsumi2023], or simply a "multiple-demand" gradient [@huang2023; @paquola2020; @valk]. Based on this prior literature and our own characterization (see @suppfig-neuroquery) we will refer to it as a "representational-executive" (RE) axis.
+The other common approach for studying FC changes in aging and AD adopts a more holistic view, analyzing connectivity patterns by decomposing connectivity matrices into components of variance often referred to as ‘gradients’ [@margulies2016]. These components organize brain regions along axes of functional similarity, representing whole-cortex patterns of brain organization. The primary components capture the largest variations in the data, arranging regions along a continuum that groups areas with similar brain activity together, while placing regions with the greatest dissimilarities at opposite ends. The sensory–association (SA) axis [@sydnor2021], which is often the primary variance component of FC [@margulies2016; @nenning2023], groups unimodal sensory and motor cortices (such as occipital, precentral, and postcentral regions) on one end, and spans toward transmodal association areas supporting higher-order cognition on the other( including the medial prefrontal cortex \[mPFC\], posterior cingulate and precuneus, angular and inferior parietal cortices, and lateral and anterior temporal regions). Typically, the second component spans visual to motor cortices (VM axis), while the third component tends to separate different transmodal systems. Specifically, the executive lateral fronto-parietal system lies on one end and parts of the default mode network, including mPFC and anterior temporal regions, lies on the other [@hardikar2024]. This latter axis has been referred to as a "representation-modulation" axis [@katsumi2023], or simply a "multiple-demand" gradient [@huang2023; @paquola2020; @valk]. Based on this prior literature and our own characterization (see @extfig-neuroquery) we will refer to it as a "representational-executive" (RE) axis.
 
 A main feature of the gradients lies in capturing the brain’s functional architecture as continuous, overlapping maps ranking regions by their degree of involvement in distinct functional domains. But most prior work has studied gradients in terms of how their expression changes, for example becoming more pronounced during development [@pines2022; @sydnor2023; @dong2021] and less pronounced with aging or Alzheimer’s disease [@bethlehem2020; @hu2022; @ottoy2024]. In contrast, and consistent with recent work using low-dimensional representations of global brain organization in aging and AD [@jones2022], we do not treat functional gradients as the primary outcome of interest. Instead, we use functional gradients as a framework to interpret the spatial distribution of connectivity changes in aging and AD. 
 
@@ -587,32 +337,56 @@ To do so, we quantify region-wise connectivity using nodal affinity. This measur
 
 ## Results
 
-We analyzed resting-state fMRI data from the BioFINDER-2 cohort (973 participants) with complete data (CSF Aβ42/40, tau PET and fMRI scans; see @tbl-table1 for participant characteristics). After parcellating the cortex into 1000 regions [@schaefer2018], FC was quantified using nodal affinity, the parcel-wise average of connectivity similarity to all other parcels. Henceforth, we focus on this functional connectivity similarity (FCS) as our central FC measure of interest, see @fig-concept A and Methods. Nodal affinity was used as the outcome in parcel-wise regression models (see Methods), with the t-values of the terms of interest projected onto the cortical surface, resulting in "t-maps" (@fig-concept A, C). Our goal was to assess the degree to which these t-maps aligned with the principal axes (i.e. gradients) of functional organization (@fig-concept C). The gradients of interest were defined as the first three principal components of the averaged connectomes from healthy controls (@fig-concept B; see @suppfig-gradmethodcomp for comparisons of different methods to derive gradients, and explained variance of the derived components). Supplementary analyses (Table S1) with gradients derived using several methods (including the traditional diffusion map embedding from @margulies2016) confirmed that this methodological choice did not substantially impact the results. Due to a non-existent or modest and non-reproducible relationship between the t-maps and Gradient 2 (see @suppfig-grad2), this gradient was left out of subsequent analyses for brevity. Details about the anatomical, functional and network coverage of the SA and RE axis are presented in @suppfig-neuroquery. The age- and AD-related t-maps were spatially compared to the SA and RE axis, using Pearson correlation to quantify their relationship with statistical significance assessed using a spin test to account for spatial autocorrelation [@vása2018].
+We analyzed resting-state fMRI data from the BioFINDER-2 cohort (973 participants) with complete data (CSF Aβ42/40, tau PET and fMRI scans; see @tbl-table1 for participant characteristics). After parcellating the cortex into 1000 regions [@schaefer2018], FC was quantified using nodal affinity, the parcel-wise average of connectivity similarity to all other parcels. Henceforth, we focus on this functional connectivity similarity (FCS) as our central FC measure of interest, see @fig-concept A and Methods. Nodal affinity was used as the outcome in parcel-wise regression models (see Methods), with the t-values of the terms of interest projected onto the cortical surface, resulting in "t-maps" (@fig-concept A, C). Our goal was to assess the degree to which these t-maps aligned with the principal axes (i.e. gradients) of functional organization (@fig-concept C). The gradients of interest were defined as the first three principal components of the averaged connectomes from healthy controls (@fig-concept B; see @extfig-gradmethodcomp for comparisons of different methods to derive gradients, and explained variance of the derived components). Supplementary analyses (Table S1) with gradients derived using several methods (including the traditional diffusion map embedding from @margulies2016) confirmed that this methodological choice did not substantially impact the results. Due to a non-existent or modest and non-reproducible relationship between the t-maps and Gradient 2 (see @suppfig-grad2), this gradient was left out of subsequent analyses for brevity. Details about the anatomical, functional and network coverage of the SA and RE axis are presented in @extfig-neuroquery. The age- and AD-related t-maps were spatially compared to the SA and RE axis, using Pearson correlation to quantify their relationship with statistical significance assessed using a spin test (one-sided, uncorrected; see Methods) to account for spatial autocorrelation [@vása2018]. We interpret gradient alignment primarily based on effect-size magnitude and consistency across cohorts and analyses; modest but statistically significant correlations are reported but not emphasized.
+
+::: {#extfig-neuroquery .column-body-outset}
+![](revision_figures/gradient_coverage.pdf)
+
+Functional connectivity gradients capture spatial organization and cognitive specialization across the cortex. Top: Spatial distribution of gradient scores for the SA axis (left) and the RE axis (right) respectively, derived from biofinder. Middle: Meta-analytic decoding was performed using the NeuroQuery database [@dockès2020] to identify cognitive terms associated with each Schaefer-1000 parcel. For each parcel, regional associations with NeuroQuery terms were estimated using the ROIAssociationDecoder in NiMARE [@Salo2023], and results were aggregated across parcels. The resulting term associations were filtered to include only cognitive concepts listed in the Cognitive Atlas [@poldrack2011]. Words were assigned to a gradient side (e.g. sensory or association depending on the gradient of interest) decided by their average gradient value, and within each side the 25 most frequently mentioned words (i.e., the highest number of parcel associations) were retained. For each term, we counted the number of parcels it was associated with and its mean gradient value, assigned it to a gradient side, and retained the 25 most frequently associated terms per side. The terms are visualised along an x-axis of, and weighted both in size and colour by, their mean gradient score. Bottom: Distribution of gradient scores across the 7 Yeo networks.
+:::
 
 In studies comparing aging and AD, it is common to rely on clinical diagnostic criteria. However, these criteria may confound pathological processes with cognitive factors (e.g., resilience). To isolate pathological AD effects, we used a continuous measure of pathology severity by nonlinearly mapping participants onto a continuous trajectory based on CSF Aβ42/40 ratio and tau PET using the SCORPIUS method [@SCORPIUS]. This continuous pathology measure was used instead of clinical diagnoses to quantify AD disease progression in all subsequent analyses (but see @suppfig-diagnosis for an analysis with clinical diagnoses). In @fig-concept D, the relationship between this composite pathology score and its constituents is visualized, along with its distribution over clinical groups.
 
 
 :::: column-page
 ::: {#fig-concept}
-![](figures/conceptual_plot/methods_plot_grayed.png)
+![](figures/conceptual_plot/methods_plot_grayed.pdf)
 
-Mapping changes of functional connectivity similarity to cortical gradients. (A) Resting-state fMRI data for each subject were parcellated into 1000 regions [@schaefer2018]. Timeseries from these parcels underwent pairwise Pearson correlation. Cosine pairwise similarity between the connectivity profiles of the parcels were then calculated and averaged for each parcel, resulting in one FCS value per parcel and subject [@margulies2016]. This served as the outcome in parcelwise regression models, with t-values of the terms of interest (e.g., age, diagnosis) mapped onto the cortical surface in (C), forming t-maps. (B) Gradients were derived by averaging connectivity matrices of healthy controls and calculating principal components. The first three components/gradients were retained but only the first (SA axis) and third (RE axis) further analysed. (C) T-maps are compared to gradients and their relationship quantified using spin tests. (D) Participants were given a pathology score by mapping them nonlinearly onto a continuous pathology trajectory using Aβ and tau biomarkers using the SCORPIUS method [@SCORPIUS], providing a gradated and biological alternative to clinical diagnoses for subsequent analyses (see Methods for details). The relationship (LOESS curves) between the pathology score and the scaled biomarkers used to derive it is shown to the left, and distributions of clinical diagnosis groups to the right.
+Mapping changes of functional connectivity similarity to cortical gradients. (A) Resting-state fMRI data for each subject were parcellated into 1000 regions [@schaefer2018]. Timeseries from these parcels underwent pairwise Pearson correlation. Cosine pairwise similarity between the connectivity profiles of the parcels were then calculated and averaged for each parcel, resulting in one FCS value per parcel and subject [@margulies2016]. This served as the outcome in parcel-wise regression models, with t-values of the terms of interest (e.g., age, diagnosis) mapped onto the cortical surface in (C), forming t-maps. (B) Gradients were derived by averaging connectivity matrices of healthy controls and calculating principal components. The first three components/gradients were retained but only the first (SA axis) and third (RE axis) further analysed. (C) T-maps are compared to gradients and their relationship quantified using spin tests (one-sided; see Methods). (D) Participants were given a pathology score by mapping them nonlinearly onto a continuous pathology trajectory using Aβ and tau biomarkers using the SCORPIUS method [@SCORPIUS], providing a gradated and biological alternative to clinical diagnoses for subsequent analyses (see Methods for details). The relationship (LOESS curves) between the pathology score and the scaled biomarkers used to derive it is shown to the left, and distributions of clinical diagnosis groups to the right.
 :::
 ::::
 
 ##### Cross-sectional effects of age and AD pathology on FCS align with distinct gradients
 
-In the BioFINDER-2 cohort, the spatial distribution of node-wise associations between FCS and AD pathology aligned with the SA axis (r = 0.74, p~spin~\<0.001), reflecting decreases of FCS in sensory-motor (unimodal) regions and increases in associative (transmodal) regions with increasing pathology. Age effects were instead independently aligned with the RE axis (r = 0.75, p~spin~\<0.001), with executive areas showing increasing and representational areas decreasing FCS with increasing age (@fig-fig1 A, @suppfig-mainoverlaid). Notably, age effects were not strongly aligned with the SA axis, and AD effects were not strongly aligned with RE axis, suggesting a double dissociation. All variance inflation factors were below 1.2, indicating no issue of multicollinearity between age and pathology. These findings were replicated using a subset of 129 participants from the ADNI  with complete data (SA axis for pathology: r = 0.54, p~spin~\<0.001; RE axis for age: r = 0.68, p~spin~\<0.001; see @fig-fig1 B). 
-<!-- Separate analyses of within- and between-network affinity (@suppfig-within, @suppfig-between) revealed similar patterns to overall affinity, with generally weaker gradient relationships for within- compared to between-network affinity. This suggests that both contribute to the observed gradient alignments, but between-network connections play a greater role. Interestingly, using nodal connectivity strength (the average connection weight of each parcel and more conventional FC measure), we obtained very similar spatial distributions of effects (see @suppfig-strength), even though this measure implies a different interpretation. -->
-We also ran the analysis with tau and Aβ separated, as well as with *APOE* ε4 status as a predictor. The results suggest that alignment to the SA axis is more closely related to tau than to Aβ positivity, and that *APOE* ε4 carriership was not associated with gradient-aligned effects (@suppfig-tauAb). Finally, in an additional model including cortical thickness, white-matter hyperintensity burden, lacunes, microbleeds, and CSF α-synuclein positivity (@suppfig-cerebvasc), the characteristic gradient alignments for age (RE axis) and AD pathology (SA axis) remained largely unchanged, indicating that these effects are not explained by atrophy or cerebrovascular confounds. Interestingly, several of the additional covariates also showed independent effects aligning with the gradients.
+In the BioFINDER-2 cohort, the spatial distribution of node-wise associations between FCS and AD pathology aligned with the SA axis (r = 0.74, p~spin~\<0.001), reflecting decreases of FCS in sensory-motor (unimodal) regions and increases in associative (transmodal) regions with increasing pathology. Age effects were instead independently aligned with the RE axis (r = 0.75, p~spin~\<0.001), with executive areas showing increasing and representational areas decreasing FCS with increasing age (@fig-fig1 A, @extfig-mainoverlaid). Notably, age effects were not strongly aligned with the SA axis, and AD effects were not strongly aligned with RE axis, suggesting a double dissociation. All variance inflation factors were below 1.2, indicating no issue of multicollinearity between age and pathology. These findings were replicated using a subset of 129 participants from the ADNI  with complete data (SA axis for pathology: r = 0.54, p~spin~\<0.001; RE axis for age: r = 0.68, p~spin~\<0.001; see @fig-fig1 B). 
+<!-- Separate analyses of within- and between-network affinity (@suppfig-within, @suppfig-between) revealed similar patterns to overall affinity, with generally weaker gradient relationships for within- compared to between-network affinity. This suggests that both contribute to the observed gradient alignments, but between-network connections play a greater role. Interestingly, using nodal connectivity strength (the average connection weight of each parcel and more conventional FC measure), we obtained very similar spatial distributions of effects (see @extfig-strength), even though this measure implies a different interpretation. -->
+We also ran the analysis with tau and Aβ separated, as well as with *APOE* ε4 status as a predictor. The results suggest that alignment to the SA axis is more closely related to tau than to Aβ positivity, and that *APOE* ε4 carriership was not associated with gradient-aligned effects (@extfig-tauAb). Finally, in an additional model including cortical thickness, white-matter hyperintensity burden, lacunes, microbleeds, and CSF α-synuclein positivity (@extfig-cerebvasc), the characteristic gradient alignments for age (RE axis) and AD pathology (SA axis) remained largely unchanged, indicating that these effects are not explained by atrophy or cerebrovascular confounds. Interestingly, several of the additional covariates also showed independent effects aligning with the gradients.
 
 :::: column-page
 ::: {#fig-fig1}
-![](figures/figure1.jpg)
+![](figures/figure1.pdf)
 
-Age and AD pathology are associated with functional connectivity changes aligned with distinct organizational gradients. These dissociable alignments were observed in BioFINDER-2 (A), and in an external cohort, ADNI (B). Cortical maps display t-values from nodal linear regression models with nodal affinity as the outcome, using age and Alzheimer’s pathology as independent variables, covaried for sex and motion. Scatter plots show the relationship between t-values and gradient scores across nodes, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test. Color scales on the axes match the corresponding cortical t-maps. See @suppfig-mainoverlaid for network delineation of the cortical maps of A.
+Age and AD pathology are associated with functional connectivity changes aligned with distinct organizational gradients. These dissociable alignments were observed in BioFINDER-2 (A), and in an external cohort, ADNI (B). Cortical maps display t-values from nodal linear regression models with nodal affinity as the outcome, using age and Alzheimer’s pathology as independent variables, covaried for sex and motion. Scatter plots show the relationship between t-values and gradient scores across nodes, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test (one-sided, uncorrected; see Methods). Color scales on the axes match the corresponding cortical t-maps. Points are colored by their Yeo network membership [@yeo2011]. See @extfig-mainoverlaid for network delineation of the cortical maps of A.
 :::
 ::::
+
+::: {#extfig-mainoverlaid .column-body-outset}
+![](figures/main_res_with_overlaid_nets.pdf)
+
+Main results of @fig-fig1 A with the seven Yeo networks overlaid (top) and bar plots of the t-values from all parcels colored by their network membership (bottom). The colorbar on the y-axes of the histograms correspond to the color scale of the cortical maps, and the colorbar on the x-axes correspond to the color scale of the RE axis and the SA axis for Age and AD pathology, respectively.
+:::
+
+::: {#extfig-tauAb .column-body-outset}
+![](revision_figures/apoe_plot_v1_w_tau_ab.pdf)
+
+\A A) Main results with separated pathology in the full sample controlling for diagnosis, due to the fact that all MCI/AD are Aβ+ by definition in this study. Tau pathology is calculated here as a non-linear mapping of tau PET SUVR from Braak12, Braak34, Braak56 in the same manner as for the main pathology composite. Aβ positivity was determined using previously established amyloid-PET cut-offs derived in [@biel2025]. B) Main results with separated pathology in cognitively unimpaired. Tau effects on FCS show considerably stronger alignment with the sensory-association axis compared to Aβ positivity. C) Main result with *APOE* ε4 carriership in the model in the full sample. D) Since the relationship between being an ε4 carrier and being Aβ+ is strong, and being Aβ+ is strongly related to being MCI/AD, we also ran the analysis in cognitively unimpaired Aβ- individuals. Here, we can see that being an ε4 carrier in itself does not give rise to gradient alignment.
+:::
+
+::: {#extfig-cerebvasc .column-body-outset}
+![](revision_figures/atrophy_and_cerebrovasc.pdf)
+
+The FCS patterns associated with age and AD remained stable after including atrophy and several vascular markers as covariates in the main analysis. The parcel-wise model included age, tau pathology, cortical thickness in the AD atrophy signature region, white-matter hyperintensity burden, presence of lacunes, presence of microbleeds, and CSF α-synuclein positivity (RTQuIC). Scatterplots show the spatial correlation between each effect map and the sensory–association and representational–executive axes. The principal age- and tau-related gradient alignments reported in the main manuscript remain robust after accounting for these factors, which themselves seemingly give rise to gradient-aligned effects.
+:::
 
 ##### FCS effects and their alignment with gradients vary along the age- and pathology spectra
 
@@ -620,10 +394,10 @@ Prior studies on FC in AD have reported an initial pattern of regional hyperconn
 
 Regional FCS trajectories, averaged within 20 quantile bins (ventiles) based on gradient values, are shown in @fig-gam B.3. Across the pathology spectrum, average FC in transmodal ventiles increased relatively linearly, while FCS in unimodal ventiles decreased at a similar rate. Sensory-motor (unimodal) ventiles consistently exhibited higher FC than associative (transmodal). Across age, FCS increased in executive ventiles and decreased in representation ventiles. While executive ventiles had lower FCS than representation regions in younger age, this pattern reversed in older age.
 
-Prior work has suggested that both phenotypic heterogeneity and age–pathology interactions may influence large-scale functional organization in AD [@jones2022], raising the possibility that these factors may contribute to the decrease in alignment we see over progressive accumulation of pathology. To examine this, we first included an age × pathology interaction term in the parcelwise linear models. This interaction showed an inverse relationship with the sensory–association axis, indicating that increasing age attenuates the gradient-aligned FC effects associated with pathology. Consistent with this, when stratifying patients by age (\<65 vs ≥65 years) and repeating the nonlinear analyses from @fig-gam, the older group showed a steeper decline in gradient alignment with increasing pathology. However, a reduction in alignment was also observed in the younger group, indicating that age–pathology interactions alone do not explain the loss of alignment at higher pathology levels. In contrast, stratifying patients into amnestic and non-amnestic groups based on cognitive domain scores revealed similar alignment trajectories, with no clear differences between groups (see @suppfig-interplot).
+Prior work has suggested that both phenotypic heterogeneity and age–pathology interactions may influence large-scale functional organization in AD [@jones2022], raising the possibility that these factors may contribute to the decrease in alignment we see over progressive accumulation of pathology. To examine this, we first included an age × pathology interaction term in the parcel-wise linear models. This interaction showed an inverse relationship with the sensory–association axis, indicating that increasing age attenuates the gradient-aligned FC effects associated with pathology. Consistent with this, when stratifying patients by age (\<65 vs ≥65 years) and repeating the nonlinear analyses from @fig-gam, the older group showed a steeper decline in gradient alignment with increasing pathology. However, a reduction in alignment was also observed in the younger group, indicating that age–pathology interactions alone do not explain the loss of alignment at higher pathology levels. In contrast, stratifying patients into amnestic and non-amnestic groups based on cognitive domain scores revealed similar alignment trajectories, with no clear differences between groups (see @suppfig-interplot).
 
 ::: {#fig-gam}
-![](figures/figure2.jpg){width="100%" fig-align="center"}
+![](figures/figure2.pdf){width="100%" fig-align="center"}
 
 Nonlinear models reveal that the alignment of age- and pathology-related FCS effects with organizational gradients varies across the age and AD pathology continuum. Generalized additive models (GAMs) were fitted for each parcel, with nodal affinity as the outcome, and age and AD pathology as (non-linear) smooth terms, while controlling for sex and motion. Predicted trajectories and their derivatives were calculated. (A): Top row: Scatter plots of averaged slope coefficients across pathology quartiles vs. SA axis scores, with parcels colored by network membership. Bottom row: Cortical maps of averaged slope coefficients. (B.1): Nonlinear relationship (LOESS curves with 95% CI) between the composite AD pathology score and scaled pathology measures. (B.2): Correlation coefficients showing how alignment between trajectory derivatives and gradient scores changes across pathology (SA axis) and age (RE axis). (B.3): Predicted nodal affinity trajectories for pathology and age, averaged within gradient-based ventiles (20 equally sized groups), colored by mean gradient scores. Marginal histograms in B shows the sample sizes across pathology score and age from the original estimation. (C): Same as A, but for age quartiles.
 :::
@@ -638,9 +412,9 @@ Across the pathology windows, baseline age showed a decreasing association with 
 
 :::: column-page
 ::: {#fig-fig4}
-![](figures/figure3.jpg)
+![](figures/figure3.pdf)
 
-Within-subject change in pathology is related to gradient-aligned FCS effects. A: A linear mixed-effects model was applied at each parcel, with FC as the outcome and baseline age, baseline pathology (tau PET SUVR from Braak I-VI), Δ pathology (longitudinal change in tau PET from baseline) as fixed effects and random intercepts for subjects, covaried for time since baseline, sex and scanner motion. Cortical maps display t-values from the parcel-wise models, while scatter plots show the relationship between t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test. Color scales of the cortical maps are shown along the axes of the scatter plots. B: Schematic of the sliding window approach used to assess longitudinal nonlinearities in the relationship between FCS and gradients across the aging and pathology spectra. The heatmap represents a bivariate histogram; the color of each tile indicates the number of subjects in each histogram bin. Windows are represented as rectangles “moving” across the bivariate histogram. Age windows spanned 25 years and were incremented by 1 year, while pathology windows spanned 0.35 pathology score units and were incremented by 0.015 units (indicated by the curved arrow), resulting in 44 age windows and 45 pathology windows, all having ≥ 25 subjects. For each window we fit linear mixed models at the parcel level, t-maps for each fixed effect of interest were extracted and the t-maps correlated (Pearson correlation) with the SA and RE axes. C: Results of the sliding window analysis showing the dynamic relationship of AD pathology on FC gradient alignment. The correlation values on the scatters are overlaid with an estimation from generalized additive models, with 95% confidence intervals. For the age terms in each windowing, correlations are shown between the t-map and the RE axis, while for the pathology terms, they are shown between the t-maps and the SA axis. Marginal plots show the sample size for each window. Results from the age windowing show that baseline age and pathology effects on the RE and SA axes, respectively, are mostly stable across the adult lifespan. Across the pathology windows, baseline pathology effects increase in gradient alignment over the initial windows after which they decrease. This pattern was mirrored in Δ pathology, but the within subject change preceded the baseline effects with peaks and declines in earlier windows.
+Within-subject change in pathology is related to gradient-aligned FCS effects. A: A linear mixed-effects model was applied at each parcel, with FC as the outcome and baseline age, baseline pathology (tau PET SUVR from Braak I-VI), Δpathology (longitudinal difference in tau PET from baseline) as fixed effects and random intercepts for subjects. Cortical maps display t-values from the parcel-wise models, while scatter plots show the relationship between t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using spin tests (one-sided, uncorrected; see Methods). B: Schematic of the sliding window approach used to assess longitudinal nonlinearities in the relationship between FCS and gradients across the aging and pathology spectra. The heatmap represents a bivariate histogram. Windows are represented as “moving” rectangles. Age windows spanned 25 years and were incremented by 1 year, while pathology windows spanned 0.35 pathology units and were incremented by 0.015 (indicated by the curved arrow), resulting in 44 age windows and 45 pathology windows, all having ≥ 25 subjects. For each window we fit parcel-wise linear mixed models, t-maps for each fixed effect of interest were extracted and the t-maps correlated (Pearson correlation) with the SA and RE axes. C: Results of the sliding window analysis showing the dynamic relationship of AD pathology on FC gradient alignment. The correlation values on the scatters are overlaid with an estimation from generalized additive models, with 95% confidence intervals. For the age terms in each windowing, correlations are shown between the t-map and the RE axis, while for the pathology terms, they are shown between the t-maps and the SA axis. Marginal plots show the sample size for each window. Results from the age windowing show that baseline age and pathology effects on the RE and SA axes, respectively, are mostly stable across the adult lifespan. Across the pathology windows, baseline pathology effects increase in gradient alignment over the initial windows after which they decrease. This pattern was mirrored in Δ pathology, but the within subject change preceded the baseline effects with peaks and declines in earlier windows.
 :::
 ::::
 
@@ -660,7 +434,7 @@ In the cognitively impaired group, parcel-wise regression was performed to exami
 
 :::: column-page
 ::: {#fig-cogfig}
-![](figures/figure4.jpg)
+![](figures/figure4.pdf)
 
 Cognitive status modifies the relationship between AD pathology, age, and FCS changes along the SA axis. Cross-sectional results are shown for (A) cognitively unimpaired Aβ-, *APOE* ε4 non-carriers and (B) cognitively impaired individuals with mild cognitive impairment (MCI) or AD dementia. In A, models include age, pathology, cognition (mPACC), and an cognition × age interaction (with centered predictors and inverted cognition scores for interpretability). In B, models include age, pathology, and cognition without interactions. Tau-driven AD pathology in the cognitively unimpaired group is associated with SA-like FCS changes whereas it is absent in the MCI/AD dementia group. Instead, worse cognition (-mPACC in B) in the MCI/AD dementia group is associated with SA-like changes, which closely resembles the effects seen in older cognitively unimpaired individuals (-mPACC x Age in A).
 :::
@@ -672,19 +446,37 @@ Prior work has shown that aging and Alzheimer’s disease disproportionately aff
 
 :::: column-page
 ::: {#fig-cogfull}
-![](revision_figures/imputed_cog/cognition_full.jpg)
+![](revision_figures/imputed_cog/cognition_full.pdf)
 
-\(A\) Bifactor (Schmid–Leiman) cognitive model. Ten cognitive tests were decomposed into a general factor (“g”) and four orthogonal domain factors (memory, executive, visuospatial, language) using the R package psych [@psych] (see Methods). Standardized loadings are shown for each test on both the general and domain-specific factors. (B) Parcelwise associations between domain-specific cognition and FCS. Parcelwise linear models were fit with FCS as the outcome and domain scores as predictors, covarying for age, AD pathology, sex, motion, and global cognition. Higher scores on the domain-specific factors were associated with positive gradient alignment. Scatterplots show spatial correlations between parcelwise t-values and the sensory–association and representational–executive axes. (C) Effects of age and AD pathology on cognitive domains. Regression coefficients (±95% CI) from models predicting domain-specific factor scores indicate that age is more strongly associated with executive decline, whereas AD pathology is more strongly associated with memory decline. The sample (N = 954) consists of all individuals from the original sample with values on at least 5 of the 10 cognitive tests. (D) Parcelwise mediation analyses. Indirect effects quantify whether age- or pathology-related changes in FCS mediate their effects on executive and memory performance. Domain scores were orthogonalized with respect to global cognition, and models covaried for pathology in age analyses and for age in pathology analyses. In the middle row indirect effects are visualised across their position on the two respective axes (RE for age and SA for pathology). Positive effects indicate beneficial mediation and negative effects detrimental mediation. The negative correlation (bottom row) between the indirect effects for the two different domains indicates that effects seemingly beneficial for one domain may be detrimental for the other. 
+Domain-specific cognition maps onto functional connectivity gradients that differentially relate to aging and Alzheimer’s disease. (A) Bifactor (Schmid–Leiman) cognitive model. Ten cognitive tests were decomposed into a general factor (“g”) and four orthogonal domain factors (memory, executive, visuospatial, language; see Methods). Standardized loadings are shown for each test on both the general and domain-specific factors. (B) parcel-wise associations between domain-specific cognition and FCS. Parcel-wise linear models were fit with FCS as the outcome and domain scores as predictors, covarying for age, AD pathology, sex, motion, and global cognition. Higher scores on the domain-specific factors were associated with positive gradient alignment. Scatterplots show spatial correlations between parcel-wise t-values and the sensory–association and representational–executive axes. (C) Effects of age and AD pathology on cognitive domains. Regression coefficients (±95% CI) from models predicting domain-specific factor scores indicate that age is more strongly associated with executive decline, whereas AD pathology is more strongly associated with memory decline. The sample (N = 954) consists of all individuals from the original sample with values on at least 5 of the 10 cognitive tests. (D) Parcel-wise mediation analyses. Indirect effects quantify whether age- or pathology-related changes in FCS mediate their effects on executive and memory performance. Domain scores were orthogonalized with respect to global cognition, and models covaried for pathology in age analyses and for age in pathology analyses. In the middle row indirect effects are visualised across their position on the two respective axes (RE for age and SA for pathology). Positive effects indicate beneficial mediation and negative effects detrimental mediation. The negative correlation (bottom row) between the indirect effects for the two different domains indicates that effects seemingly beneficial for one domain may be detrimental for the other. 
 :::
 ::::
 
 ##### Sensitivity analyses
 
-To demonstrate the robustness of our results to methodological choices, we performed several sensitivity analyses. First, we derived functional gradients using two different dimensionality reduction techniques for gradient-estimation and across four correlation-coefficient thresholds for each main analysis (32 replications in total), and found that the alignment with the t-maps across approaches were consistent (@tbl-table3). We also correlated the t-maps within the BioFINDER sample to the gradients derived from ADNI and vice versa with comparable results (@suppfig-switchgrad A,B).
-<!-- We repeated the main analysis using within- and between-network affinity (@suppfig-within, @suppfig-between), revealing similar patterns to overall affinity. However, generally weaker gradient relationships for within- compared to between-network affinity suggests that between-network connections may play a greater role. Interestingly, using nodal connectivity strength (the average connection weight of each parcel and more conventional FC measure), we obtained very similar spatial distributions of effects (see @suppfig-strength), even though this measure implies a different interpretation. -->
-Interestingly, we repeated the main analysis using nodal connectivity strength (the average connection weight of each parcel and more conventional FC measure) instead of nodal affinity and observed comparable spatial patterns (@suppfig-strength). We further replicated the results using within-network affinity (@suppfig-within), between-network affinity (@suppfig-between), and nodal affinity computed directly from unthresholded Pearson correlations (@suppfig-affnothresh), also with similar spatial patterns. Additionally, we ran the main analysis with a pathology score calculated after pooling BioFINDER and ADNI rather than computing the pathology scores separately, and the results did not deviate to any great extent from the original (@suppfig-switchgrad C,D). Parcel-specific tau PET models produced results comparable to the global tau models, suggesting that regional tau levels mainly reflect global tau levels in this context (@suppfig-nodaltau).
+To demonstrate the robustness of our results to methodological choices, we performed several sensitivity analyses. First, we derived functional gradients using two different dimensionality reduction techniques for gradient-estimation and across four correlation-coefficient thresholds for each main analysis (32 replications in total), and found that the alignment with the t-maps across approaches were consistent (Table S1). We also correlated the t-maps within the BioFINDER sample to the gradients derived from ADNI and vice versa with comparable results (@suppfig-switchgrad A,B).
+<!-- We repeated the main analysis using within- and between-network affinity (@suppfig-within, @suppfig-between), revealing similar patterns to overall affinity. However, generally weaker gradient relationships for within- compared to between-network affinity suggests that between-network connections may play a greater role. Interestingly, using nodal connectivity strength (the average connection weight of each parcel and more conventional FC measure), we obtained very similar spatial distributions of effects (see @extfig-strength), even though this measure implies a different interpretation. -->
+Interestingly, we repeated the main analysis using nodal connectivity strength (the average connection weight of each parcel and more conventional FC measure) instead of nodal affinity and observed comparable spatial patterns (@extfig-strength). We further replicated the results using within-network affinity (@suppfig-within), between-network affinity (@suppfig-between), and nodal affinity computed directly from unthresholded Pearson correlations (@suppfig-affnothresh), also with similar spatial patterns. Additionally, we ran the main analysis with a pathology score calculated after pooling BioFINDER and ADNI rather than computing the pathology scores separately, and the results did not deviate to any great extent from the original (@suppfig-switchgrad C,D). Parcel-specific tau PET models produced results comparable to the global tau models, suggesting that regional tau levels mainly reflect global tau levels in this context (@extfig-nodaltau).
 
-Because nodal affinity and the SA axis share some broad structure inherent to large correlation matrices, we examined whether this could explain the pathology–gradient alignment. After removing parcel-wise variance shared with nodal affinity averaged over subjects (@suppfig-parcor B), the alignment between pathology and the SA axis FCS persisted, indicating that it is not driven by circular dependencies in the input data. Moreover, predictors differ in their gradient alignment: age aligns with the RE axis, education shows an inverse RE alignment, and some factors (e.g., sex) show no alignment with either axis, indicating that the SA axis is not a generic attractor (see @suppfig-parcor A for sex and education effects).
+::: {#extfig-strength .column-body-outset}
+![](figures/supplementary_strength.pdf)
+
+Analyses replicated with nodal connectivity strength (column-wise average of the unthresholded connectivity matrix) as the outcome measure demonstrates that age-related FC effects align with the RE axis, while AD pathology-related effects align with the SA axis, consistent with findings using nodal affinity in the main text. Results are shown for BioFINDER (A), ADNI (B). How cognitive status seems to modify these relationships are shown in (C) and (D). Cortical maps display t-values from nodal linear models, while scatter plots show the relationships between t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test (one-sided, uncorrected; see Methods).
+:::
+
+::: {#extfig-nodaltau .column-body-outset}
+![](revision_figures/nodal_tau.pdf) 
+
+Results from parcel-wise models using tau PET SUVR extracted for each Schaefer-1000 parcel (FCS~parcel~ \~ age + tau~parcel~ + covariates). The spatial pattern closely matches analyses with global pathology measures, indicating that parcel-level tau largely tracks global tau burden on the effect of FCS.
+:::
+
+Because nodal affinity and the SA axis share some broad structure inherent to large correlation matrices, we examined whether this could explain the pathology–gradient alignment. After removing parcel-wise variance shared with nodal affinity averaged over subjects (@extfig-parcor B), the alignment between pathology and the SA axis FCS persisted, indicating that it is not driven by circular dependencies in the input data. Moreover, predictors differ in their gradient alignment: age aligns with the RE axis, education shows an inverse RE alignment, and some factors (e.g., sex) show no alignment with either axis, indicating that the SA axis is not a generic attractor (see @extfig-parcor A for sex and education effects).
+
+::: {#extfig-parcor .column-body-outset}
+![](revision_figures/caus_plot.pdf)
+
+\A Cross-sectional results of the full sample with education in the model and sex as variable of interest (A). Correlations of the t-maps from pathology (path) and age in the model FC~parcel~ \~ age + AD pathology + sex + motion, when accounting for the variance of nodal affinity averaged across subjects. The correlation between the pathology t-map and the SA axis persists even though we account for mean nodal affinity, indicating it is not the shared data structure that accounts for the correlation between the two (B). Individual nodal affinity maps correlated with the SA and RE axis respectively show that, while individual affinity maps tend to negatively correlate with the SA axis, they do not on average tend to correlate with the RE axis.
+:::
 
 ## Discussion
 
@@ -694,7 +486,7 @@ This study demonstrates that age- and AD-related reorganization in functional co
 
 The cortical patterns of FCS identified in this study illustrate a balancing scale of age-related FCS increases and decreases, anchored at the centers of the SA and RE axis for AD and aging, respectively. FCS changes in one functional domain, as captured by these gradients (e.g., decreased FCS in sensorimotor areas along the SA axis), are mirrored by less or opposing changes in the "opposite" domain (e.g., increased FCS in associative regions). This dynamic is especially noteworthy in light of the cognitive domains most affected by AD and aging, which align closely with the SA and RE axis, respectively. AD primarily impairs episodic memory [@buckner2008], and the limbic, default mode, and associative networks supporting memory lie on the end of the SA axis that tended to show increased FCS with early pathology in our data. In contrast, normal aging disproportionately affects executive functioning [@hedden2004; @buckner2004], supported by the dorsal attention and control networks [@uddin2019], which lie on the executive end of the RE axis, the same side that showed increased FCS with age.
 
-Consistent with this alignment of cognitive burden and gradient architecture, our analyses with domain specific cognitive performance showed that better memory and executive performance each exhibited gradient-aligned FCS effects. Executive performance aligned more strongly with the RE axis and memory aligned more strongly with the SA axis. This suggests that differential cognitive vulnerability may help shape the observed age–RE and pathology–SA dissociation. Importantly, higher performance in both memory and executive domains was associated with positive gradient alignment, in contrast to global cognition, which had negative alignment. This could suggest that gradient aligned effects may support domain specific cognitive functioning. The parcelwise mediation analyses added to this interpretation. Specifically for AD pathology, SA-aligned effects tended to be beneficial for memory. Age related RE-alignment had a similar but less clear pattern. Importantly, the indirect effects on the two cognitive domains were inversely related, such that effects seemingly beneficial for one domain tended to be detrimental for the other. This is consistent with the notion that cognitive processes draw on shared, limited neural resources [@cabeza2018]. Together, these patterns point to a systematic reconfiguration of connectivity that may reflect shifts in resource allocation [@hillary2017], and highlight that macroscale gradients capture not only organizational principles of the cortex but also functional susceptibilities arising in the context of aging and AD.
+Consistent with this alignment of cognitive burden and gradient architecture, our analyses with domain specific cognitive performance showed that better memory and executive performance each exhibited gradient-aligned FCS effects. Executive performance aligned more strongly with the RE axis and memory aligned more strongly with the SA axis. This suggests that differential cognitive vulnerability may help shape the observed age–RE and pathology–SA dissociation. Importantly, higher performance in both memory and executive domains was associated with positive gradient alignment, in contrast to global cognition, which had negative alignment. This could suggest that gradient aligned effects may support domain specific cognitive functioning. The parcel-wise mediation analyses added to this interpretation. Specifically for AD pathology, SA-aligned effects tended to be beneficial for memory. Age related RE-alignment had a similar but less clear pattern. Importantly, the indirect effects on the two cognitive domains were inversely related, such that effects seemingly beneficial for one domain tended to be detrimental for the other. This is consistent with the notion that cognitive processes draw on shared, limited neural resources [@cabeza2018]. Together, these patterns point to a systematic reconfiguration of connectivity that may reflect shifts in resource allocation [@hillary2017], and highlight that macroscale gradients capture not only organizational principles of the cortex but also functional susceptibilities arising in the context of aging and AD.
 
 <!-- Notably, these gradient-aligned patterns persisted even after jointly accounting for cortical atrophy and multiple cerebrovascular markers, underscoring that the observed spatial patterns of FCS effects are not attributable to structural degeneration alone. In fact, several of these markers themselves showed independent effect patterns aligning with the gradients, strengthening the interpretation that these signatures may arise due to system strain caused by physiological processes. -->
 
@@ -724,7 +516,7 @@ Regardless of interpretation, gradient-like FCS alterations appear to signal ong
 
 The strength of this study lies in its large, single-site main cohort and the several methods employed to validate the findings within it, including an external replication, nonlinear, and longitudinal linear and nonlinear analyses. The longitudinal approach of this paper should be emphasized, as such within-subject designs are still relatively rare in the field [@hohenfeld2018]. By using a whole-brain perspective and continuous measures of AD pathology, we also overcome the limitations of region-specific analyses and categorical diagnostic classifications. Using several different methodological approaches we show that the results are generally not methodology dependent, but that differences between nodal affinity and nodal connectivity strength may be worth further investigation. However, this study also has several limitations. <!-- First, combining multiple pathology measures to map a disease trajectory obscures potential pathology-specific effects that could have been of interest. --> First, our whole-brain approach overcomes biases inherent in region- or network-specific analyses but limits the ability to pinpoint specific connections driving the gradient-aligned patterns. Second, resting-state connectivity has a weaker relationship to cognition compared to task-based paradigms [@elliott2019; @greene2018]; future studies should explore whether task-based FC strengthens or refines the findings of this study. Third, as an observational study, causal inferences regarding the relationship between functional connectivity, pathology, and cognitive decline is limited. Lastly, while we stratified patients within the typical AD spectrum into amnestic and non-amnestic groups to assess differential trajectories of gradient alignment across pathology, the limited representation of atypical AD phenotypes (e.g., posterior cortical atrophy, logopenic variant primary progressive aphasia, dysexecutive AD) constrains our ability to determine whether domain-predominant cognitive impairments are associated with distinct gradient alignments or with reduced pathology-to–sensory–association alignment in advanced disease.
 
-In sum, our findings reveal that age- and AD-related FCS alterations align with distinct large-scale cortical gradients of functional organization. These alignments vary along the age and AD pathology spectra, and are associated with cognition, independent of AD pathology burden. We propose that gradient-like FCS changes may reflect a general neural signature of cognitive strain or system-level stress, while acknowledging that the directionality of this relationship is uncertain. Similarly, we cannot conclude whether this signature is detrimental or compensatory -- our parcelwise mediation analyses seem to suggest that they are both. We show that these patterns emerge in older individuals, those that are cognitively healthy but have subtle AD pathology, and clinically impaired patients alike, suggesting that cognitive demands may increasingly exceed available neural resources in these groups.
+In sum, our findings reveal that age- and AD-related FCS alterations align with distinct large-scale cortical gradients of functional organization. These alignments vary along the age and AD pathology spectra, and are associated with cognition, independent of AD pathology burden. We propose that gradient-like FCS changes may reflect a general neural signature of cognitive strain or system-level stress, while acknowledging that the directionality of this relationship is uncertain. Similarly, we cannot conclude whether this signature is detrimental or compensatory -- our parcel-wise mediation analyses seem to suggest that they are both. We show that these patterns emerge in older individuals, those that are cognitively healthy but have subtle AD pathology, and clinically impaired patients alike, suggesting that cognitive demands may increasingly exceed available neural resources in these groups.
 
 ## Tables
 
@@ -799,6 +591,13 @@ ft
 
 :::
 
+## Extended data figure captions
+
+::: {.figure-caption-section-extfig}
+
+:::
+
+
 ## Acknowledgements
 
 We would like to thank all research participants and their family members, and everyone involved in the collection, refinement, and administration of the data used in this study. Their efforts and contributions have made this research possible. This work was supported by the SciLifeLab Wallenberg Data Driven Life Science Program (grant: KAW 2020.0239), the Swedish Alzheimer Foundation (AF-994626), and the Swedish Research Council (2024-03642). The BioFINDER-2 study was funded by the European Research Council (ADG-101096455), the Swedish Research Council (2022-00775, 2021-02219), Alzheimer’s Association (ZEN24-1069572, SG-23-1061717), GHR Foundation, ERA PerMed (ERAPERMED2021-184), Knut and Alice Wallenberg foundation (2022-0231), Strategic Research Area MultiPark (Multidisciplinary Research in Parkinson’s disease) at Lund University, Swedish Brain Foundation (FO2021-0293, FO2023-0163), Parkinson foundation of Sweden (1412/22), WASP and DDLS Joint call for research projects (WASP/DDLS22-066), Swedish Alzheimer Foundation (AF-1011799, AF-980907, AF-994229, AF-1032702), Cure Alzheimer’s fund, Rönström Family Foundation, Berg Family Foundation, Konung Gustaf V:s och Drottning Victorias Frimurarestiftelse, Skåne University Hospital Foundation (2020-O000028), Regionalt Forskningsstöd (2022-1259) and Swedish federal government under the ALF agreement (2022-Projekt0080, 2022-Projekt0107). Additional support was provided by grants from the National Institute of Health (R37MH125829, R01MH120482, R01EB022573, R01MH112847, U24NS130411), the Penn-CHOP Lifespan Brain Institute, and the AI2D Center. The precursor of 18F-flutemetamol was sponsored by GE Healthcare. The precursor of 18F-RO948 was provided by Roche. N.F. was supported by the BrightFocus Foundation (A2021026S), the Gerhard and Ilse Schick Foundation and the Alzheimer's Forschung Initiative (23074CB). L.C. was supported by Fondation Philippe Chatrier. LEMW was supported by the Bente Rexed Gerstedt Foundation, the Hains Foundation and MultiPark, a strategic research area at Lund University. HHB was supported by the European Union’s Horizon Europe Research and Innovation Program under Marie Sklodowska-Curie action (101153323). The funding sources had no role in the design and conduct of the study; in the collection, analysis, interpretation of the data; or in the preparation, review, or approval of the manuscript.
@@ -822,6 +621,8 @@ Therapeutics.
 
 ## Author contributions
 
+JR and JWV conceptualized the study. JR, LC, LEW, OH and JWV contributed to analytical design. JR, NF, OS, AD, DVW, SJ, ES were involved in data processing and curation. SP, ES, RO, NMC and OH acquired and provided the data. JR conducted data analysis. JWV supervised the study. JR and JWV wrote the manuscript. All authors interpreted the data and contributed substantively to revising the manuscript
+
 ## Competing Interests
 
 OH is employed by Eli Lilly and Lund University. SP has acquired research support (for the institution) from Avid and ki elements through ADDF. In the past 2 years, he has received consultancy/speaker fees from Bioartic, Biogen, Eisai, Eli Lilly, Novo Nordisk, and Roche. NMC has received consultancy/speaker fees from Biogen, Eli Lilly, Owkin and Merck. JWV has received consultancy/speaker  fees from Manifest Technologies. SJ has received speaker fee from EANM. ES has acquired research support (for the institution) from Beckman Coulter, Bristol Myers Squibb, C2N Diagnostics, Eisai, Fujirebio, GE Healthcare and Roche Diagnostics. The remaining authors declare no competing interests.
@@ -830,10 +631,10 @@ OH is employed by Eli Lilly and Lund University. SP has acquired research suppor
 
 ## Sample
 
-**BioFINDER**. Information regarding recruitment, diagnostic criteria, and Aβ positivity assessment for the BioFINDER-2 cohort (https://biofinder.se/two; clinical trial number NCT03174938) has been described in detail previously [@leuzy2020; @palmqvist2020]. All participants provided written informed consent in accordance with the Declaration of Helsinki. Ethical approval for the study was obtained from the Ethics Committee of Lund University, Lund, Sweden, with additional permissions for PET imaging granted by the Swedish Medicines and Products Agency and the local Radiation Safety Committee at Skåne University Hospital, Sweden. For the cross-sectional analysis, 1,168 individuals had all relevant data available (fMRI, CSF Aβ42/40, and tau PET). However, as described in the Imaging section, a stringent in-scanner motion filter was applied, excluding 194 individuals and leaving a final cross-sectional sample of N = 973. Of these, 655 were cognitively unimpaired or had self-reported cognitive decline (SCD), while 319 were diagnosed with mild cognitive impairment or dementia [@palmqvist2023]. Cognitively impaired cases were included only if they were Aβ-positive, as assessed by abnormal CSF Aβ42/40 values, see the bivariate distribution of age and pathology score of these individuals in @fig-agepath. For the longitudinal analysis, 480 individuals had fMRI and tau PET data from at least two visits. After applying the motion filter, 378 unique individuals with at least two data points remained. See tables Table 1 and Table 2 for additional details.
+**BioFINDER**. Information regarding recruitment, diagnostic criteria, and Aβ positivity assessment for the BioFINDER-2 cohort (https://biofinder.se/two; clinical trial number NCT03174938) has been described in detail previously [@leuzy2020; @palmqvist2020]. All participants provided written informed consent in accordance with the Declaration of Helsinki. Ethical approval for the study was obtained from the Ethics Committee of Lund University, Lund, Sweden, with additional permissions for PET imaging granted by the Swedish Medicines and Products Agency and the local Radiation Safety Committee at Skåne University Hospital, Sweden. Participants in BioFINDER-2 are compensated with 400 SEK per visit/examination (MRI, PET, LP) to cover travel costs to and from the examinations. For the cross-sectional analysis, 1,168 individuals had all relevant data available (fMRI, CSF Aβ42/40, and tau PET). However, as described in the Imaging section, a stringent in-scanner motion filter was applied, excluding 194 individuals and leaving a final cross-sectional sample of N = 973. Of these, 655 were cognitively unimpaired or had self-reported cognitive decline (SCD), while 319 were diagnosed with mild cognitive impairment or dementia [@palmqvist2023]. Cognitively impaired cases were included only if they were Aβ-positive, as assessed by abnormal CSF Aβ42/40 values, see the bivariate distribution of age and pathology score of these individuals in @fig-agepath. For the longitudinal analysis, 480 individuals had fMRI and tau PET data from at least two visits. After applying the motion filter, 378 unique individuals with at least two data points remained. See tables Table 1 and Table 2 for additional details.
 
 ::: {#fig-agepath}
-![](revision_figures/age_path_dist.jpg)
+![](revision_figures/age_path_dist.pdf)
 
 Distribution of age and pathology score of the main cross-sectional sample. 
 :::
@@ -884,23 +685,29 @@ In both BioFINDER and ADNI, parcel-wise timeseries were extracted using the 1000
 
 Nodal affinity reduces the rank of the original correlation matrix [@chen2002], highlighting dominant patterns of variance while preserving interpretability. Averaging the affinity matrix across parcels then yields a metric that reflects how generic or specialized a parcel’s connectivity profile is relative to the rest of the brain: higher values indicate widespread similarity, whereas lower values point to more distinct, unique connectivity patterns. Compared to nodal strength, the parcel-wise average of correlation coefficients, affinity emphasizes the configuration of connections rather than their overall magnitude. <!-- Due to affinity being a relative measure, it may be less susceptible to global shifts in correlation values that can arise from noise (e.g. movement in the scanner), preprocessing, or global signal changes, instead highlighting reorganization of connectivity patterns.  --> This makes it a particularly interesting measure in the context of aging and AD, where hypotheses often focus on loss of differentiation or "integration" of brain regions [@deery2023; @zhang2023].
 
-Affinity is also widely used in functional gradient studies because it is traditionally the underlying matrix from which the gradients are derived [@margulies2016]. For comparison, nodal connectivity strength – the parcel-wise average of the original connectivity matrices – was also calculated. All main analyses were replicated with nodal strength as the outcome, yielding results comparable to those with nodal affinity (see @suppfig-strength). Additionally, we replicated our findings using correlation instead of cosine similarity on unthresholded connectivity matrices, which also yielded comparable results (see @suppfig-affnothresh). In @suppfig-within and @suppfig-between, we run the main analyses with nodal affinity calculated within and between each Yeo 7 network, respectively, by taking the average affinity values of each parcel within its own network, and the average of each parcel’s affinity to parcels outside of its own network.
+Affinity is also widely used in functional gradient studies because it is traditionally the underlying matrix from which the gradients are derived [@margulies2016]. For comparison, nodal connectivity strength – the parcel-wise average of the original connectivity matrices – was also calculated. All main analyses were replicated with nodal strength as the outcome, yielding results comparable to those with nodal affinity (see @extfig-strength). Additionally, we replicated our findings using correlation instead of cosine similarity on unthresholded connectivity matrices, which also yielded comparable results (see @suppfig-affnothresh). In @suppfig-within and @suppfig-between, we run the main analyses with nodal affinity calculated within and between each Yeo 7 network, respectively, by taking the average affinity values of each parcel within its own network, and the average of each parcel’s affinity to parcels outside of its own network.
 
 ##### Derivation of functional gradients {#sec-gradder}
 
 Breaking down the connectivity matrices into low-dimensional components, known as gradients [@margulies2016], captures connectivity patterns of the brain as continuous measures of connectivity similarity over the cortex. Regions with similar connectivity patterns will get grouped together at different ends of these gradients. The primary components in such analyses represent the major variance axes of functional connectivity. For BioFINDER and ADNI, respectively, we calculated an estimate of the functional connectome by averaging individual connectivity matrices from cognitively unimpaired *APOE* ε4 non-carriers without abnormal Aβ levels. In BioFINDER, only younger participants (≤60 years) were included (n = 125), whereas in ADNI, the entire age range was used (n = 82) due to the unavailability of a younger sample.
 
-The variance components, or gradients, of these two connectomes were derived using principal component analysis (PCA) with singular value decomposition directly on the connectome without thresholding. Traditionally, gradients are derived using diffusion map embedding [@coifman2005; @margulies2016], which involves applying heavy thresholding to the connectome before taking the pairwise cosine similarity of the rows/columns. However, we found that both methods produced comparable components with respect to the original gradients from @margulies2016 (accessed from https://identifiers.org/neurovault.collection:1598). We felt that applying PCA directly on the connectome, without transformation or thresholding, offered a simpler and more interpretable approach compared to diffusion map embedding, and did not result in a notable divergence. In @suppfig-gradmethodcomp, we compare the two methods over a set of thresholding values, supporting this decision (see also @hong2020 for a more formal comparison). Supplementary sensitivity analyses using gradients derived from both diffusion map embedding and PCA over different thresholds confirmed that this choice did not alter our results to any great extent, see Table S1.
+The variance components, or gradients, of these two connectomes were derived using principal component analysis (PCA) with singular value decomposition directly on the connectome without thresholding. Traditionally, gradients are derived using diffusion map embedding [@coifman2005; @margulies2016], which involves applying heavy thresholding to the connectome before taking the pairwise cosine similarity of the rows/columns. However, we found that both methods produced comparable components with respect to the original gradients from @margulies2016 (accessed from https://identifiers.org/neurovault.collection:1598). We felt that applying PCA directly on the connectome, without transformation or thresholding, offered a simpler and more interpretable approach compared to diffusion map embedding, and did not result in a notable divergence. In @extfig-gradmethodcomp, we compare the two methods over a set of thresholding values, supporting this decision (see also @hong2020 for a more formal comparison). Supplementary sensitivity analyses using gradients derived from both diffusion map embedding and PCA over different thresholds confirmed that this choice did not alter our results to any great extent, see Table S1.
 
-Meta-analytic decoding was performed using the NeuroQuery database [@dockès2020] to identify cognitive terms associated with each Schaefer-1000 parcel. For each parcel, regional associations with NeuroQuery terms were estimated using the ROIAssociationDecoder in NiMARE [@Salo2023]. We then reorganised these parcel-level results into term-level summaries by pooling, for each term, all of its parcel associations. The resulting term set was filtered to include only cognitive concepts listed in the Cognitive Atlas [@poldrack2011], matched by approximate string similarity, and visualized as a word cloud highlighting their spatial alignment along the principal functional gradient in @suppfig-neuroquery. We first kept only words with r \> 0.05. For each word, we counted how many parcels it was associated with and computed its mean gradient value. Words were assigned to a gradient side (e.g., sensory or association depending on the gradient of interest) based on this value, and within each side the 25 most frequently "mentioned" words (i.e., the words associated with the largest number of parcels) were retained.
+::: {#extfig-gradmethodcomp .column-body-outset}
+![](figures/gradient_param_comparison_bf.jpg)
+
+Derived gradients compared over a set of different parameter values show that the derivation method (PCA or DME) only has marginal effect on the overall spatial structure of the gradients. Reference gradients from [@margulies2016] are presented in the leftmost column. PCA method: principal component analysis via singular value decomposition on the average connectivity matrix from individuals BioFINDER without cognitive impairment, *APOE* ε4 non-carriers without abnormal amyloid levels, and ≤60 years of age. DME: diffusion map embedding (DME). The gradients using either method are shown for 4 different levels of FC thresholding.
+:::
+
+Meta-analytic decoding was performed using the NeuroQuery database [@dockès2020] to identify cognitive terms associated with each Schaefer-1000 parcel. For each parcel, regional associations with NeuroQuery terms were estimated using the ROIAssociationDecoder in NiMARE [@Salo2023]. We then reorganised these parcel-level results into term-level summaries by pooling, for each term, all of its parcel associations. The resulting term set was filtered to include only cognitive concepts listed in the Cognitive Atlas [@poldrack2011], matched by approximate string similarity, and visualized as a word cloud highlighting their spatial alignment along the principal functional gradient in @extfig-neuroquery. We first kept only words with r \> 0.05. For each word, we counted how many parcels it was associated with and computed its mean gradient value. Words were assigned to a gradient side (e.g., sensory or association depending on the gradient of interest) based on this value, and within each side the 25 most frequently "mentioned" words (i.e., the words associated with the largest number of parcels) were retained.
 
 ### Statistical analyses
 
-For the cross-sectional analyses, linear regression models were run for each parcel, with the functional connectivity metric as outcome, and the terms of interest as predictors, covaried for sex and motion (framewise displacement). For example, for the analyses looking at age and AD pathology, the model formula was as follows: $FC_{parcel} \sim age + pathology + sex + motion$. This was repeated for each of the 1000 parcels. The t-maps were then compared to the gradients using Pearson correlation. To assess the spatial correspondence between these two maps, while accounting for spatial autocorrelation, we performed a spin test based on the method introduced by @vása2018. Using the Hungarian algorithm, we generated 1000 random rotations of the parcel centroid coordinates, separately rotating the left and right hemispheres while preserving their anatomical structure. For each rotation, parcels were reassigned by minimizing the Euclidean distance between original and rotated centroids. We then recomputed the correlation between the rotated maps and compared the empirical correlation against the null distribution to obtain a permutation-based p-value.
+For the cross-sectional analyses, linear regression models were run for each parcel, with the functional connectivity metric as outcome, and the terms of interest as predictors, covaried for sex and motion (framewise displacement). For example, for the analyses looking at age and AD pathology, the model formula was as follows: $FC_{parcel} \sim age + pathology + sex + motion$. This was repeated for each of the 1000 parcels. The t-maps were then compared to the gradients using Pearson correlation. To assess the spatial correspondence between these two maps, while accounting for spatial autocorrelation, we performed a spin test based on the method introduced by @vása2018. Using the Hungarian algorithm, we generated 1000 random rotations of the parcel centroid coordinates, separately rotating the left and right hemispheres while preserving their anatomical structure. For each rotation, parcels were reassigned by minimizing the Euclidean distance between original and rotated centroids. We then recomputed the correlation between the rotated maps and compared the empirical correlation against the null distribution to obtain a permutation-based p-value. This p-value is defined as the proportion of permuted correlations more extreme than the empirical value in the direction of the observed effect. As the test is based on a finite number of rotations, p-values are discrete (minimum $1/(N_{perm}+1)$) and should be interpreted as permutation-based estimates. No correction for multiple comparisons was applied; instead, results were interpreted based on effect size and consistency across analyses.
 
-To investigate cross-sectional nonlinearities in the relationship between functional connectivity and age or pathology, generalized additive models (GAMs) with penalized regression splines (thin plate) were fitted for each parcel, with age and pathology as smooth terms and sex and motion as linear covariates ($FC_{parcel} \sim s(age) + s(pathology) + sex + motion$). The models were fitted using the R package mgcv (version 1.9-1, Wood 2011a), with default values for the number k basis functions. The first derivatives of the smooth terms were calculated at 100 evenly distributed points along each spectrum using finite differences, capturing the slope and effect direction at specific ages and pathology loads. For age, these derivatives were calculated over the central 90% of the range. These derivatives were then used to calculate R² values by correlating the slopes at each point with the SA axis (for pathology) or the RE axis (for age) scores. Gradient alignment could then be assessed continuously across the age and pathology spectra. To visualize these effects, derivatives were averaged over quartiles of pathology and age. The resulting average slopes were mapped onto the cortical surface. Additionally, FC metric predictions were generated across the same ranges, holding age constant at the sample mean (66.5) when assessing pathology effects and pathology constant at 0.1 when assessing age effects. Parcels were grouped into 20 equally sized bins (ventiles) based on the SA axis (for pathology) or the RE axis (for age) scores, and predicted values within each ventile were averaged.
+To investigate cross-sectional nonlinearities in the relationship between functional connectivity and age or pathology, generalized additive models (GAMs) with penalized regression splines (thin plate) were fitted for each parcel, with age and pathology as smooth terms and sex and motion as linear covariates ($FC_{parcel} \sim s(age) + s(pathology) + sex + motion$). The models were fitted using the R package mgcv (version 1.9-1), with default values for the number k basis functions. The first derivatives of the smooth terms were calculated at 100 evenly distributed points along each spectrum using finite differences, capturing the slope and effect direction at specific ages and pathology loads. For age, these derivatives were calculated over the central 90% of the range. These derivatives were then used to calculate R² values by correlating the slopes at each point with the SA axis (for pathology) or the RE axis (for age) scores. Gradient alignment could then be assessed continuously across the age and pathology spectra. To visualize these effects, derivatives were averaged over quartiles of pathology and age. The resulting average slopes were mapped onto the cortical surface. Additionally, FC metric predictions were generated across the same ranges, holding age constant at the sample mean (66.5) when assessing pathology effects and pathology constant at 0.1 when assessing age effects. Parcels were grouped into 20 equally sized bins (ventiles) based on the SA axis (for pathology) or the RE axis (for age) scores, and predicted values within each ventile were averaged.
 
-For the longitudinal analysis, linear mixed-effects models (lme4[@lme4]) were fit at each parcel with FCS as the outcome and baseline age, baseline pathology, and within-subject pathology change (Δpathology) as fixed effects. Time between baseline and follow-up scan, sex and scanner motion were included as (fixed effects) covariates of no interest, and random intercepts were specified for subjects, i.e. $FC_{parcel} \sim age_{baseline} + pathology_{baseline} + \Delta pathology_{t_i-t_0} + time + sex + motion + (1 | subject)$. Variance inflation factors in this model were all \<1.21. The within-subject change in pathology was calculated as the difference between the baseline pathology score and the pathology score at each follow-up time point. Δpathology therefore captures absolute within-person change, enabling us to test whether increases in pathology are associated with concurrent changes in FCS. This approach separates the between and within subject effects. Time was included to account for unspecific longitudinal effects and differences in follow-up intervals, ensuring that the Δ pathology term captures pathology-specific within-person variation. Obtained parcelwise t-values from each fixed effect of interest were then correlated with the parcelwise component scores of the gradients.
+For the longitudinal analysis, linear mixed-effects models (lme4[@lme4]) were fit at each parcel with FCS as the outcome and baseline age, baseline pathology, and within-subject pathology change (Δpathology) as fixed effects. Time between baseline and follow-up scan, sex and scanner motion were included as (fixed effects) covariates of no interest, and random intercepts were specified for subjects, i.e. $FC_{parcel} \sim age_{baseline} + pathology_{baseline} + \Delta pathology_{t_i-t_0} + time + sex + motion + (1 | subject)$. Variance inflation factors in this model were all \<1.21. The within-subject change in pathology was calculated as the difference between the baseline pathology score and the pathology score at each follow-up time point. Δpathology therefore captures absolute within-person change, enabling us to test whether increases in pathology are associated with concurrent changes in FCS. This approach separates the between and within subject effects. Time was included to account for unspecific longitudinal effects and differences in follow-up intervals, ensuring that the Δ pathology term captures pathology-specific within-person variation. Obtained parcel-wise t-values from each fixed effect of interest were then correlated with the parcel-wise component scores of the gradients.
 
 To assess nonlinear patterns of longitudinal change across the old age and AD pathology spectrum, we employed a sliding window approach. This allowed us to detect localized changes without smoothing over transient effects. In this approach the model described in the previous paragraph was fitted at the parcel level repeatedly in windows traversing over baseline age and baseline pathology separately (i.e. age windows were only filtered on age and vice versa). Age windows were set at 25 years and incremented by 1 year, while pathology windows spanned 0.35 pathology score units and were incremented by 0.015, resulting in 44 and 45 windows respectively. Although relatively arbitrary, the window size of age was chosen to balance the number of subjects in each window, being sufficiently wide to capture the age effects we observed across the whole sample while being sufficiently narrow to capture nonlinearities across it. This window size turned out to be approximately 35% of the full age range, hence the pathology window was set at 35% of the pathology range \[0, 1\] as well. The pathology increment was chosen to get approximately the same number of windows as for age. Obtained t-values for each fixed effect of interest, in each window, were correlated with gradient scores. This allowed for a dynamic assessment of gradient alignment across both the baseline age and pathology spectra.
 
@@ -912,14 +719,23 @@ Data from the validation cohort ADNI is a public access dataset and can be obtai
 
 ### Code availability and used software
 
-Timeseries extraction from fMRI Nifti images was performed using Nilearn [@abraham2014] in Python 3.12, all other analyses and visualisation was done using R 4.4.2 (2024) using an array of different packages including: tidyverse [@tidyverse]; sf [@sf]; cowplot [@cowplot]; patchwork [@patchwork]; magick [@magick]; lme4 [@lme4]; gratia [@gratia]; ggpmisc [@ggpmisc]; ggside [@ggside]; mgcv [@mgcv]; and SCORPIUS [@SCORPIUS]. Code for all analyses and visualisation, including a quarto document for reproducing this manuscript with synthetic data is available at https://github.com/DeMONLab-BioFINDER/fc_changes_follow_gradients.
+Timeseries extraction from fMRI Nifti images was performed using Nilearn in Python 3.12, all other analyses and visualisation was done using R 4.4.2 (2024) using an array of different packages including: tidyverse; sf; cowplot; patchwork; magick; lme4; gratia; ggpmisc; ggside; mgcv; mice; psych; matrixStats; and SCORPIUS. Code for all analyses and visualisation, including a quarto document for reproducing this manuscript with synthetic data is available at https://github.com/DeMONLab-BioFINDER/fc_changes_follow_gradients.
 
-# Supplementary
+<!-- using Nilearn [@abraham2014] -->
+<!-- using an array of different packages including: tidyverse [@tidyverse]; sf [@sf]; cowplot [@cowplot]; patchwork [@patchwork]; magick [@magick]; lme4 [@lme4]; gratia [@gratia]; ggpmisc [@ggpmisc]; ggside [@ggside]; mgcv [@mgcv]; and SCORPIUS [@SCORPIUS] -->
+
+## References
+
+:::{#refs}
+:::
+
+
+# Supplementary Material
 
 ```{r message=FALSE, warning=FALSE, eval=TRUE}
 #| label: tbl-table3
 #| tbl-cap-location: bottom
-#| tbl-cap: "Gradient derivation method and FC thresholding has limited effect on the main results. This table shows the main analyses from Figure 2 and Figure 5 using gradients derived with principal component analysis (PCA) or diffusion map embedding (DME) over four different thresholding values: 0.00, 0.25, 0.50 and 0.75. A threshold of 0.75 means that 75% of the lowest values in the connectivity matrix is zeroed out. In the columns SA axis and RE axis, the Pearson correlation (r) is shown with accompanying p-value from spin tests, quantifying the relationship between the t-values for each specific term and the gradient scores based on the derivation method and thresholding specified in those two columns. Gradients were derived in all analyses from the average connectome of individuals without cognitive impairment, apoe4 non-carriers without abnormal amyloid levels. In BioFINDER only individuals ≤60 years of age were included while in ADNI the whole age range was used due to the smaller sample size. For the DME method this matrix is then converted into an affinity matrix by taking the cosine similarity between each pair of connectivity profiles, the components are then calculated as outlined in [@margulies2016]."
+#| tbl-cap: "Gradient derivation method and FC thresholding has limited effect on the main results. This table shows the main analyses from Figure 2 and Figure 5 using gradients derived with principal component analysis (PCA) or diffusion map embedding (DME) over four different thresholding values: 0.00, 0.25, 0.50 and 0.75. A threshold of 0.75 means that 75% of the lowest values in the connectivity matrix is zeroed out. In the columns SA axis and RE axis, the Pearson correlation (r) is shown with accompanying p-value from spin tests (one-sided; see Methods), quantifying the relationship between the t-values for each specific term and the gradient scores based on the derivation method and thresholding specified in those two columns. Gradients were derived in all analyses from the average connectome of individuals without cognitive impairment, apoe4 non-carriers without abnormal amyloid levels. In BioFINDER only individuals ≤60 years of age were included while in ADNI the whole age range was used due to the smaller sample size. For the DME method this matrix is then converted into an affinity matrix by taking the cosine similarity between each pair of connectivity profiles, the components are then calculated as outlined in [@margulies2016]."
 
 t3 <- readRDS("tables/supp_table.rds")
 
@@ -999,134 +815,90 @@ ft
 
 ```
 
-::: {#suppfig-neuroquery .column-body-outset}
-![](revision_figures/gradient_coverage.jpg)
 
-Top: Spatial distribution of gradient scores for the SA axis (left) and the RE axis (right) respectively, derived from biofinder. Middle: Meta-analytic decoding was performed using the NeuroQuery database [@dockès2020] to identify cognitive terms associated with each Schaefer-1000 parcel. For each parcel, regional associations with NeuroQuery terms were estimated using the ROIAssociationDecoder in NiMARE [@Salo2023], and results were aggregated across parcels. The resulting term associations were filtered to include only cognitive concepts listed in the Cognitive Atlas [@poldrack2011]. Words were assigned to a gradient side (e.g. sensory or association depending on the gradient of interest) decided by their average gradient value, and within each side the 25 most frequently mentioned words (i.e., the highest number of parcel associations) were retained. For each term, we counted the number of parcels it was associated with and its mean gradient value, assigned it to a gradient side, and retained the 25 most frequently associated terms per side. The terms are visualised along an x-axis of, and weighted both in size and colour by, their mean gradient score. Bottom: Distribution of gradient scores across the 7 Yeo networks.
-:::
 
-::: {#suppfig-gradmethodcomp .column-body-outset}
-![](figures/gradient_param_comparison_bf.jpg)
-
-Derived gradients compared over a set of different parameter values show that the derivation method (PCA or DME) only has marginal effect on the overall spatial structure of the gradients. Reference gradients from [@margulies2016] are presented in the leftmost column. PCA method: principal component analysis via singular value decomposition on the average connectivity matrix from individuals BioFINDER without cognitive impairment, *APOE* ε4 non-carriers without abnormal amyloid levels, and ≤60 years of age. DME: diffusion map embedding (DME). The gradients using either method are shown for 4 different levels of FC thresholding.
-:::
 
 ::: {#suppfig-grad2 .column-body-outset}
-![](figures/supplementary_gradient2.jpg)
+![](suppfig_original/jpg/supplementary_gradient2.jpg)
 
 Main results of @fig-fig1 shown with Gradient 2. This analysis showed that there was no strong or reproducible relationships between the the t-maps for age and AD pathology and Gradient 2.
 :::
 
 ::: {#suppfig-diagnosis .column-body-outset}
-![](figures/supplementary_diagnosis.jpg)
+![](suppfig_original/jpg/supplementary_diagnosis.jpg)
 
-Analyses showing t-maps and alignment with organizational axes for age and clinical diagnoses. Cortical maps display t-values from nodal linear models, while scatter plots show the relationships between t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test. The number of participants is here greater than in the main analysis due to more individuals having clinical diagnosis available than some of the pathology measures.
+Analyses showing t-maps and alignment with organizational axes for age and clinical diagnoses. Cortical maps display t-values from nodal linear models, while scatter plots show the relationships between t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test (one-sided, uncorrected; see Methods). The number of participants is here greater than in the main analysis due to more individuals having clinical diagnosis available than some of the pathology measures.
 :::
 
-::: {#suppfig-mainoverlaid .column-body-outset}
-![](figures/main_res_with_overlaid_nets.jpg)
 
-Main results of @fig-fig1 2A with the seven Yeo networks overlaid (top) and bar plots of the t-values from all parcels colored by their network membership (bottom). The colorbar on the y-axes of the histograms correspond to the color scale of the cortical maps, and the colorbar on the x-axes correspond to the color scale of the RE axis and the SA axis for Age and AD pathology, respectively.
-:::
 
-::: {#suppfig-within .column-body-outset}
-![](figures/within_supplementary.jpg)
-
-Analyses replicated with within-network affinity. Within-network affinity was calculated as the average affinity between parcels within the same Yeo network [@yeo2011]. Results are shown for BioFINDER (A), ADNI (B). How cognitive status seems to modify these relationships are shown in (C) and (D). Cortical maps display t-values from nodal linear models, while scatter plots show the relationships between t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test.
-:::
-
-::: {#suppfig-between .column-body-outset}
-![](figures/between_supplementary.jpg)
-
-Analyses replicated with between-network affinity. Between-network affinity was calculated as the average affinity to parcels outside of a parcel’s own Yeo 7 network [@yeo2011]. Results are shown for BioFINDER (A), ADNI (B). How cognitive status seems to modify these relationships are shown in (C) and (D). Cortical maps display t-values from nodal linear models, while scatter plots show the relationships between t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test.
-:::
-
-::: {#suppfig-strength .column-body-outset}
-![](figures/supplementary_strength.jpg)
-
-Analyses replicated with nodal connectivity strength (column-wise average of the unthresholded connectivity matrix) as the outcome measure demonstrates that age-related FC effects align with the RE axis, while AD pathology-related effects align with the SA axis, consistent with findings using nodal affinity in the main text. Results are shown for BioFINDER (A), ADNI (B). How cognitive status seems to modify these relationships are shown in (C) and (D). Cortical maps display t-values from nodal linear models, while scatter plots show the relationships between t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test.
-:::
-
-::: {#suppfig-tauAb .column-body-outset}
-![](revision_figures/apoe_plot_v1_w_tau_ab.jpg)
-
-\A A) Main results with separated pathology in the full sample controlling for diagnosis, due to the fact that all MCI/AD are Aβ+ by definition in this study. Tau pathology is calculated here as a non-linear mapping of tau PET SUVR from Braak12, Braak34, Braak56 in the same manner as for the main pathology composite. Aβ positivity was determined using previously established amyloid-PET cut-offs derived in [@biel2025]. B) Main results with separated pathology in cognitively unimpaired. Tau effects on FCS show considerably stronger alignment with the sensory-association axis compared to Aβ positivity. C) Main result with *APOE* ε4 carriership in the model in the full sample. D) Since the relationship between being an ε4 carrier and being Aβ+ is strong, and being Aβ+ is strongly related to being MCI/AD, we also ran the analysis in cognitively unimpaired Aβ- individuals. Here, we can see that being an ε4 carrier in itself does not give rise to gradient alignment.
-:::
-
-::: {#suppfig-cerebvasc .column-body-outset}
-![](revision_figures/atrophy_and_cerebrovasc.jpg)
-
-The FCS patterns associated with age and AD remained stable after including atrophy and several vascular markers as covariates in the main analysis. The parcelwise model included age, tau pathology, cortical thickness in the AD atrophy signature region, white-matter hyperintensity burden, presence of lacunes, presence of microbleeds, and CSF α-synuclein positivity (RTQuIC). Scatterplots show the spatial correlation between each effect map and the sensory–association and representational–executive axes. The principal age- and tau-related gradient alignments reported in the main manuscript remain robust after accounting for these factors, which themselves seemingly give rise to gradient-aligned effects.
-:::
 
 ::: {#suppfig-interplot .column-body-outset}
-![](revision_figures/imputed_cog/age_plot.jpg)
+![](suppfig_original/jpg/age_plot.jpg)
 
-Left: Parcel-wise linear regression results in the full sample (N = 973), modeling FCS as a function of age (scaled), AD pathology, and their interaction (controlling for sex and motion). Surface maps show t-values for the main effects and the age × pathology interaction. Scatterplots illustrate the correspondence between parcel-wise t-values and the sensory–association and representational–executive axes, with Pearson correlations and spin-test p-values indicated. The age × pathology interaction shows an inverse alignment with the SA axis, indicating attenuation of pathology-related gradient alignment at older ages. Right: Stratified nonlinear analyses of SA alignment across the AD pathology continuum. Using the full control sample but restricting patient subsets, gradient correlations with the first derivatives of the non-linear parcelwise slopes were estimated across 100 pathology values from 0 to 1. In the top plot patients were stratified by age and in the bottom plot they were stratified as amnestic/non-amnestic by performance on cognitive domain scores. Domain scores were derived through a bifactor model of cognition visualised in @fig-cogfull. Older patients show a steeper decline in SA axis alignment at higher pathology levels compared to younger patients, whereas both amnestic and non-amnestic groups exhibit broadly similar trajectories. Together, these analyses indicate that age modulates the strength of pathology-related gradient alignment, while broad cognitive phenotype (within typical AD presentation) does not fully account for the observed loss of alignment at later disease stages.
+Age attenuates Alzheimer’s disease–related gradient alignment, whereas cognitive phenotype shows limited modulation. Left: Parcel-wise linear regression results in the full sample (N = 973), modeling FCS as a function of age (scaled), AD pathology, and their interaction (controlling for sex and motion). Surface maps show t-values for the main effects and the age × pathology interaction. Scatterplots illustrate the correspondence between parcel-wise t-values and the sensory–association and representational–executive axes, with Pearson correlations and spin-test p-values indicated. The age × pathology interaction shows an inverse alignment with the SA axis, indicating attenuation of pathology-related gradient alignment at older ages. Right: Stratified nonlinear analyses of SA alignment across the AD pathology continuum. Using the full control sample but restricting patient subsets, gradient correlations with the first derivatives of the non-linear parcel-wise slopes were estimated across 100 pathology values from 0 to 1. In the top plot patients were stratified by age and in the bottom plot they were stratified as amnestic/non-amnestic by performance on cognitive domain scores. Domain scores were derived through a bifactor model of cognition visualised in @fig-cogfull. Older patients show a steeper decline in SA axis alignment at higher pathology levels compared to younger patients, whereas both amnestic and non-amnestic groups exhibit broadly similar trajectories. Together, these analyses indicate that age modulates the strength of pathology-related gradient alignment, while broad cognitive phenotype (within typical AD presentation) does not fully account for the observed loss of alignment at later disease stages.
 :::
 
 ::: {#suppfig-suppwin .column-body-outset}
-![](figures/supplementary_windowing.jpg)
-
+![](suppfig_original/jpg/supplementary_windowing.jpg)
 Results of the sliding window analysis from @fig-fig4 showing the dynamic effect of AD pathology on FC gradient alignment. The correlation values on the scatters are smoothed with generalized additive models. Correlations are shown for each term for both the SA and RE axis. Marginal plots show the sample size for each window. At higher baseline-pathology windows, pathology-related FC effects show a negative association with the sensory–association axis, coinciding with a transient rise in alignment with the representational–executive axis. This crossover indicates that the spatial organization of pathology-related FC changes may shift as pathology advances.
 :::
 
 ::: {#suppfig-healthcognopat .column-body-outset}
-![](figures/supplementary_health_no_pat_adj.jpg)
+![](suppfig_original/jpg/supplementary_health_no_pat_adj.jpg)
 
-A: Cross-sectional results for cognitively unimpaired Aβ-, *APOE* ε4 non-carriers. The model includes age, inverted cognition (-mPACC), and an age × cognition interaction (with centered predictors and inverted cognition scores for interpretability). Unlike the main analysis presented in @fig-cogfig, this analysis does not adjust for pathology. The age effects observed here partially reflect the effects previously attributed to pathology, revealing a relationship with the SA axis that diminishes when adjusting for pathology. Cortical maps display t-values from nodal linear regression models, while scatter plots show the relationships between the t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test. B: Distribution of tau PET SUVR from Braak I-II, Braak III-IV and Braak V-VI in cognitively unimpaired Aβ-, *APOE* ε4 non-carriers.
+A: Cross-sectional results for cognitively unimpaired Aβ-, *APOE* ε4 non-carriers. The model includes age, inverted cognition (-mPACC), and an age × cognition interaction (with centered predictors and inverted cognition scores for interpretability). Unlike the main analysis presented in @fig-cogfig, this analysis does not adjust for pathology. The age effects observed here partially reflect the effects previously attributed to pathology, revealing a relationship with the SA axis that diminishes when adjusting for pathology. Cortical maps display t-values from nodal linear regression models, while scatter plots show the relationships between the t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test (one-sided, uncorrected; see Methods). B: Distribution of tau PET SUVR from Braak I-II, Braak III-IV and Braak V-VI in cognitively unimpaired Aβ-, *APOE* ε4 non-carriers.
 :::
 
 ::: {#suppfig-healthnoint .column-body-outset}
-![](figures/supplementary_health_no_interaction.jpg)
+![](suppfig_original/jpg/supplementary_health_no_interaction.jpg)
 
 Cross-sectional results for cognitively unimpaired Aβ-, *APOE* ε4 non-carriers. This model is without interaction between cognition and age.
 :::
 
 ::: {#suppfig-allgrads .column-body-outset}
-![](revision_figures/all_grad_plot.jpg)
+![](suppfig_original/jpg/all_grad_plot.jpg)
 
 To investigate whether the lost association between AD pathology and the sensory association axis in the cognitively impaired subgroup analysis was related to a bias in deriving the gradients only from cognitively healthy subjects below the age of 60, we derived gradients from the full sample and ran the same analysis. This produced consistent results.
 :::
 
 ::: {#suppfig-clinnocog .column-body-outset}
-![](figures/supplementary_clin_without_cognition.jpg)
+![](suppfig_original/jpg/supplementary_clin_without_cognition.jpg)
 
 Cross-sectional results within the MCI and AD group without cognition. This analysis revealed that AD pathology showed no relationship to the SA axis even when not accounting for cognition, within this group.
 :::
 
 ::: {#suppfig-clincogint .column-body-outset}
-![](figures/supplementary_clin_int.jpg)
+![](suppfig_original/jpg/supplementary_clin_int.jpg)
 
-Cross-sectional analyses within patients with mild cognitive impairment (MCI) and Alzheimer’s disease (AD), interacting AD pathology and cognition revealed that this did not affect the main effect of cognition. Predictors have been centred and cognition scores inverted for interpretability. Cortical maps display t-values from nodal linear regression models, while scatter plots show the relationships between the t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test.
+Cross-sectional analyses within patients with mild cognitive impairment (MCI) and Alzheimer’s disease (AD), interacting AD pathology and cognition revealed that this did not affect the main effect of cognition. Predictors have been centred and cognition scores inverted for interpretability. Cortical maps display t-values from nodal linear regression models, while scatter plots show the relationships between the t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test (one-sided, uncorrected; see Methods).
 :::
 
 ::: {#suppfig-switchgrad .column-body-outset}
-![](revision_figures/switched_grad_all_path.jpg)
+![](suppfig_original/jpg/switched_grad_all_path.jpg)
 
 Main results but using gradients derived from ADNI to interpret the t-maps in BioFINDER (A) and the gradients derived from BioFINDER to interpret the t-maps from ADNI (B). To investigate whether the calculation pathology scores within each cohort affected the results we derived a pathology score after pooling data from the two samples and running the main analysis again in both BioFINDER (C) and ADNI (D). Results were comparable with the originally derived pathology score within each cohort.
 :::
 
+
+
+::: {#suppfig-within .column-body-outset}
+![](suppfig_original/jpg/within_supplementary.jpg)
+
+Analyses replicated with within-network affinity. Within-network affinity was calculated as the average affinity between parcels within the same Yeo network [@yeo2011]. Results are shown for BioFINDER (A), ADNI (B). How cognitive status seems to modify these relationships are shown in (C) and (D). Cortical maps display t-values from nodal linear models, while scatter plots show the relationships between t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test (one-sided, uncorrected; see Methods).
+:::
+
+::: {#suppfig-between .column-body-outset}
+![](suppfig_original/jpg/between_supplementary.jpg)
+
+Analyses replicated with between-network affinity. Between-network affinity was calculated as the average affinity to parcels outside of a parcel’s own Yeo 7 network [@yeo2011]. Results are shown for BioFINDER (A), ADNI (B). How cognitive status seems to modify these relationships are shown in (C) and (D). Cortical maps display t-values from nodal linear models, while scatter plots show the relationships between t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test (one-sided, uncorrected; see Methods).
+:::
+
+
 ::: {#suppfig-affnothresh .column-body-outset}
-![](figures/supplementary_affinity_no_thresh_correlation.jpg)
+![](suppfig_original/jpg/supplementary_affinity_no_thresh_correlation.jpg)
 
-Analyses replicated with nodal affinity calculated using Pearson correlation instead of cosine similarity and no thresholding demonstrate consistent results with the main analyses (@fig-fig1 and @fig-cogfig). Results are shown for BioFINDER (A), ADNI (B). How cognitive status seems to modify these relationships are shown in (C) and (D). Cortical maps display t-values from nodal linear models, while scatter plots show the relationships between t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test.
+Analyses replicated with nodal affinity calculated using Pearson correlation instead of cosine similarity and no thresholding demonstrate consistent results with the main analyses (@fig-fig1 and @fig-cogfig). Results are shown for BioFINDER (A), ADNI (B). How cognitive status seems to modify these relationships are shown in (C) and (D). Cortical maps display t-values from nodal linear models, while scatter plots show the relationships between t-values and gradient scores, colored by network membership. The relationship was quantified using Pearson correlation and significance assessed using a spin test (one-sided, uncorrected; see Methods).
 :::
 
-::: {#suppfig-nodaltau .column-body-outset}
-![](revision_figures/nodal_tau.jpg) 
 
-Results from parcelwise models using tau PET SUVR extracted for each Schaefer-1000 parcel (FCS~parcel~ \~ age + tau~parcel~ + covariates). The spatial pattern closely matches analyses with global pathology measures, indicating that parcel-level tau largely tracks global tau burden on the effect of FCS.
-:::
-
-::: {#suppfig-parcor .column-body-outset}
-![](revision_figures/caus_plot.jpg)
-
-\A Cross-sectional results of the full sample with education in the model and sex as variable of interest (A). Correlations of the t-maps from pathology (path) and age in the model FC~parcel~ \~ age + AD pathology + sex + motion, when accounting for the variance of nodal affinity averaged across subjects. The correlation between the pathology t-map and the SA axis persists even though we account for mean nodal affinity, indicating it is not the shared data structure that accounts for the correlation between the two (B). Individual nodal affinity maps correlated with the SA and RE axis respectively show that, while individual affinity maps tend to negatively correlate with the SA axis, they do not on average tend to correlate with the RE axis.
-:::
-
-## Supplementary figure captions
-
-::: {.figure-caption-section-suppfig}
-
-:::
