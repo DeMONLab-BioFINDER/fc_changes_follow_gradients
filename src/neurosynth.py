@@ -18,7 +18,7 @@ from nimare.meta.cbma import mkda
 
 
 # Load the parcellation
-img = nib.load("stuff_for_revisions/schaefer_neurosynth/Schaefer2018_1000Parcels_7Networks_order_FSLMNI152_2mm.nii.gz")
+img = nib.load("data/neurosynth/schaefer_neurosynth/Schaefer2018_1000Parcels_7Networks_order_FSLMNI152_2mm.nii.gz")
 atlas_ras = nib.as_closest_canonical(img) 
 data = atlas_ras.get_fdata().astype(int)
 affine = atlas_ras.affine
@@ -27,10 +27,10 @@ affine = atlas_ras.affine
 for i in range(1, 1001):
     mask = (data == i).astype(np.uint8)
     out_img = nib.Nifti1Image(mask, affine)
-    nib.save(out_img, f"stuff_for_revisions/schaefer_neurosynth/parcel_{i}.nii.gz")
+    nib.save(out_img, f"data/neurosynth/schaefer_neurosynth/parcel_{i}.nii.gz")
     
 
-out_dir = os.path.abspath("stuff_for_revisions/neurosynth")
+out_dir = os.path.abspath("data/neurosynth/neurosynth")
 os.makedirs(out_dir, exist_ok=True)
 
 files = nimare.extract.fetch_neurosynth(
@@ -100,29 +100,9 @@ x = x.reset_index().rename(columns={"index": "feature"})
 x = x.filter(r>0.025)
 #ids = neurosynth_dset.get_studies_by_mask(parc)
 
-    
-
-#dset = Dataset(os.path.join(get_resource_path(), "neurosynth_laird_studies.json"))
-# dset.annotations.head(5)
-# g1 = nib.load("stuff_for_revisions/gradient1.nii.gz")
-# 
-# decoder = CorrelationDecoder(
-#     frequency_threshold=0.001,
-#     meta_estimator=mkda.MKDAChi2,
-#     target_image='z_desc-association',
-# )
-# 
-# decoder.fit(dset)
-# decoding_results = decoder.transform(g1)
-
-# atlas_img = nib.load("stuff_for_revisions/schaefer_neurosynth/Schaefer2018_1000Parcels_7Networks_order_FSLMNI152_2mm.nii.gz")
-# atlas_ras = nib.as_closest_canonical(atlas_img) 
-# decoder = ROIAssociationDecoder(masker=atlas_ras)
-# decoder.fit(neurosynth_dset)
 
 
-
-parcel_dir = "stuff_for_revisions/schaefer_neurosynth"
+parcel_dir = "data/neurosynth/schaefer_neurosynth"
 all_results = []
 
 for i in range(1, 1001):  # Schaefer 1000 parcels
@@ -145,12 +125,12 @@ for i in range(1, 1001):  # Schaefer 1000 parcels
 
 
 results_df = pd.concat(all_results, ignore_index=True)
-results_df.to_csv("schaefer1000_neurosynth_terms.csv", index=False)
+results_df.to_csv("data/neurosynth/schaefer1000_neurosynth_terms.csv", index=False)
 
 
 
 
-parc = nib.load("stuff_for_revisions/schaefer_neurosynth/parcel_1.nii.gz")
+parc = nib.load("data/neurosynth/schaefer_neurosynth/parcel_1.nii.gz")
 decoder = discrete.ROIAssociationDecoder(parc)
 decoder.fit(neurosynth_dset)
 
@@ -171,7 +151,7 @@ from nimare.decode.discrete import ROIAssociationDecoder
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 
-parcel_dir = "stuff_for_revisions/schaefer_neurosynth"
+parcel_dir = "data/neurosynth/schaefer_neurosynth"
 parcel_indices = range(1, 1001)  # Schaefer-1000
 
 def decode_one_parcel(i):
@@ -227,5 +207,5 @@ for df in all_results:
 results_df = pd.concat(fixed_results, ignore_index=True)
 
 # save
-results_df.to_csv("schaefer1000_neurosynth_terms.csv", index=False)
+results_df.to_csv("data/neurosynth/schaefer1000_neurosynth_terms.csv", index=False)
 

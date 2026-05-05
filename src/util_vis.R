@@ -6,6 +6,19 @@ library(purrr)
 source("src/plot_gams.R")
 source("src/plot_grad_rels.R")
 
+pad_plot <- function(plot, pad = 1) {
+  library(grid)
+  library(gtable)
+  
+  gt <- if (inherits(plot, "patchwork")) {
+    patchwork::patchworkGrob(plot)
+  } else {
+    ggplot2::ggplotGrob(plot)
+  }
+  
+  gtable::gtable_add_padding(gt, grid::unit(pad, "pt"))
+}
+
 make_gradient_plots <- function(gradient_data,
                                 gradient_colors = data.frame(gradient1 = c("#3F596D", "#D38A4E"), 
                                                              gradient2 = c("#4682B4", "#781286"),  
@@ -94,6 +107,7 @@ prepare_longitudinal_and_window_analysis <- function(long_df,
     gradient_data = grad_df %>% filter(study == "biofinder"),
     gradients = c(1, 3),
     empty_row_height = -0.2,
+    brain_title_vjust = -10,
     r_spin_size = 0.9,
     gradient_colors = gradient_cols,
     add_shade = TRUE,
@@ -290,9 +304,9 @@ plot_longitudinal_and_window_analysis <- function(analysis_data,
   
   p_bf_long[[1]] <- p_bf_long[[1]] + theme(plot.title = element_text(vjust = -2))
   p_bf_long[[2]] <- p_bf_long[[2]] + theme(plot.title = element_text(vjust = -2))
-  p_bf_long[[3]] <- p_bf_long[[3]] + labs(title = "Age BL") + theme(plot.title = element_text(vjust = 0))
-  p_bf_long[[4]] <- p_bf_long[[4]] + labs(title = "Pathology BL") + theme(plot.title = element_text(vjust = 0))
-  p_bf_long[[5]] <- p_bf_long[[5]] + labs(title = bquote(Delta * "Pathology" ~ (t[i] - t[0]))) + theme(plot.title = element_text(vjust = -0.3))
+  p_bf_long[[3]] <- p_bf_long[[3]] + labs(title = "Age BL") + theme(plot.title = element_text(vjust = 0, margin = margin(b = -5)))
+  p_bf_long[[4]] <- p_bf_long[[4]] + labs(title = "Pathology BL") + theme(plot.title = element_text(vjust = 0, margin = margin(b = -5)))
+  p_bf_long[[5]] <- p_bf_long[[5]] + labs(title = bquote(Delta * "Pathology" ~ (t[i] - t[0]))) + theme(plot.title = element_text(vjust = -0.3, margin = margin(b = -5)))
   
   hist_map <- hist_map_data %>%
     ggplot() +
@@ -400,7 +414,7 @@ plot_longitudinal_and_window_analysis <- function(analysis_data,
   
   p_bf_long_cp <- ggdraw() +
     draw_plot(p_bf_long) +
-    draw_plot(net_legend, x = 0.1, y = 0.025, width = 0.25, height = 0.065) +
+    draw_plot(net_legend, x = 0.1, y = 0.01, width = 0.25, height = 0.065) +
     draw_plot_label("A", size = label_size) +
     draw_label(paste0("BioFINDER Longitudinal", " (N=", n_long, ")"), x = 0.045, y = 0.965, hjust = 0, size = title_size) +
     draw_label("FCS ~ age_bl + path_bl + Delta path +\ntime + sex + motion + (1|sub)", x = 0.015, y = 0.89, hjust = 0, size = subtitle_size)
@@ -413,7 +427,7 @@ plot_longitudinal_and_window_analysis <- function(analysis_data,
   
   slide_meth <- ggdraw() +
     draw_plot(hist_map, x = 0.01, y = 0.3, width = 0.98, height = 0.7) +
-    draw_plot(p_bf_long[[5]] + labs(title = expression(Delta * Path)) + theme(plot.title = element_text(vjust = 0)), x = 0.39, y = 0.02, width = 0.3, height = 0.3) +
+    draw_plot(p_bf_long[[5]] + labs(title = expression(Delta * Path)) + theme(plot.title = element_text(vjust = 0, margin = margin(b = 0))), x = 0.39, y = 0.017, width = 0.29, height = 0.29) +
     draw_plot(p_bf_long[[1]] + theme(plot.title = element_text(vjust = 0)), x = 0.69, y = 0.025, width = 0.29, height = 0.29) +
     draw_image(lmm_tab, x = 0.02, y = 0.00, width = 0.35, height = 0.25) +
     draw_plot_label("B", size = label_size) +
@@ -421,7 +435,7 @@ plot_longitudinal_and_window_analysis <- function(analysis_data,
     annotate("segment", x = 0.33, y = 0.425, xend = 0.225, yend = 0.22, linewidth = struct_linewidth, arrow = arrow(length = unit(0.06, "inches"))) +
     annotate("label", label = "Parcel-wise LMM\nin age window", x = 0.25, y = 0.3, size = annotation_size) +
     annotate("text", label = "Pearson Correlation", x = 0.7, y = 0.02, size = annotation_size) +
-    annotate("segment", x = 0.38, y = 0.145, xend = 0.43, yend = 0.145, arrow = arrow(length = unit(0.06, "inches")), linewidth = struct_linewidth) +
+    annotate("segment", x = 0.38, y = 0.147, xend = 0.43, yend = 0.147, arrow = arrow(length = unit(0.06, "inches")), linewidth = struct_linewidth) +
     theme(plot.background = element_rect(color = "black", linewidth = struct_linewidth))
   
   final_fig <- ggdraw() +
@@ -492,10 +506,12 @@ figure_one <- function(subject_data,
                        shade_s = 0.01,
                        b_size = 11,
                        plot_title_size = 1,
+                       brain_title_size = rel(plot_title_size),
+                       brain_title_vjust = 0,
                        axes_title_size = 1,
                        ax_txt_size = rel(1),
-                       r2_sizing1 = 4.6,
-                       r2_sizing2 = 4.6,
+                       r2_sizing1 = 1,
+                       r2_sizing2 = 1,
                        boxed = FALSE,
                        empt_row_height = 0,
                        selected_gradients = c(1, 3), 
@@ -541,6 +557,8 @@ figure_one <- function(subject_data,
                                          filter_criteria = quo(),
                                          show_networks = FALSE,
                                          axis_text_size = ax_txt_size,
+                                         brain_title_size = brain_title_size,
+                                         brain_title_vjust = brain_title_vjust,
                                          rasterize = raster,
                                          ggrastr_dpi = ggrastr_dpi,
                                          raster_scale_atlas = rast_scale_atlas,
@@ -558,7 +576,6 @@ figure_one <- function(subject_data,
     p_bf <- bf_p$plot &
       theme(#text = element_text(size = text_size),
         plot.tag = element_blank(),
-        plot.title = element_text(size = rel(plot_title_size)),
         axis.title = element_text(size = rel(axes_title_size))) 
     
     
@@ -619,6 +636,8 @@ figure_one <- function(subject_data,
                                            filter_criteria = quo(),
                                            show_networks = FALSE,
                                            axis_text_size = ax_txt_size,
+                                           brain_title_size = brain_title_size,
+                                           brain_title_vjust = brain_title_vjust,
                                            rasterize = raster,
                                            ggrastr_dpi = ggrastr_dpi,
                                            raster_scale_atlas = rast_scale_atlas,
@@ -636,7 +655,6 @@ figure_one <- function(subject_data,
     p_a <- adni_p$plot &
       theme(#text = element_text(size = text_size),
         plot.tag = element_blank(),
-        plot.title = element_text(size = rel(plot_title_size)),
         axis.title = element_text(size = rel(axes_title_size)))
     
     # f <- fig1_formula_ad
@@ -709,6 +727,8 @@ figure_one <- function(subject_data,
                                                filter_criteria = quo(),
                                                show_networks = FALSE,
                                                axis_text_size = ax_txt_size,
+                                               brain_title_size = brain_title_size,
+                                               brain_title_vjust = brain_title_vjust,
                                                rasterize = raster,
                                                ggrastr_dpi = ggrastr_dpi,
                                                raster_scale_atlas = rast_scale_atlas,
@@ -727,7 +747,6 @@ figure_one <- function(subject_data,
     health_l_marg <- l_marg - 0.016666
     p_health_cog <- health_cog$plot &
       theme(plot.tag = element_blank(),
-            plot.title = element_text(size = rel(plot_title_size)),
             axis.title = element_text(size = rel(axes_title_size))
       )
     
@@ -748,10 +767,10 @@ figure_one <- function(subject_data,
     
     plt_idx <- 3:6
     if (length(selected_gradients) < 2) plt_idx <- plt_idx-1
-    p_health_cog[[plt_idx[1]]] <- p_health_cog[[plt_idx[1]]] + labs(title = "Age") + theme(plot.title = element_text(vjust = -1.5)) 
+    p_health_cog[[plt_idx[1]]] <- p_health_cog[[plt_idx[1]]] + labs(title = "Age") + theme(plot.title = element_text(vjust = brain_title_vjust))
     p_health_cog[[plt_idx[2]]] <- p_health_cog[[plt_idx[2]]] + labs(title = "-mPACC", subtitle = "(Inverted cognition)") + theme(plot.subtitle = element_text(hjust = 0.5, size = rel(0.6)))
-    p_health_cog[[plt_idx[3]]] <- p_health_cog[[plt_idx[3]]] + labs(title = "AD Pathology") + theme(plot.title = element_text(vjust = -1.5)) 
-    p_health_cog[[plt_idx[4]]] <- p_health_cog[[plt_idx[4]]] + labs(title = "-mPACC×Age") + theme(plot.title = element_text(vjust = -1.5)) 
+    p_health_cog[[plt_idx[3]]] <- p_health_cog[[plt_idx[3]]] + labs(title = "AD Pathology") + theme(plot.title = element_text(vjust = brain_title_vjust))
+    p_health_cog[[plt_idx[4]]] <- p_health_cog[[plt_idx[4]]] + labs(title = "-mPACC×Age") + theme(plot.title = element_text(vjust = brain_title_vjust))
     
     p_health_cog <- ggdraw() + draw_plot(p_health_cog) + 
       draw_plot_label(ifelse(split, "A", "C"), x = health_l_marg-health_l_marg, size = tag_size) + 
@@ -780,6 +799,8 @@ figure_one <- function(subject_data,
                                                  filter_criteria = quo(),
                                                  show_networks = FALSE,
                                                  axis_text_size = ax_txt_size,
+                                                 brain_title_size = brain_title_size,
+                                                 brain_title_vjust = brain_title_vjust,
                                                  rasterize = raster,
                                                  ggrastr_dpi = ggrastr_dpi,
                                                  raster_scale_atlas = rast_scale_atlas,
@@ -797,7 +818,6 @@ figure_one <- function(subject_data,
     p_clinical_cog <-
       clinical_cog$plot  &
       theme(plot.tag = element_blank(),
-            plot.title = element_text(size = rel(plot_title_size)),
             axis.title = element_text(size = rel(axes_title_size))
       )
     
@@ -815,8 +835,8 @@ figure_one <- function(subject_data,
     
     plt_idx <- 3:5
     if (length(selected_gradients) < 2) plt_idx <- plt_idx-1
-    p_clinical_cog[[plt_idx[1]]] <- p_clinical_cog[[plt_idx[1]]] + labs(title = "Age") + theme(plot.title = element_text(vjust = -1.5)) 
-    p_clinical_cog[[plt_idx[2]]] <- p_clinical_cog[[plt_idx[2]]] + labs(title = "AD Pathology") + theme(plot.title = element_text(vjust = -1.5)) 
+    p_clinical_cog[[plt_idx[1]]] <- p_clinical_cog[[plt_idx[1]]] + labs(title = "Age") + theme(plot.title = element_text(vjust = brain_title_vjust))
+    p_clinical_cog[[plt_idx[2]]] <- p_clinical_cog[[plt_idx[2]]] + labs(title = "AD Pathology") + theme(plot.title = element_text(vjust = brain_title_vjust))
     p_clinical_cog[[plt_idx[3]]] <- p_clinical_cog[[plt_idx[3]]] + labs(title = "-mPACC", subtitle = "(Inverted cognition)") + theme(plot.subtitle = element_text(hjust = 0.5, size = rel(0.6)))
     
     p_clinical_cog <- ggdraw() + draw_plot(p_clinical_cog) + draw_plot_label(ifelse(split, "B", "D"), x = clin_l_marg-l_marg, size = tag_size)

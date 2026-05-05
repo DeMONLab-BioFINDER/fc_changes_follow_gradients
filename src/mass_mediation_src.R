@@ -333,6 +333,7 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
                                      parcels,
                                      gradient_colors = gradient_cols,
                                      plt_title = "",
+                                   plt_title_size = rel(1),
                                      terms_nice = treatments,
                                      plot_spacing = 0.3,
                                      point_size = 1,
@@ -733,7 +734,7 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
   
   age_corr <- wide_data |> 
     ggplot(aes(memory, executive, color = name)) +
-    geom_point(alpha = 0.5, show.legend = FALSE, size = 0.2) +
+    geom_point(alpha = 0.2, show.legend = FALSE, size = 0.2) +
     stat_poly_line(se = FALSE, color = "#323232", linewidth = 0.3) +
     ggpp::annotate(geom = "text_npc", label = label_corr,
                    size = 2,
@@ -742,9 +743,9 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
                    parse = TRUE) +
     scale_color_manual(values = net_names %>% select(name, col) %>% deframe())  +
     labs(#subtitle = label_corr,
-         x = paste0("Age", "→", "FCS" , "→", "Mem"),
-         y = paste0("Age", "→", "FCS" , "→", "Exec")) +
-    theme(axis.title = element_text(size = rel(0.9)))
+         x = expression(Age %->% FCS %->% Mem),
+         y = expression(Age %->% FCS %->% Exec)) +
+    theme(axis.title = element_text(size = rel(0.85)))
   
   
   
@@ -765,7 +766,7 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
   
   pathology_corr <- wide_data |> 
     ggplot(aes(memory, executive, color = name)) +
-    geom_point(alpha = 0.5, show.legend = FALSE, size = 0.2) +
+    geom_point(alpha = 0.2, show.legend = FALSE, size = 0.2) +
     stat_poly_line(se = FALSE, color = "#323232", linewidth = 0.3) +
     ggpp::annotate(geom = "text_npc", label = label_corr,
                    size = 2,
@@ -774,9 +775,9 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
                    parse = TRUE) +
     scale_color_manual(values = net_names %>% select(name, col) %>% deframe())  +
     labs(#subtitle = label_corr,
-         x = paste0("ADpath", "→", "FCS" , "→", "Mem"),
-         y = paste0("ADpath", "→", "FCS" , "→", "Exec")) +
-    theme(axis.title = element_text(size = rel(0.9)))
+         x = expression(ADpath %->% FCS %->% Mem),
+         y = expression(ADpath %->% FCS %->% Exec)) +
+    theme(axis.title = element_text(size = rel(0.85)))
   
   plots_to_include <- c(est_plots, plots, list(age_corr, pathology_corr))
 
@@ -788,7 +789,7 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
                                                             #subtitle = subtit_expr,
                                                             #tag_levels = c('A', '1'),
                                                             theme = theme(
-                                                              plot.title = element_text(#size = 28,
+                                                              plot.title = element_text(size = plt_title_size,
                                                                 hjust = 0),
                                                               plot.background = element_rect(color = "black")
                                                             )) +
@@ -801,7 +802,7 @@ plot_mediation_barplot <- function(subject_data, treatments, outcomes, covariate
   
   if (rectangle) {
     big_plot  <-  big_plot  + plot_annotation(
-      theme = theme(plot.background = element_rect(color = "black", fill = NA)))
+      theme = theme(plot.background = element_rect(color = "black", fill = NA, linewidth = 0.5)))
   }
   
   source_data <- gradient_data %>%
@@ -1009,13 +1010,13 @@ plot_mediation_structure <- function(treat, mediator, outcome,
     # Arrows
     geom_edge_link(
       aes(
-        end_cap = label_rect(node2.name, fontsize = lab_size*(1/0.352777778)),
-        start_cap = label_rect(node1.name, fontsize = lab_size*(1/0.352777778))
+        end_cap = label_rect(node2.name, fontsize = lab_size*(1/0.5)),
+        start_cap = label_rect(node1.name, fontsize = lab_size*(1/0.5))
       ),
       linewidth = 0.1,
       angle_calc = "along",
       label_dodge = unit(0.25, "mm"),
-      arrow = arrow(angle = 20, length = unit(0.075, "cm"), type = "closed"),
+      arrow = arrow(angle = 20, length = unit(0.04, "cm"), type = "closed"),
       color = "black"
     ) +
     
