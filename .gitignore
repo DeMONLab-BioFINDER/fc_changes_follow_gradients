@@ -2,5 +2,43 @@
 .Rhistory
 .RData
 .Ruserdata
+# Ignore everything in paper
+paper/*
+
+# Allow Git to look inside paper/
+!paper/
+
+# Keep specific files
+!paper/fc_changes_paper.qmd
+!paper/custom_ref_new.docx
+!paper/references.docx
+
+# Keep directories (must re-include parent dirs too)
+!paper/_extensions/
+!paper/figures/
+
+# Keep everything inside these dirs
+!paper/_extensions/**
+!paper/figures/**
+
+# Ignore everything in suppfig_original except paper/suppfig_original/jpg
+paper/suppfig_original/*
+!paper/suppfig_original/
+!paper/suppfig_original/jpg/
+!paper/suppfig_original/jpg/**
+
+
+data/*
+!data/atlas_data/
+!data/atlas_data/**
+data/atlas_data/atlas_data_not_in_paper/
+!data/adni_src_data_synthetic/
+!data/adni_src_data_synthetic/**
+!data/bf_src_data_synthetic/
+!data/bf_src_data_synthetic/**
+!data/gradients/
+!data/gradients/**
 data/adni_src_data
 data/bf_src_data
+src/scratch
+random
