@@ -9,7 +9,8 @@ This repository provides code for reproducing analyses and figures from the manu
 Due to data-sharing restrictions, the repository uses synthetic data by default.
 
 
-[!NOTE]
+ℹ️ **NOTE**
+
 The source code in the repo is for the final version of the manuscript, the code in the docker container produces the version of the manuscript
 that is published as a preprint. You won't be able to run all of the source code in the current repo with the synthetic data. As soon as I have time
 I will synthesize new data and update everything so that you can run everything from start to finish for the final version.
