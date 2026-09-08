@@ -31,13 +31,13 @@ conflicts_prefer(dplyr::select)
 conflicts_prefer(dplyr::lag)
 
 
-# These arguments are set as environmental variables when running the docker image
-# if you are running the code on your own machine, set them manually
+# These options are read from environment variables. Set them in the shell
+# before running Rscript, or with Sys.setenv() in an interactive R session.
 
 from_start <- as.logical(Sys.getenv("FROM_START", "FALSE"))
 create_brain_permutations <- as.logical(Sys.getenv("CREATE_BRAIN_PERMUTATIONS", "FALSE"))
 extract_timeseries <- as.logical(Sys.getenv("EXTRACT_TIMESERIES", "FALSE"))
-real_data <- as.logical(Sys.getenv("REAL_DATA", "TRUE"))
+real_data <- as.logical(Sys.getenv("REAL_DATA", "FALSE"))
 
 figure_path <- "paper/figures"
 dir.create(figure_path, showWarnings = FALSE)

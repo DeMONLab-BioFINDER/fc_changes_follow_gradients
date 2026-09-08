@@ -30,6 +30,9 @@ data/atlas_data/atlas_data_not_in_paper/
 !data/bf_src_data_synthetic/**
 !data/gradients/
 !data/gradients/**
+
+data/adni_src_data_synthetic/connectomes/
+data/bf_src_data_synthetic/connectomes/
 data/adni_src_data
 data/bf_src_data
 src/scratch
