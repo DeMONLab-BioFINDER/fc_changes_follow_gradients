@@ -34,10 +34,10 @@ conflicts_prefer(dplyr::lag)
 # These arguments are set as environmental variables when running the docker image
 # if you are running the code on your own machine, set them manually
 
-from_start <- as.logical(Sys.getenv("FROM_START", "TRUE"))
+from_start <- as.logical(Sys.getenv("FROM_START", "FALSE"))
 create_brain_permutations <- as.logical(Sys.getenv("CREATE_BRAIN_PERMUTATIONS", "FALSE"))
 extract_timeseries <- as.logical(Sys.getenv("EXTRACT_TIMESERIES", "FALSE"))
-real_data <- as.logical(Sys.getenv("REAL_DATA", "FALSE"))
+real_data <- as.logical(Sys.getenv("REAL_DATA", "TRUE"))
 
 figure_path <- "paper/figures"
 dir.create(figure_path, showWarnings = FALSE)
@@ -801,8 +801,14 @@ if (from_start) {
 
 
 success_vec <- list.files(connectome_dir_adni) |> tools::file_path_sans_ext()
-adni_df <- adni_df___ |> filter(fmri_bl, id_ses %in% success_vec) |> 
-  inner_join(rsqa_fd, join_by(ID==id_ses))
+if (real_data) {
+  adni_df <- adni_df___ |> filter(fmri_bl, id_ses %in% success_vec) |> 
+    inner_join(rsqa_fd, join_by(id_ses==id_ses))
+} else {
+  adni_df <- adni_df___ |> filter(fmri_bl, id_ses %in% success_vec) |> 
+    inner_join(rsqa_fd, join_by(ID==id_ses))
+}
+
 
 adni_df_unfilt <- adni_df |> mutate(motion_filter = (rsqa__MeanFD<0.3 & rsqa__MaxFD<3))
 adni_df <- adni_df_unfilt |>  filter(motion_filter)
