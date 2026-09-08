@@ -1,0 +1,10 @@
+# Data
+data/
+stuff_for_revisions/
+
+# Outputs
+paper/*
+!paper/fc_changes_paper.qmd
+
+# Code
+src/scratch/
