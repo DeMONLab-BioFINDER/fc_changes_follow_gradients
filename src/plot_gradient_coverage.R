@@ -1,8 +1,8 @@
 plot_gradient_coverage <- function(
   grad_df,
-  nq_results = readr::read_rds("stuff_for_revisions/schaefer1000_NQ_results.rds"),
+  nq_results = readr::read_rds("data/atlas_data/schaefer1000_NQ_results.rds"),
   roi_labs = readr::read_delim(
-    "stuff_for_revisions/Schaefer2018_1000Parcels_7Networks_order_FSLMNI152_2mm.Centroid_RAS.csv",
+    "data/atlas_data/Schaefer2018_1000Parcels_7Networks_order_FSLMNI152_2mm.Centroid_RAS.csv",
     show_col_types = FALSE
   ) |>
     dplyr::select(1, 2) |>

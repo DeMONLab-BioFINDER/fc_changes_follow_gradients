@@ -1019,6 +1019,7 @@ plot_gradient_relationships <- function(subject_data,
 
   n_terms = length(unique(ests$term)[!(unique(ests$term) %in% c(covariates, "(Intercept)"))])
   n_analysis <- length(list_of_parcel_data)
+  vertical_row_spacers <- list()
 
   list_of_brain_plots_ests <- list()
   letter_tag <- letters[2:(n_analysis+1)]
@@ -1081,10 +1082,13 @@ plot_gradient_relationships <- function(subject_data,
 
 
   if (layout_construction == "vertical") {
-    n_plot_rows <- (n_terms * n_analysis) + (n_analysis - 1) + 1
-    row_heights <- c(1, rep(c(rep(1, n_terms), plot_spacing), n_analysis))[-(n_plot_rows+1)]
+    n_content_rows <- (n_terms * n_analysis) + 1
+    n_plot_rows <- (n_content_rows * 2) - 1
+    row_heights <- rep(1, n_plot_rows)
     col_widths <- NULL
-    empty_rows <- seq(1, n_plot_rows, by = n_terms + 1)[-1]
+    empty_rows <- seq(2, n_plot_rows, by = 2)
+    
+    row_heights[empty_rows] <- empty_row_height
 
     if (right_term_side) {
       layout <- c(
@@ -1133,6 +1137,11 @@ plot_gradient_relationships <- function(subject_data,
       }
     }
 
+    vertical_row_spacers <- rep(list(plot_spacer()), length(empty_rows))
+    for (empt in empty_rows) {
+      layout <- c(layout, area(empt, 1, r = length(gradients) + 1))
+    }
+
   }
 
 
@@ -1141,7 +1150,7 @@ plot_gradient_relationships <- function(subject_data,
 
   brain_plots <- unlist(list_of_brain_plots_ests, recursive = FALSE)
 
-  plots_to_include <- c(gradient_plots, brain_plots, plots)
+  plots_to_include <- c(gradient_plots, brain_plots, plots, vertical_row_spacers)
 
   if (plt_subtitle) {
     #f <- mod_formula

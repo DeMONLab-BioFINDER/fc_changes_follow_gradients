@@ -156,6 +156,7 @@ bf_dx <-  plot_gradient_relationships(biofinder_df %>%
                                         mutate(diagnosis=factor(diagnosis, levels = c("CN/SCD", "MCI", "AD"))), 
                                       gradient_data = grad_df %>% filter(study=="biofinder"), 
                                       gradients = c(1, 2, 3),
+                                      rasterize = TRUE,
                                       vect = TRUE,
                                       gray_out = TRUE,
                                       add_shade = TRUE, 
@@ -186,8 +187,8 @@ p_dx[[6]] <- p_dx[[6]] + ggtitle("Term3")
 
 img_width <- 180/25.4/2
 
-p_name <- "figure_dx.png"
-ggsave(file.path(figure_path_concept, p_name), p_dx, width = img_width*3, height = img_width*0.9*3, units = "in", dpi = 600, device = "png")
+p_name <- "figure_dx.svg"
+ggsave(file.path(figure_path_concept, p_name), p_dx, width = img_width*3, height = img_width*0.9*3, units = "in", dpi = 300, device = "svg")
 img <- magick::image_read(file.path(figure_path_concept, p_name))
 img_resized <- magick::image_resize(img, "33%x33%")
 magick::image_write(img_resized, file.path(figure_path_concept, p_name), density = 300)
