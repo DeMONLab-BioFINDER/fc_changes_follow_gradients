@@ -41,6 +41,8 @@ real_data <- as.logical(Sys.getenv("REAL_DATA", "FALSE"))
 
 figure_path <- "paper/figures"
 dir.create(figure_path, showWarnings = FALSE)
+supplementary_figure_path <- "paper/suppfig_original/jpg"
+dir.create(supplementary_figure_path, recursive = TRUE, showWarnings = FALSE)
 source_figure_path <- "paper/figures_source_data"
 dir.create(source_figure_path, showWarnings = FALSE)
 table_path <- "paper/tables"
@@ -372,11 +374,11 @@ if (from_start) {
 
   names(ts_list) <- tools::file_path_sans_ext(basename(ts_files))
   
-  # Take only the timeseries from subjects of interest
+  # Take only the <- from subjects of interest
   timeseries <- ts_list[biofinder_df$image_file]
   
   dir.create(connectome_dir, showWarnings = FALSE)
-  already_proc_conn <- list.files(connectome_dir) |> str_remove_all(".rds")
+  already_proc_conn <- list.files(connectome_dir) |> tools::file_path_sans_ext()
   proc_conn <- names(timeseries)[!(names(timeseries) %in% already_proc_conn)]
   
   print("Writing connectomes")
@@ -409,7 +411,7 @@ if (from_start) {
 }
 
 # These are all subjects who successfully got calculated connectomes
-success_vec <- list.files(connectome_dir) |> str_remove_all(".rds")
+success_vec <- list.files(connectome_dir) |> tools::file_path_sans_ext()
 
 # Filter the data on that
 biofinder_df <- biofinder_df |> filter(image_file %in% success_vec)
@@ -528,7 +530,7 @@ if (from_start) {
   write_rds(average_connectome, file.path(atlas_dir, "average_connectome_normalyoung.rds"))
   
   average_connectome_ALL <- apply(con_cube_bf, c(1, 2), mean)
-  write_rds(average_connectome, file.path(atlas_dir, "average_connectome_ALL.rds"))
+  write_rds(average_connectome_ALL, file.path(atlas_dir, "average_connectome_ALL.rds"))
   rm(healthy_young_connectomes)
   
   # This takes some time, creates supplementary figure 9
@@ -551,7 +553,7 @@ if (from_start) {
   # so the fontsize chosen should be large enough to shrink it by the scaling factor
   scaling_factor <-  3
   magick_geom_scaling <- paste0(100/scaling_factor, "%x", 100/scaling_factor, "%")
-  p_name <- "gradient_param_comparison_bf.png"
+  p_name <- "gradient_param_comparison_bf.jpg"
   
   ggsave(file.path(figure_path, p_name), comp_plot , #patch_plots[["biofinder"]], 
          width = img_width*scaling_factor, height = img_width*scaling_factor*0.675, bg ="white")
@@ -675,6 +677,12 @@ withr::with_seed(123456, {
 traject_tau <- trajectory_tau$time
 adni_df___ <- adni_df___ |> left_join(patvars_tau |> mutate(tau_pathology = traject_tau) |> select(id_ses, tau_pathology))
 
+# Only baseline ADNI scans are used. Motion files are keyed by subject ID,
+# whereas timeseries and connectomes are keyed by the dated file_func value.
+adni_baseline_lookup <- adni_df___ |>
+  filter(fmri_bl, !is.na(file_func)) |>
+  distinct(ID, file_func)
+
 rm(adni_df_, adni_df__)
 
 ############
@@ -708,6 +716,9 @@ if (from_start) {
   })
   
   names(adni_timeseries) <- timeseries_files |> tools::file_path_sans_ext() |>  str_remove_all("_timeseries")
+  adni_timeseries <- adni_timeseries[
+    intersect(names(adni_timeseries), adni_baseline_lookup$file_func)
+  ]
   
   # This is to scrub timeseries
   set_false_window <- function(log_vec) {
@@ -725,17 +736,32 @@ if (from_start) {
   
   scrubbed_time_series <- list()
   for(file in names(adni_timeseries)) {
-    
-    fd <- c(0, adni_fd[[file]])
+    subject_id <- adni_baseline_lookup$ID[match(file, adni_baseline_lookup$file_func)]
+    if (is.na(subject_id) || is.null(adni_fd[[subject_id]])) {
+      stop("No motion file found for baseline ADNI timeseries: ", file)
+    }
+
+    fd <- adni_fd[[subject_id]] |> pull(displacement)
+    n_frames <- nrow(adni_timeseries[[file]])
+    if (length(fd) == n_frames - 1) {
+      fd <- c(0, fd)
+    } else if (length(fd) != n_frames) {
+      stop(
+        "Motion and timeseries lengths do not match for ", file,
+        ": ", length(fd), " motion values for ", n_frames, " frames"
+      )
+    }
     # Setting the same threshold as originally done by Franzmeier
     fd_filt <- set_false_window(fd<0.5)
-    scrubbed_time_series[[file]] <- adni_timeseries[[file]][fd_filt, ]
+    scrubbed_time_series[[file]] <- adni_timeseries[[file]][fd_filt, , drop = FALSE]
     
   }
   frame_length <- sapply(scrubbed_time_series, nrow)
-  # Uncomment this line if running with real data
-  # timeseries <- scrubbed_time_series[frame_length>100]
-   timeseries <- scrubbed_time_series
+  if (real_data) {
+    timeseries <- scrubbed_time_series[frame_length>100]
+  } else {
+    timeseries <- scrubbed_time_series
+  }
 }
 
 
@@ -775,7 +801,7 @@ if (from_start) {
 
 
 success_vec <- list.files(connectome_dir_adni) |> tools::file_path_sans_ext()
-adni_df <- adni_df___ |> filter(id_ses %in% success_vec) |> 
+adni_df <- adni_df___ |> filter(fmri_bl, id_ses %in% success_vec) |> 
   inner_join(rsqa_fd, join_by(ID==id_ses))
 
 adni_df_unfilt <- adni_df |> mutate(motion_filter = (rsqa__MeanFD<0.3 & rsqa__MaxFD<3))
@@ -878,7 +904,7 @@ if (from_start) {
   varexp_df <- c()
   for (i in 1:nrow(params)) {
     param_i <- params[i, ]
-    grad_list <- get_gradients(connectome_ests = list(adni = average_connectome),
+    grad_list <- get_gradients(connectome_ests = list(adni = average_connectome_adni),
                                n_gradients = c(1,2,3),
                                threshold = param_i$threshold,
                                similarity_method = param_i$sim_method,
@@ -1156,9 +1182,9 @@ write_csv(analysis_data$grad_cor_path,
           file.path(source_figure_path, paste0("figure3_windowing_path", ".csv")))
 
 
-p_name <- "supplementary_windowing.pdf"
-ggsave(file.path(figure_path, p_name), longitudindal_figs[["supp_fig"]] |> pad_plot(),
-       width = img_width*scaling_factor, height = img_width*0.5*scaling_factor, units = "mm", dpi = 300, device = "pdf", bg = "white")
+p_name <- "supplementary_windowing.jpg"
+ggsave(file.path(supplementary_figure_path, p_name), longitudindal_figs[["supp_fig"]] |> pad_plot(),
+       width = img_width*scaling_factor, height = img_width*0.5*scaling_factor, units = "mm", dpi = 300, device = "jpeg", bg = "white")
 
 
 
@@ -1758,10 +1784,10 @@ ggsave(file.path(figure_path, p_name), strength_supp[[1]] |> pad_plot(),
        units = "mm", dpi = 300, device = "pdf")
 
 
-source_data <- between_supp$tmaps$fig1$bf |> mutate(panel = "A") |> 
-  bind_rows(between_supp$tmaps$fig1$adni |> mutate(panel = "B")) |> 
-  bind_rows(between_supp$tmaps$fig2$health |> mutate(panel = "C")) |> 
-  bind_rows(between_supp$tmaps$fig2$clin |> mutate(panel = "D")) |> 
+source_data <- strength_supp$tmaps$fig1$bf |> mutate(panel = "A") |> 
+  bind_rows(strength_supp$tmaps$fig1$adni |> mutate(panel = "B")) |> 
+  bind_rows(strength_supp$tmaps$fig2$health |> mutate(panel = "C")) |> 
+  bind_rows(strength_supp$tmaps$fig2$clin |> mutate(panel = "D")) |> 
   select(-n) |> 
   left_join(grad_df |> filter(study %in% c("adni", "biofinder")) |> 
               select(region, study, starts_with("gradient")) |>
@@ -2345,8 +2371,6 @@ tibble(`SA corr` = subj_corr_g1, `RE corr` = subj_corr_g3) |>
 ########################################################
 source("src/util_vis.R")
 
-supplementary_figure_path <- "paper/suppfig_original"
-
 bf_dx <-  plot_gradient_relationships(biofinder_df %>% 
                                         filter(fmri_bl) %>%
                                         mutate(motion = rsqa__MeanFD
@@ -2387,7 +2411,7 @@ bf_dx <-  plot_gradient_relationships(biofinder_df %>%
 
 img_width <- 140
 p_name <- "supplementary_diagnosis.pdf"
-ggsave(file.path(supplementary_figure_path, p_name), bf_dx$plot |> pad_plot(), width = img_width, 
+ggsave(file.path(figure_path, p_name), bf_dx$plot |> pad_plot(), width = img_width, 
        bg = "white", height = img_width*0.9, units = "mm", dpi = 300)
 
 source_data <- bf_dx$tmaps |> 
@@ -2430,10 +2454,10 @@ fig_one <- figure_one(subject_data = biofinder_df,
 img_width = 180 
 scaling_factor <-  1
 
-p_name <- "supplementary_gradient2.pdf"
+p_name <- "supplementary_gradient2.jpg"
 ggsave(file.path(supplementary_figure_path, p_name), fig_one[[1]] |> pad_plot(),
        width = img_width*scaling_factor, height = img_width*0.35*scaling_factor, 
-       units = "mm", dpi = 300,  bg = "white")
+       units = "mm", dpi = 300, device = "jpeg", bg = "white")
 
 source_data <- fig_one$tmaps$bf |> mutate(study = "biofinder") |> 
   bind_rows(fig_one$tmaps$adni |> mutate(study = "adni")) |> 
@@ -2476,11 +2500,11 @@ within_supp <- figure_one(subject_data = biofinder_df,
                           brain_plot_names_f1 = c(NA, "AD Pathology"))
 img_width = 180 
 scaling_factor <-  1
-p_name <- "within_supplementary.pdf"
+p_name <- "within_supplementary.jpg"
 ggsave(file.path(supplementary_figure_path, p_name), within_supp[[1]] |> pad_plot(), 
        width = img_width*scaling_factor, 
        height = img_width*0.8*scaling_factor,
-       units = "mm", dpi = 300, device = "pdf")
+       units = "mm", dpi = 300, device = "jpeg", bg = "white")
 
 
 source_data <- within_supp$tmaps$fig1$bf |> mutate(panel = "A") |> 
@@ -2527,11 +2551,11 @@ between_supp <- figure_one(subject_data = biofinder_df,
                            brain_plot_names_f1 = c(NA, "AD Pathology"))
 
 img_width = 180
-p_name <- "between_supplementary.pdf"
+p_name <- "between_supplementary.jpg"
 ggsave(file.path(supplementary_figure_path, p_name), between_supp[[1]] |> pad_plot(), 
        width = img_width*scaling_factor, 
        height = img_width*0.8*scaling_factor,
-       units = "mm", dpi = 300, device = "pdf")
+       units = "mm", dpi = 300, device = "jpeg", bg = "white")
 
 
 source_data <- between_supp$tmaps$fig1$bf |> mutate(panel = "A") |> 
@@ -2577,11 +2601,11 @@ aff_no_thresh <- figure_one(subject_data = biofinder_df,
                             brain_plot_names_f1 = c(NA, "AD Pathology"))
 
 img_width = 180
-p_name <- "supplementary_affinity_no_thresh_correlation.pdf"
+p_name <- "supplementary_affinity_no_thresh_correlation.jpg"
 ggsave(file.path(supplementary_figure_path, p_name), aff_no_thresh[[1]] |> pad_plot(), 
        width = img_width*scaling_factor, 
        height = img_width*0.8*scaling_factor,
-       units = "mm", dpi = 300, device = "pdf")
+       units = "mm", dpi = 300, device = "jpeg", bg = "white")
 
 
 source_data <- aff_no_thresh$tmaps$fig1$bf |> mutate(panel = "A") |> 
@@ -2636,10 +2660,10 @@ clinical_cog_int <-  plot_gradient_relationships(biofinder_df |> filter(fmri_bl,
                                                  net_legend_y = 0.01)
 
 img_width = 140 
-p_name <- "supplementary_clin_int.pdf"
+p_name <- "supplementary_clin_int.jpg"
 ggsave(file.path(supplementary_figure_path, p_name), clinical_cog_int$plot |> pad_plot(), width = img_width*scaling_factor, 
-       height = img_width*0.6*scaling_factor, units = "mm", dpi = 300, #device = "pdf",
-       bg = "white")
+       height = img_width*0.6*scaling_factor, units = "mm", dpi = 300,
+       device = "jpeg", bg = "white")
 
 source_data <- clinical_cog_int$tmaps |> 
   select(-n, -model_formula) |> 
@@ -2686,12 +2710,11 @@ clinical_wo_cog <-  plot_gradient_relationships(biofinder_df |> filter(fmri_bl, 
 
 
 img_width = 90 
-p_name <- "supplementary_clin_without_cognition.pdf"
+p_name <- "supplementary_clin_without_cognition.jpg"
 ggsave(file.path(supplementary_figure_path, p_name), clinical_wo_cog$plot |> pad_plot(), 
        width = img_width*scaling_factor, 
        height = img_width*0.85*scaling_factor, 
-       units = "mm", dpi = 300, #device = "pdf", 
-       bg = "white")
+       units = "mm", dpi = 300, device = "jpeg", bg = "white")
 
 source_data <- clinical_wo_cog$tmaps |> 
   select(-n, -model_formula) |> 
@@ -2761,12 +2784,11 @@ p_health_cog_no_interact[[plt_idx[2]]] <- p_health_cog_no_interact[[plt_idx[2]]]
 p_health_cog_no_interact[[plt_idx[3]]] <- p_health_cog_no_interact[[plt_idx[3]]] + labs(title = "AD pathology")
 
 img_width = 90
-p_name <- "supplementary_health_no_interaction.pdf"
+p_name <- "supplementary_health_no_interaction.jpg"
 ggsave(file.path(supplementary_figure_path, p_name), p_health_cog_no_interact |> pad_plot(), 
        width = img_width*scaling_factor, 
        height = img_width*0.8*scaling_factor, 
-       units = "mm", dpi = 300, #device = "pdf", 
-       bg = "white")
+       units = "mm", dpi = 300, device = "jpeg", bg = "white")
 
 source_data <- health_cog_no_interact$tmaps |> 
   select(-n, -model_formula) |> 
@@ -2861,12 +2883,11 @@ health_no_pat <- ggdraw() +
   draw_plot_label("B", x = 0.6, size = 7)
 
 img_width = 180
-p_name <- "supplementary_health_no_pat_adj.pdf"
+p_name <- "supplementary_health_no_pat_adj.jpg"
 ggsave(file.path(supplementary_figure_path, p_name), health_no_pat |> pad_plot(), 
        width = img_width*scaling_factor, 
        height = img_width*0.45*scaling_factor, units = "mm", 
-       dpi = 300, #device = "pdf",
-       bg = "white")
+       dpi = 300, device = "jpeg", bg = "white")
 
 
 source_data <- health_cog$tmaps |> 
@@ -3257,10 +3278,10 @@ age_plots <- ggdraw()+
 
 scaling_factor <- 1
 img_width <- 180
-p_name <- "age_plot.pdf"
+p_name <- "age_plot.jpg"
 ggsave(file.path(supplementary_figure_path, p_name), age_plots |> pad_plot(),
        width = img_width*scaling_factor, height = img_width*0.5*scaling_factor, 
-       units = "mm", dpi = 300, device = "pdf", bg = "white")
+       units = "mm", dpi = 300, device = "jpeg", bg = "white")
 
 plot_gam_gradient_effects_res$source_data |> 
   write_csv(file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), "_LeftPanel.csv")))
@@ -3326,12 +3347,12 @@ all_grad <- plot_gradient_relationships(biofinder_df %>% filter(fmri_bl, diagnos
                                         brain_names = c("Age", "AD Pathology", "-mPACC"))
 
 img_width = 88
-p_name <- "all_grad_plot.pdf"
+p_name <- "all_grad_plot.jpg"
 
 ggsave(file.path(supplementary_figure_path, p_name), all_grad$plot |> pad_plot(),
        width = img_width*scaling_factor,
        height = img_width*0.8*scaling_factor, 
-       units = "mm", dpi = 300, device = "pdf", bg = "white")
+       units = "mm", dpi = 300, device = "jpeg", bg = "white")
 
 all_grad$tmaps |> 
   left_join(grad_all |> filter(study %in% c("everyone")) |> 
@@ -3538,11 +3559,11 @@ switched_grads_all_path <- ggdraw() +
 
 scaling_factor <- 1
 img_width <- 180
-p_name <- "switched_grad_all_path.pdf"
+p_name <- "switched_grad_all_path.jpg"
 ggsave(file.path(supplementary_figure_path, p_name), switched_grads_all_path |> pad_plot(),
        width = img_width*scaling_factor, 
        height = img_width*0.85*scaling_factor, 
-       units = "mm", dpi = 300, device = "pdf", bg = "white")
+       units = "mm", dpi = 300, device = "jpeg", bg = "white")
 
 
 bf_adni_grad$tmaps |> mutate(panel = "A") |> 
