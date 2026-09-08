@@ -19,6 +19,13 @@ paper/*
 # Keep everything inside the extensions directory
 !paper/_extensions/**
 
+# Keep the manually assembled conceptual-figure assets
+!paper/figures/
+paper/figures/*
+!paper/figures/conceptual_plot/
+paper/figures/conceptual_plot/*
+!paper/figures/conceptual_plot/methods_plot_grayed.pdf
+!paper/figures/conceptual_plot/LMM_table.png
 
 data/*
 !data/atlas_data/

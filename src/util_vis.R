@@ -423,7 +423,7 @@ plot_longitudinal_and_window_analysis <- function(analysis_data,
     draw_plot(window_plots) +
     draw_plot_label("C", size = label_size)
   
-  lmm_tab <- magick::image_read("paper/figures_old/conceptual_plot/LMM_table.png")
+  lmm_tab <- magick::image_read("paper/figures/conceptual_plot/LMM_table.png")
   
   slide_meth <- ggdraw() +
     draw_plot(hist_map, x = 0.01, y = 0.3, width = 0.98, height = 0.7) +

@@ -34,7 +34,7 @@ conflicts_prefer(dplyr::lag)
 # These options are read from environment variables. Set them in the shell
 # before running Rscript, or with Sys.setenv() in an interactive R session.
 
-from_start <- as.logical(Sys.getenv("FROM_START", "FALSE"))
+from_start <- as.logical(Sys.getenv("FROM_START", "TRUE"))
 create_brain_permutations <- as.logical(Sys.getenv("CREATE_BRAIN_PERMUTATIONS", "FALSE"))
 extract_timeseries <- as.logical(Sys.getenv("EXTRACT_TIMESERIES", "FALSE"))
 real_data <- as.logical(Sys.getenv("REAL_DATA", "FALSE"))
@@ -1625,6 +1625,10 @@ df <- biofinder_cog_comp |> filter(fmri_bl
                janitor::clean_names()) 
 
 parcs <- df |> select(starts_with("x7")) |> colnames()
+
+conflicted::conflicts_prefer(base::as.matrix)
+conflicted::conflicts_prefer(Matrix::crossprod)
+conflicted::conflicts_prefer(dplyr::count)
 
 pw_mediation_bar_res <- plot_mediation_barplot(subject_data = df |> 
                                                  mutate(age_ = age,
