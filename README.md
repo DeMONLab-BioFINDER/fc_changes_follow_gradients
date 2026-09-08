@@ -165,59 +165,45 @@ The entry point for the analysis. It performs the following broad stages in sequ
 
 `main.R` is intentionally a sequential analysis script rather than an R package or workflow-manager project. Run it from the repository root because paths are relative to that location.
 
-### Core analysis helpers
+## Scripts
 
-#### `src/util.R`
+`src/util.R`
 
 Contains the main numerical and modelling helpers, including:
 
 - nodal strength, within-network, and between-network connectivity; connectivity similarity/affinity;
 - vectorised parcel-wise linear and mixed-effects regression;
 - extraction of nodal model estimates (getting t-values from the vectorised models);
-- GAM related functions;
+- parcelwise GAM related functions;
 - main function for the sensitivity table of the supplementary.
 
 Several functions rely on atlas objects created near the beginning of `main.R`, so this file is not designed as a standalone library.
 
-#### `src/util_gradients.R`
+`src/util_gradients.R`
 
 Implements gradient construction and alignment. It contains the diffusion-map implementation, PCA/diffusion gradient estimation, component reordering, sign alignment to reference gradients, and optional visualization.
 
 ### Visualization helpers
 
-#### `src/plot_grad_rels.R`
+`src/plot_grad_rels.R`
 
 Fits or receives parcel-wise models and builds the cortical maps and scatterplots used to show relationships between model-effect maps and functional gradients.
 
-#### `src/plot_gams.R`
+`src/plot_gams.R`
 
 Builds the nonlinear-analysis figure from parcel-wise generalized additive model predictions and derivatives. The file contains the current plotting implementation and retained legacy wrappers.
 
-#### `src/util_vis.R`
+`src/util_vis.R`
 
 Composes higher-level manuscript figures from the lower-level plotting functions. This includes the main cross-sectional figures, longitudinal/window figures, network overlays, gradient comparisons, and shared layout helpers.
 
-#### `src/plot_gradient_coverage.R`
+`src/plot_gradient_coverage.R`
 
 Creates the figure describing the anatomical, network, and cognitive-term coverage of the principal gradients. It uses the precomputed NeuroQuery result stored in `data/atlas_data/schaefer1000_NQ_results.rds`, which you can get using code in `neurosynth.py`. 
 
-#### `src/mass_mediation_src.R`
+`src/mass_mediation_src.R`
 
 Contains the parcel-wise mediation function. This function makes it possible to run 1000 mediation analyses in a matter of seconds. 
-
-### Manuscript and provenance scripts
-
-#### `src/render_paper.R`
-
-Renders `paper/fc_changes_paper.qmd` with Quarto. It should normally be run only after the analysis has created all required figures, tables, and processed datasets.
-
-#### `src/methods_figure.R`
-
-Historical code used to generate components of the conceptual methods figure. It depends on restricted real-data connectomes and is not part of the supported synthetic workflow. The final methods figure was assembled manually and is retained directly in `paper/figures/conceptual_plot/`.
-
-#### `src/neurosynth.py`
-
-An exploratory provenance script from the NeuroSynth/NeuroQuery decoding work. It is not called by `main.R`, requires external downloads and inputs that are not distributed, and is not currently supported as a standalone reproducible script. The analysis pipeline uses the derived, precomputed NeuroQuery result in `data/atlas_data/` instead.
 
 
 ## Citation
