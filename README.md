@@ -1,183 +1,231 @@
-## Functional Connectivity Changes in Aging and Alzheimer's Disease
+# Different functional connectivity gradients reflect aging and Alzheimer's disease
 
-This repository provides code for reproducing analyses and figures from the manuscript:
+This repository contains the analysis code accompanying the manuscript **“Different functional connectivity gradients reflect aging and Alzheimer’s disease.”**
 
-**"Different functional connectivity gradients reflect aging and Alzheimer’s disease"**
+Preprint: [https://doi.org/10.1101/2025.05.22.655469](https://doi.org/10.1101/2025.05.22.655469)
 
-[Preprint](https://doi.org/10.1101/2025.05.22.655469)
+The original participant data cannot be shared. Synthetic BioFINDER and ADNI datasets are included so that the structure of the workflow can be inspected and the analysis code can be exercised without access to restricted data.
 
-Due to data-sharing restrictions, the repository uses synthetic data by default.
+The synthetic results are not scientifically meaningful and will not reproduce the numerical results reported in the manuscript. The repository should be understood as a reproducible record of the analysis workflow, with synthetic data provided for testing.
+
+## Reproducibility status
+
+The supported environment is R with `renv`. Running `renv::restore()` will however also install some python dependencies for parts of the workflow that you normally would not need to use but that is kept for provenance. 
 
 
-ℹ️ **NOTE**
+The main processing and analyis script is called `main.R`. 
 
-The source code in the repo is for the final version of the preprint, the code in the docker container produces the first version of the preprint.
-All analyses except for nodal tau regression can be run with synthetic data. The repo provides synthetic data for users to test the code. 
+The intended execution pattern is:
 
----
+1. Run `renv::restore()` to download all packages used in this repo.
+2. Run the analysis with `FROM_START=TRUE` first time you run it. This will create connectomes from synthetic fMRI timeseries, calculate derivatives and clean the synthetic datasets just as the real datasets were processed. 
+3. The derivatives and cleaned datasets will be saved locally and after that you can run the script with `FROM_START=FALSE` for later runs that reuse the generated connectomes and cached results.
 
-## Getting Started
+Running everything from start may take one to two hours or more depending on the system. Only running analyses and producing figures will be faster. However, the brain figures do take some time to render. 
 
-You can either clone the repo as it is and try to set it up using in R using `renv::restore()` and then
-source `src/main.R`, but the easiest way to reproduce the analyses and manuscript is likely to use a docker
-container with the dependencies.
+Generated connectomes, processed data, figure files, and most other outputs are intentionally excluded from version control. Consequently, `FROM_START=FALSE` is not expected to work immediately after a fresh clone.
 
-### Docker Image
+The full pipeline has been successfully run from start to finish on a fresh clone. However, it has not yet been tested on a machine other than the one on which the code was developed.
 
-First install docker https://www.docker.com/get-started/
+## Requirements
 
-The Docker image is available on Docker Hub:
+- R 4.6.0 
+- Quarto, for rendering `paper/fc_changes_paper.qmd`
+- System libraries required by packages such as `sf` and `magick`
+- Sufficient memory for arrays containing subject-level 1000 × 1000 connectomes
 
-```
-docker pull jorittmo/fc-changes-image:latest
-```
+The analysis has primarily been developed on Ubuntu. Other operating systems may require different system-library installation steps.
 
-### Running the Analysis with Docker
+Python is not required for the standard synthetic workflow. `requirements.txt` records packages used by optional Python-based processing.
 
-To reproduce the paper using the synthetic data provided clone the repo to 
-a directory of your choice and then run:
+## Installation
 
-```
-docker run --rm \
-  -v /fc_changes_follow_gradients/data/adni_src_data_synthetic:/fc_changes/data/adni_src_data_synthetic \
-  -v /fc_changes_follow_gradients/data/bf_src_data_synthetic:/fc_changes/data/bf_src_data_synthetic \
-  -v /fc_changes_follow_gradients/docker_out:/fc_changes/paper/output \
-  -e FROM_START=FALSE \
-  jorittmo/fc-changes-image \
-  Rscript src/main.R
-```
+Clone the repository and start R from its root directory. The project `.Rprofile` activates `renv` automatically.
 
-This will run all analyses (without pre-calculating measures etc) and spit out the manuscript with figures usin synthetic data in `docker_out`.
+Restore the recorded R environment:
 
-Ensure the host mount paths are the absolute path to the repo (i.e. `~/fc_changes_follow_gradients`, if you put it in you home folder).
-
-* `-v` mounts local directories into the container for data input and output.
-* `-e FROM_START` sets if you want to do all pre-computation to get derivatives, gradients and such. Set to `TRUE` to recompute everything from scratch and to `FALSE` to only run analyses and models and generate figures.
-
-If you want to try the image without running the full analysis pipeline which takes ~10-30 minutes depending on setup, and if you run it from start
-you can just render the paper by doing:
-
-```
-docker run --rm \
-  -v /fc_changes_follow_gradients/docker_out:/fc_changes/paper/output \
-  -e FROM_START=FALSE \
-  jorittmo/fc-changes-image \
-  Rscript src/render_paper.R
+```r
+renv::restore()
 ```
 
-The rendered paper (with synthetic data) should then be reachable in the folder `docker_out`.
+If `renv` is not already installed, install it first:
 
----
+```r
+install.packages("renv")
+renv::restore()
+```
 
-## Configuration and Arguments
+## Running the synthetic workflow
 
-The script `main.R` recognizes the following environmental arguments:
+All commands should be run from the repository root.
 
-| Argument                    | Description                                                                                  | Recommended Setting (Synthetic Data) |
-| --------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------ |
-| `FROM_START`                | Recompute everything (connectome calculation, FC derivatives, gradients) from scratch        | `FALSE` (data precomputed)           |
-| `CREATE_BRAIN_PERMUTATIONS` | Generate brain permutations for spin tests  (takes quite long to run and is not necessary)   | `FALSE` (already included)           |
-| `EXTRACT_TIMESERIES`        | Extract parcel time series from raw images  (should not be used for now)                     | `FALSE` (timeseries pre-extracted)   |
-| `REAL_DATA`                 | Toggle between real and synthetic data  (Should not be used for now)                         | `FALSE` (synthetic data)             |
+For the first run:
 
-To override the defaults, set them as environmental variables when calling Docker (e.g., `-e FROM_START=TRUE`).
+```bash
+FROM_START=TRUE \
+CREATE_BRAIN_PERMUTATIONS=FALSE \
+EXTRACT_TIMESERIES=FALSE \
+REAL_DATA=FALSE \
+Rscript src/main.R
+```
 
----
+The equivalent commands from an interactive R session are:
 
-## Workflow Summary
+```r
+Sys.setenv(
+  FROM_START = "TRUE",
+  CREATE_BRAIN_PERMUTATIONS = "FALSE",
+  EXTRACT_TIMESERIES = "FALSE",
+  REAL_DATA = "FALSE"
+)
+source("src/main.R")
+```
 
-The code in `main.R` runs the following major steps:
+After a successful from-scratch run, cached results can be reused with:
 
-1. **Initial setup**
+```bash
+FROM_START=FALSE REAL_DATA=FALSE Rscript src/main.R
+```
 
-   * Set flags (`FROM_START`, `CREATE_BRAIN_PERMUTATIONS`, `EXTRACT_TIMESERIES`, `REAL_DATA`), create folders.
 
-2. **Atlas Loading**
+### Configuration variables
 
-   * Load/parcellation (Schaefer, Yeo), build ROI-to-network lookup, gradient color palettes.
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `FROM_START` | `FALSE` | When `TRUE`, calculate connectomes, connectivity derivatives, gradients, and expensive window analyses. When `FALSE`, reuse locally generated results. |
+| `CREATE_BRAIN_PERMUTATIONS` | `FALSE` | Generate a new set of cortical rotations for spatial permutation tests. The repository already includes the rotations used by the workflow. |
+| `EXTRACT_TIMESERIES` | `FALSE` | Extract parcel time series from raw NIfTI images using Python and Nilearn. Raw images are not included, so this should remain `FALSE` for the supplied synthetic data. |
+| `REAL_DATA` | `FALSE` | Select restricted BioFINDER and ADNI source-data paths. These data are not distributed; leave this `FALSE` outside the authorized analysis environment. |
 
-3. **(Optional) Permutations**
+## Outputs
 
-   * If requested, generate 1,000 spin/test parcellation rotations and save them.
+A from-scratch run creates or updates the following local outputs:
 
-4. **(Optional) Timeseries Extraction**
+- `data/bf_src_data_synthetic/connectomes/`: BioFINDER synthetic connectomes.
+- `data/adni_src_data_synthetic/connectomes/`: baseline ADNI synthetic connectomes.
+- `data/processed_and_cleaned/`: cleaned data, connectivity derivatives, gradients, and window-analysis caches.
+- `paper/figures/`: main and extended-data figures, primarily as PDF files.
+- `paper/suppfig_original/jpg/`: supplementary figures embedded by the manuscript.
+- `paper/figures_source_data/`: CSV source data written alongside the figures.
+- `paper/tables/`: tables consumed by the Quarto manuscript.
+- `paper/fc_changes_paper.docx`: the rendered manuscript.
 
-   * If requested, use Nilearn to read raw NIfTIs, extract 1,000-parcel time series, save as `.rds`.
+These outputs are generally ignored by Git to keep the archived source repository smaller and to avoid mixing generated synthetic results with the published results.
 
-5. **Load & Clean BioFINDER Data**
+### Manuscript-rendering limitations
 
-   * Read CSV → filter for motion & diagnosis/pathology → compute continuous pathology trajectories via SCORPIUS → finalize `biofinder_df`.
+The methods figure at `paper/figures/conceptual_plot/methods_plot_grayed.pdf` was assembled manually in Inkscape from components generated during development. The final assembled PDF is retained because it cannot be recreated automatically by the current scripts.
 
-6. **(FROM\_START) Build BioFINDER Connectomes & Derivatives**
+The parcel-wise tau requires data that I have not yet synthesized. Therefore, the synthetic workflow does not generate `paper/figures/nodal_tau.pdf`, although the manuscript currently references that figure. 
 
-   * Read saved timeseries → compute 1000×1000 correlation matrices → save → read them back into a big 3D array → compute node-strength + two "affinity” measures via `fc_strength`/`get_affinity` → save those results.
+After all required figures and tables are available, the manuscript can be rendered separately with:
 
-7. **(FROM\_START) Compute BioFINDER Gradients & Parameter Sweep**
+```bash
+Rscript src/render_paper.R
+```
 
-   * Load “Margulies” reference gradients (CSV or via Nilearn), build “healthy-young” average connectome → plot supplementary gradient-comparison figure and save → call `get_gradients` once at (threshold=0, method=pca; the gradients used) → then loop over several{threshold, method, affinity} combos to build a large dataframes with gradients derived over different values.
+## Repository structure
 
-8. **Load & Clean ADNI Data**
+```text
+.
+├── data/
+│   ├── adni_src_data_synthetic/    # synthetic ADNI metadata and time series
+│   ├── bf_src_data_synthetic/      # synthetic BioFINDER metadata and time series
+│   ├── atlas_data/                 # atlas geometry, labels, rotations, and reference data
+│   └── gradients/                  # reference functional-gradient data
+├── paper/
+│   ├── _extensions/                # local Quarto/Pandoc extensions
+│   ├── fc_changes_paper.qmd        # manuscript source
+│   ├── references.bib              # bibliography
+│   └── custom_ref_new.docx         # Word reference template
+├── renv/                           # renv activation and settings
+├── src/                            # analysis and visualization code
+├── renv.lock                       # pinned R package environment
+└── requirements.txt                # optional Python dependencies
+```
 
-   * Read CSV → rename columns → compute continuous `pathology_ad` via SCORPIUS → load FD CSVs (not computed in this workflow) → (if `FROM_START`) extract/scrub timeseries → build ADNI connectomes → filter by motion → save cleaned `adni_df`.
+## Source-code guide
 
-9. **(FROM\_START) Compute ADNI Connectivity Derivatives**
+### Main workflow
 
-   * Read 3D array of ADNI connectomes → compute node-strength + two affinity variants → save.
+#### `src/main.R`
 
-10. **(FROM\_START) Compute ADNI Gradients & Merge**
+The entry point for the analysis. It performs the following broad stages in sequence:
 
-    * Build “young, healthy” average ADNI connectome → call `get_gradients` once (PCA) → bind with BioFINDER gradients → loop over parameter grid to build `gradient_data_adni` → merge with BioFINDER → save a
+1. Reads configuration variables and prepares output directories.
+2. Loads the Schaefer-1000 atlas, Yeo network labels, cortical geometry, and spin-test permutations (if you don't want to calculate them yourself).
+3. Reads and cleans the synthetic BioFINDER metadata.
+4. Constructs BioFINDER connectomes from parcel time series.
+5. Calculates nodal connectivity strength and a variety of connectivity-similarity/affinity measures.
+6. Derives functional gradients and evaluates alternative gradient parameters.
+7. Reads baseline ADNI metadata, matches scan-level time series to subject-level motion files, performs motion scrubbing, and calculates replication-cohort connectomes and derivatives.
+8. Runs cross-sectional, nonlinear, longitudinal, cognition, mediation, and sensitivity analyses. See the paper for more information. 
+9. Writes figures, figure source data (only statistics), and descriptive tables.
+10. Invokes `src/render_paper.R`.
 
-11. **(Optional) Methods Figure** 
-    
-    * Run code to generate pngs used in the methods plot, this is now commented out in main.R, just uncomment our source `methods_figure.R` to generate the figures used in it. This plot is not reproducible as it was put together in inkscape. All other figures are generated.
+`main.R` is intentionally a sequential analysis script rather than an R package or workflow-manager project. Run it from the repository root because paths are relative to that location.
 
-12. **Main Figures**
+### Core analysis helpers
 
-    * **Figure 1**: `figure_one(...)` cross-sectional biofinder + ADNI (cognition is also generated but we take only the first figure panels), save as PNG
-    * **Figure 2**: first calculate non-linear trajectories: `gam_pred_nodes(...)` → `plot_gams_v1(...)`, save as PNG
-    * **Figure 3**: Build "longitudinal" df → `longitudinal_and_window_analysis(...)`, save main & supp PNG
-    * **Figure 4**: `figure_one(...)` cognition panels only, save as PNG
+#### `src/util.R`
 
-13. **Supplementary Figures**
+Contains the main numerical and modelling helpers, including:
 
-    * Many calls to `plot_gradient_relationships(...)`, `figure_one(...)`, `overlaid_main_results(...)` with different and/or measures (diagnosis, gradient 2 only, within/between-network affinity, nodal strength, no-threshold affinity, clinical interactions, healthy group interactions, pathology densities etc.). Each saved to a distinct file under `paper/figures/…`.
+- nodal strength, within-network, and between-network connectivity; connectivity similarity/affinity;
+- vectorised parcel-wise linear and mixed-effects regression;
+- extraction of nodal model estimates (getting t-values from the vectorised models);
+- GAM related functions;
+- main function for the sensitivity table of the supplementary.
 
-14. **Table 1 (Cross-Sectional)**
+Several functions rely on atlas objects created near the beginning of `main.R`, so this file is not designed as a standalone library.
 
-    * Build descriptive `finalfit` tables for BioFINDER & ADNI, row-bind, save as `CS_tbl1.rds`.
+#### `src/util_gradients.R`
 
-15. **Longitudinal Table 1 (BioFINDER)**
+Implements gradient construction and alignment. It contains the diffusion-map implementation, PCA/diffusion gradient estimation, component reordering, sign alignment to reference gradients, and optional visualization.
 
-    * Compute baseline/follow-up summary for each BioFINDER subject → `summary_factorlist(...)`, save as `LT_tbl1.rds`.
+### Visualization helpers
 
-16. **(FROM\_START) Gradient Sensitivity Analyses (Supplementary Table)**
+#### `src/plot_grad_rels.R`
 
-    * If `FROM_START`, call `write_gradient_supp_table(params)`, save as `supp_table.rds`; otherwise just load.
+Fits or receives parcel-wise models and builds the cortical maps and scatterplots used to show relationships between model-effect maps and functional gradients.
 
-17. **Quarto Rendering**
+#### `src/plot_gams.R`
 
-    * Source the script render_paper.R which calls quarto to render the manuscript and then moves the rendered paper into paper/output
+Builds the nonlinear-analysis figure from parcel-wise generalized additive model predictions and derivatives. The file contains the current plotting implementation and retained legacy wrappers.
 
-    
----
+#### `src/util_vis.R`
 
-## Troubleshooting
+Composes higher-level manuscript figures from the lower-level plotting functions. This includes the main cross-sectional figures, longitudinal/window figures, network overlays, gradient comparisons, and shared layout helpers.
 
-If you encounter any issues, please open an issue on GitHub, and we'll assist you as quickly as possible.
+#### `src/plot_gradient_coverage.R`
 
-The non-container version of this code has only been tested locally on ubuntu 22.04. If you have dependency troubles I recommend
-the containerized version.
+Creates the figure describing the anatomical, network, and cognitive-term coverage of the principal gradients. It uses the precomputed NeuroQuery result stored in `data/atlas_data/schaefer1000_NQ_results.rds`, which you can get using code in `neurosynth.py`. 
 
-The code is not as well documented as I would have wanted at this time, so please raise an issue or contact me directly for further inquiries.
+#### `src/mass_mediation_src.R`
 
----
+Contains the parcel-wise mediation function. This function makes it possible to run 1000 mediation analyses in a matter of seconds. 
+
+### Manuscript and provenance scripts
+
+#### `src/render_paper.R`
+
+Renders `paper/fc_changes_paper.qmd` with Quarto. It should normally be run only after the analysis has created all required figures, tables, and processed datasets.
+
+#### `src/methods_figure.R`
+
+Historical code used to generate components of the conceptual methods figure. It depends on restricted real-data connectomes and is not part of the supported synthetic workflow. The final methods figure was assembled manually and is retained directly in `paper/figures/conceptual_plot/`.
+
+#### `src/neurosynth.py`
+
+An exploratory provenance script from the NeuroSynth/NeuroQuery decoding work. It is not called by `main.R`, requires external downloads and inputs that are not distributed, and is not currently supported as a standalone reproducible script. The analysis pipeline uses the derived, precomputed NeuroQuery result in `data/atlas_data/` instead.
+
 
 ## Citation
 
 If you use this code, please cite:
 
-Rittmo, J., Franzmeier, N., Strandberg, O., Chauveau, L., Satterthwaite, T. D., Wisse, L. E., Spotorno, N., Behjat, H. H., Dehsarvi, A., Westen, D. van, Anijärv, T. E., Palmqvist, S., Janelidze, S., Stomrud, E., Ossenkoppele, R., Mattsson-Carlgren, N., Hansson, O., & Vogel, J. W. (2025). Age and Alzheimer’s disease affect functional connectivity along separate axes of functional brain organization (p. 2025.05.22.655469). bioRxiv. https://doi.org/10.1101/2025.05.22.655469
+Rittmo, J., Franzmeier, N., Strandberg, O., Chauveau, L., Satterthwaite, T. D., Wisse, L. E., Spotorno, N., Behjat, H. H., Dehsarvi, A., van Westen, D., Anijärv, T. E., Palmqvist, S., Janelidze, S., Stomrud, E., Ossenkoppele, R., Mattsson-Carlgren, N., Hansson, O., & Vogel, J. W. (2025). *Different functional connectivity gradients reflect aging and Alzheimer’s disease*. bioRxiv. [https://doi.org/10.1101/2025.05.22.655469](https://doi.org/10.1101/2025.05.22.655469)
 
----
+## License
 
+The code is released under the terms in `LICENSE`.
