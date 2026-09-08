@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/932235849.svg)](https://doi.org/10.5281/zenodo.22666359)
+
 # Different functional connectivity gradients reflect aging and Alzheimer's disease
 
 This repository contains the analysis code accompanying the manuscript **“Different functional connectivity gradients reflect aging and Alzheimer’s disease.”**
