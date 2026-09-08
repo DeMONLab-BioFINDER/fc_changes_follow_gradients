@@ -423,7 +423,7 @@ plot_longitudinal_and_window_analysis <- function(analysis_data,
     draw_plot(window_plots) +
     draw_plot_label("C", size = label_size)
   
-  lmm_tab <- magick::image_read("paper/figures/conceptual_plot/LMM_table.png")
+  lmm_tab <- magick::image_read("paper/figures_old/conceptual_plot/LMM_table.png")
   
   slide_meth <- ggdraw() +
     draw_plot(hist_map, x = 0.01, y = 0.3, width = 0.98, height = 0.7) +
@@ -2006,7 +2006,7 @@ longitudinal_and_window_analysis_legacy <- function(long_df,
     draw_plot(window_plots) + 
     draw_plot_label("C", size = 20)
   
-  lmm_tab <- image_read("paper/figures/conceptual_plot/LMM_table.png")
+  lmm_tab <- image_read("paper/figures_old/conceptual_plot/LMM_table.png")
   
   ggdraw() +
     draw_plot(hist_map, x = 0.01, y = 0.3, width = 0.98, height = 0.7) +
@@ -2134,3 +2134,326 @@ longitudinal_and_window_analysis_legacy <- function(long_df,
   list(main_fig = final_fig, supp_fig = window_plots_both_G)
   
 }
+
+
+make_lmm_table <- function() {
+  library(grid)
+  
+  # -------------------------------------------------------------------------
+  # Canvas and positioning
+  # -------------------------------------------------------------------------
+  
+  canvas_width  <- 1180
+  canvas_height <- 827
+  
+  # Shifts the complete illustration horizontally.
+  # The original foreground card began at x = -3, so 28 gives it
+  # approximately 25 pixels of visible left margin.
+  x_offset <- 28
+  
+  # Convert source-image pixel coordinates to grid's 0–1 coordinates.
+  x_npc <- function(px) {
+    (px + x_offset) / canvas_width
+  }
+  
+  y_npc <- function(py) {
+    1 - py / canvas_height
+  }
+  
+  
+  # -------------------------------------------------------------------------
+  # Drawing helpers
+  # -------------------------------------------------------------------------
+  
+  draw_rectangle <- function(
+    left,
+    top,
+    right,
+    bottom,
+    fill = "white",
+    colour = "black",
+    line_width = 1.8
+  ) {
+    grid.rect(
+      x = x_npc((left + right) / 2),
+      y = y_npc((top + bottom) / 2),
+      width = (right - left) / canvas_width,
+      height = (bottom - top) / canvas_height,
+      gp = gpar(
+        fill = fill,
+        col = colour,
+        lwd = line_width
+      )
+    )
+  }
+  
+  
+  draw_line <- function(
+    x0,
+    y0,
+    x1,
+    y1,
+    line_width = 2,
+    line_end = "round"
+  ) {
+    grid.lines(
+      x = unit(c(x_npc(x0), x_npc(x1)), "npc"),
+      y = unit(c(y_npc(y0), y_npc(y1)), "npc"),
+      gp = gpar(
+        col = "black",
+        lwd = line_width,
+        lineend = line_end
+      )
+    )
+  }
+  
+  
+  draw_text <- function(
+    label,
+    x,
+    y,
+    font_size,
+    horizontal_justification = "left",
+    vertical_justification = "center",
+    font_face = "plain"
+  ) {
+    grid.text(
+      label,
+      x = x_npc(x),
+      y = y_npc(y),
+      just = c(
+        horizontal_justification,
+        vertical_justification
+      ),
+      gp = gpar(
+        fontfamily = "serif",
+        fontface = font_face,
+        fontsize = font_size,
+        col = "black"
+      )
+    )
+  }
+  
+  
+  draw_dot <- function(x, y, radius = 4.8) {
+    grid.circle(
+      x = x_npc(x),
+      y = y_npc(y),
+      r = unit(radius / canvas_width, "npc"),
+      gp = gpar(
+        fill = "black",
+        col = "black"
+      )
+    )
+  }
+  
+  
+  # -------------------------------------------------------------------------
+  # Table card
+  # -------------------------------------------------------------------------
+  
+  draw_lmm_card <- function(
+    left,
+    top,
+    right,
+    bottom,
+    parcel,
+    title_y,
+    title_rule_y,
+    header_y,
+    header_rule_y,
+    row_y,
+    bottom_rule_y,
+    title_x = left + 42,
+    term_x = left + 56,
+    estimate_x = left + 387,
+    tvalue_x = left + 665
+  ) {
+    draw_rectangle(
+      left = left,
+      top = top,
+      right = right,
+      bottom = bottom
+    )
+    
+    title_expression <- substitute(
+      bold("LMM results Parcel")[P],
+      list(P = parcel)
+    )
+    
+    draw_text(
+      label = title_expression,
+      x = title_x,
+      y = title_y,
+      font_size = 35
+    )
+    
+    draw_line(
+      x0 = left + 45,
+      y0 = title_rule_y,
+      x1 = right - 48,
+      y1 = title_rule_y,
+      line_width = 5.4
+    )
+    
+    draw_text(
+      label = "Term",
+      x = term_x,
+      y = header_y,
+      font_size = 31
+    )
+    
+    draw_text(
+      label = "Estimate",
+      x = estimate_x,
+      y = header_y,
+      font_size = 31
+    )
+    
+    draw_text(
+      label = "t-value",
+      x = tvalue_x,
+      y = header_y,
+      font_size = 31
+    )
+    
+    draw_line(
+      x0 = left + 46,
+      y0 = header_rule_y,
+      x1 = right - 48,
+      y1 = header_rule_y,
+      line_width = 2.5,
+      line_end = "butt"
+    )
+    
+    terms <- c(
+      "Age BL",
+      "Pathology BL",
+      "ΔPathology"
+    )
+    
+    estimates <- c(
+      "0.000",
+      "-0.001",
+      "-0.004"
+    )
+    
+    t_values <- c(
+      "2.363",
+      "-0.397",
+      "-1.178"
+    )
+    
+    for (i in seq_along(row_y)) {
+      draw_text(
+        label = terms[i],
+        x = term_x,
+        y = row_y[i],
+        font_size = 31
+      )
+      
+      draw_text(
+        label = estimates[i],
+        x = estimate_x + 90,
+        y = row_y[i],
+        font_size = 31,
+        horizontal_justification = "center"
+      )
+      
+      draw_text(
+        label = t_values[i],
+        x = tvalue_x + 115,
+        y = row_y[i],
+        font_size = 31,
+        horizontal_justification = "center"
+      )
+    }
+    
+    draw_line(
+      x0 = left + 44,
+      y0 = bottom_rule_y,
+      x1 = right - 48,
+      y1 = bottom_rule_y,
+      line_width = 5.4
+    )
+  }
+  
+  
+  # -------------------------------------------------------------------------
+  # Complete figure
+  # -------------------------------------------------------------------------
+  
+  draw_figure <- function() {
+    grid.newpage()
+    
+    grid.rect(
+      gp = gpar(
+        fill = "white",
+        col = NA
+      )
+    )
+    
+    # Rear card
+    draw_lmm_card(
+      left = 182,
+      top = 24,
+      right = 1108,
+      bottom = 632,
+      parcel = 1000,
+      title_y = 109,
+      title_rule_y = 182,
+      header_y = 247,
+      header_rule_y = 282,
+      row_y = c(340, 433, 527),
+      bottom_rule_y = 576,
+      title_x = 214,
+      term_x = 231,
+      estimate_x = 562,
+      tvalue_x = 841
+    )
+    
+    # Ellipsis
+    draw_dot(1001, 725)
+    draw_dot(1031, 697)
+    draw_dot(1060, 669)
+    
+    # Two intermediate cards
+    draw_rectangle(
+      left = 30,
+      top = 173,
+      right = 957,
+      bottom = 780
+    )
+    
+    draw_rectangle(
+      left = 14,
+      top = 187,
+      right = 941,
+      bottom = 794
+    )
+    
+    # Foreground card
+    draw_lmm_card(
+      left = -3,
+      top = 207,
+      right = 925,
+      bottom = 814,
+      parcel = 1,
+      title_y = 300,
+      title_rule_y = 364,
+      header_y = 424,
+      header_rule_y = 464,
+      row_y = c(522, 615, 709),
+      bottom_rule_y = 757,
+      title_x = 42,
+      term_x = 56,
+      estimate_x = 387,
+      tvalue_x = 665
+    )
+  }
+  
+  
+  ggplotify::as.ggplot(~draw_figure())
+  
+}
+
