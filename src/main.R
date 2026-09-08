@@ -34,10 +34,10 @@ conflicts_prefer(dplyr::lag)
 # These arguments are set as environmental variables when running the docker image
 # if you are running the code on your own machine, set them manually
 
-from_start <- as.logical(Sys.getenv("FROM_START", "FALSE"))
+from_start <- as.logical(Sys.getenv("FROM_START", "TRUE"))
 create_brain_permutations <- as.logical(Sys.getenv("CREATE_BRAIN_PERMUTATIONS", "FALSE"))
 extract_timeseries <- as.logical(Sys.getenv("EXTRACT_TIMESERIES", "FALSE"))
-real_data <- as.logical(Sys.getenv("REAL_DATA", "TRUE"))
+real_data <- as.logical(Sys.getenv("REAL_DATA", "FALSE"))
 
 figure_path <- "paper/figures"
 dir.create(figure_path, showWarnings = FALSE)
@@ -176,8 +176,8 @@ close(pb)
 sub_data <- read_csv(df_file, show_col_types = FALSE)
 
 # This is the base subject data we will be working with
-biofinder_df__ <- sub_data |> 
-  mutate(
+biofinder_df__ <- if (real_data){
+   sub_data |> mutate(
     fmri_date = as.Date(str_extract(csv_rsqa__index, "(?<=__).*"), format = "%Y%m%d"),
     visit = Visit,
     etiology = underlying_etiology_text_baseline_variable,
@@ -196,46 +196,91 @@ biofinder_df__ <- sub_data |>
     motion_filter = (rsqa__fd_max < 3 & rsqa__MeanFD < 0.3)
   ) |> 
   mutate(fmri_bl = fmri_date == min(fmri_date),
-         has_longitudinal = n()>1, .by = "sid") |> 
-  select(sid,  
-         fmri_bl,
-         fmri_date,
-         visit,
-         etiology,
-         image_file,
-         tau_file,
-         has_longitudinal,
-         age,
-         education,
-         diagnosis, 
-         mPACC_v1, 
-         apoe4,
-         ab_ratio,
-         abnorm_ab,
-         a_syn,
-         sex, 
-         rsqa__MeanFD,
-         rsqa__fd_max,
-         motion_filter,
-         cho12,
-         cho34,
-         cho56
-  ) |> 
-  group_by(sid) |> 
-  filter(
-    (any(abnorm_ab == 1, na.rm = TRUE) | !all(diagnosis == "MCI" & abnorm_ab == 0, na.rm = TRUE)) &
-      any(diagnosis %in% c("AD", "MCI", "SCD", "Normal") | is.na(diagnosis), na.rm = TRUE)
-  ) |>
-  filter(any(diagnosis != "MSA", na.rm = TRUE)) |>
-  filter(any(diagnosis != "PD", na.rm = TRUE)) |>
-  filter(any(diagnosis != "PPA_NOS", na.rm = TRUE)) |>
-  arrange(sid, fmri_date) |> 
-  fill(diagnosis, .direction = "down") |> 
-  ungroup() |> 
-  filter(!(diagnosis %in% c("MCI", "AD") & abnorm_ab == 0) | is.na(diagnosis) | is.na(abnorm_ab))
+         has_longitudinal = n()>1, .by = "sid")  |> 
+    select(sid,  
+           fmri_bl,
+           fmri_date,
+           visit,
+           image_file,
+           tau_file,
+           has_longitudinal,
+           age,
+           education,
+           diagnosis, 
+           mPACC_v1, 
+           apoe4,
+           ab_ratio,
+           abnorm_ab,
+           a_syn,
+           sex, 
+           rsqa__MeanFD,
+           rsqa__fd_max,
+           motion_filter,
+           cho12,
+           cho34,
+           cho56
+    ) |> 
+    group_by(sid) |> 
+    filter(
+      (any(abnorm_ab == 1, na.rm = TRUE) | !all(diagnosis == "MCI" & abnorm_ab == 0, na.rm = TRUE)) &
+        any(diagnosis %in% c("AD", "MCI", "SCD", "Normal") | is.na(diagnosis), na.rm = TRUE)
+    ) |>
+    filter(any(diagnosis != "MSA", na.rm = TRUE)) |>
+    filter(any(diagnosis != "PD", na.rm = TRUE)) |>
+    filter(any(diagnosis != "PPA_NOS", na.rm = TRUE)) |>
+    arrange(sid, fmri_date) |> 
+    fill(diagnosis, .direction = "down") |> 
+    ungroup() |> 
+    filter(!(diagnosis %in% c("MCI", "AD") & abnorm_ab == 0) | is.na(diagnosis) | is.na(abnorm_ab))
+  } else {
+    sub_data |> 
+      mutate(
+        image_file = csv_rsqa__index,
+        tau_file = csv_tnic_sr_mr_fs__index,
+        abnorm_ab = Abnormal_CSF_Ab42_Ab40_Ratio,
+        sex = gender_baseline_variable,
+        education = education_level_years_baseline_variable,
+        diagnosis = diagnosis_baseline_variable,
+        ab_ratio = CSF_Ab42_Ab40_ratio_imputed_Elecsys_2020_2022,
+        a_syn = sample(c("NEG", "POS"), nrow(sub_data), replace = TRUE, prob = c(0.87, 0.13)),
+        apoe4 = grepl("4", as.character(apoe_genotype_baseline_variable)),
+        cho12 = tnic_cho_com_I_II,
+        cho34 = tnic_cho_com_III_IV,
+        cho56 = tnic_cho_com_V_VI,
+        motion_filter = (rsqa__fd_max < 3 & rsqa__MeanFD < 0.3),
+        fmri_date = as.Date(
+          stringr::str_extract(csv_rsqa__index, "\\d{8}$"),
+          format = "%Y%m%d"
+        )) |> 
+      mutate(
+        fmri_bl = fmri_date == min(fmri_date, na.rm = TRUE),
+        has_longitudinal = dplyr::n() > 1,
+        .by = sid
+      ) |> 
+      select(sid,  
+             fmri_bl,
+             fmri_date,
+             image_file,
+             tau_file,
+             has_longitudinal,
+             age,
+             education,
+             diagnosis, 
+             mPACC_v1, 
+             apoe4,
+             ab_ratio,
+             abnorm_ab,
+             a_syn,
+             sex, 
+             rsqa__MeanFD,
+             rsqa__fd_max,
+             motion_filter,
+             cho12,
+             cho34,
+             cho56
+      ) 
+  } 
   
-
-
 # This is to get a dataframe with all subjects before filtering on motion
 biof_motion_unfilt <- biofinder_df__ |> group_by(sid) |> 
   fill(sex, .direction = "downup") |>
@@ -562,8 +607,9 @@ if (from_start) {
 
 
 adni_df <- read_csv(df_file_adni, show_col_types = FALSE)
-adni_df_ <- adni_df |> select(ID, file_func, DX, age, sex, amyloid_status, centiloid,
-                              alpha_syn = CSF_AlphaSyn_seeding,
+adni_df_ <- adni_df |> select(ID, file_func, DX, age, sex, amyloid_status, 
+                              # centiloid,
+                              # alpha_syn = CSF_AlphaSyn_seeding,
                               education_yrs,
                               APOE4_alleles, EXAMDATE_func, 
                               ABETA42, ABETA40, contains("braak")) 
@@ -728,7 +774,7 @@ if (from_start) {
 
 success_vec <- list.files(connectome_dir_adni) |> tools::file_path_sans_ext()
 adni_df <- adni_df___ |> filter(id_ses %in% success_vec) |> 
-  inner_join(rsqa_fd, join_by(id_ses==id_ses)) # Set the join variable depending on if longitudinal data is used
+  inner_join(rsqa_fd, join_by(ID==id_ses))
 
 adni_df_unfilt <- adni_df |> mutate(motion_filter = (rsqa__MeanFD<0.3 & rsqa__MaxFD<3))
 adni_df <- adni_df_unfilt |>  filter(motion_filter)
@@ -807,7 +853,7 @@ if (from_start) {
   # Create connectome from young healthy individuals
   yh_filt <- adni_df |> filter(fmri_bl, abnorm_ab==0, !apoe4, DX == "CN") |> pull(file_func)
   healthy_young_connectomes <- con_cube_adni[, , yh_filt]
-  average_connectome_adni <- apply(healthy_young_connectomes, c(1, 2), mean)
+  average_connectome_adni <- apply(healthy_young_connectomes, c(1, 2), mean, na.rm = TRUE)
   rm(healthy_young_connectomes)
   
   # if you want to compare ADNI gradients to margulies, uncomment:
@@ -1033,7 +1079,7 @@ library(lme4)
 fit <- lmer(formula("FC ~ time  + age_bl + path_bl + pathΔ + sex + rsqa__MeanFD + (1 | sid)"), data = reg_df)
 check_collinearity(fit)
 
-bf_longitudinal <-  plot_gradient_relationships(long_bf_ |> mutate(yearly_path = pathΔ/as.numeric(time)), 
+bf_longitudinal <-  plot_gradient_relationships(long_bf_, 
                                                 gradient_data = grad_df %>% filter(study=="biofinder"), 
                                                 gradients = c(1, 3),
                                                 empty_row_height = -0.1,
@@ -1058,7 +1104,7 @@ bf_longitudinal <-  plot_gradient_relationships(long_bf_ |> mutate(yearly_path =
                                                 cache_runs = FALSE,
                                                 longitudinal = TRUE,
                                                 sub_id = "sid",
-                                                longitudinal_formula = formula(paste0("FC ~ age_bl + path_bl + yearly_path + sex + rsqa__MeanFD + (1 | sid)")))
+                                                longitudinal_formula = formula(paste0("FC ~ age_bl + path_bl + pathΔ + sex + rsqa__MeanFD + (1 | sid)")))
 
 
 # Very case specific function for creating figure 3
@@ -1172,76 +1218,7 @@ write_csv(source_data, file.path(source_figure_path, paste0("figure4_estimates",
 library(psych)
 library(mice)
 
-
-nic <- read_delim("stuff_for_revisions/nicola__20240326_143046.csv") 
-
-
-cog <- nic |> select(1:5, mPACC_v1:fcsrt_immediate,
-                     cognitive_test_date
-)
-
-
-
-cog_bl <- cog |> 
-  filter(!is.na(cognitive_test_date)) |> 
-  select(
-    sid,
-    cognitive_test_date,
-    adas_delayed_word_recall,
-    adas_immediate_word_recall_average,
-    symbol_digit,
-    trailmaking_a, 
-    trailmaking_b,
-    letter_s,
-    animal_fluency,
-    vosp_cube,
-    bnt_15_2,
-    aqt_color_form,
-  ) |> 
-  filter(cognitive_test_date == min(cognitive_test_date), .by = "sid") 
-
-df <- cog_bl %>%
-  mutate(cognitive_test_date = as.Date(cognitive_test_date))
-
-baseline_dates <- df %>%
-  group_by(sid) %>%
-  summarise(
-    baseline_date = min(cognitive_test_date, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-df <- df %>%
-  left_join(baseline_dates, by = "sid") %>%
-  mutate(
-    days_from_baseline = as.numeric(cognitive_test_date - baseline_date)
-  )
-
-
-get_baseline_within_window <- function(date_diff, values, window_days = 365) {
-  
-  # index of baseline row
-  i0 <- which(date_diff == 0)
-  
-  # if baseline is observed, use it
-  if (length(i0) == 1 && !is.na(values[i0])) {
-    return(values[i0])
-  }
-  
-  # otherwise look within window
-  candidates <- which(
-    !is.na(values) &
-      abs(date_diff) <= window_days
-  )
-  
-  if (length(candidates) == 0) {
-    return(NA_real_)
-  }
-  
-  # take closest in time
-  closest <- candidates[which.min(abs(date_diff[candidates]))]
-  values[closest]
-}
-
+cog_source <- read_delim(file.path(data_dir, "cognition_bf.csv")) 
 
 cog_vars <- c(
   "adas_delayed_word_recall",
@@ -1256,26 +1233,27 @@ cog_vars <- c(
   "aqt_color_form"
 )
 
+baseline_df <- cog_source |>
+  filter(!is.na(cognitive_test_date)) |>
+  mutate(cognitive_test_date = as.Date(cognitive_test_date)) |>
+  select(
+    sid,
+    cognitive_test_date,
+    all_of(cog_vars)
+  ) |>
+  slice_min(
+    cognitive_test_date,
+    n = 1,
+    with_ties = FALSE,
+    by = sid
+  ) |>
+  rename(baseline_date = cognitive_test_date)
 
-baseline_df <- df %>%
-  group_by(sid) %>%
-  summarise(
-    baseline_date = first(baseline_date),
-    
-    across(
-      all_of(cog_vars),
-      ~ get_baseline_within_window(
-        date_diff = days_from_baseline,
-        values    = .x,
-        window_days = 365
-      ),
-      .names = "{.col}"
-    ),
-    .groups = "drop"
+biofinder_cog <- baseline_df |>
+  inner_join(
+    biofinder_df |> filter(fmri_bl),
+    by = "sid"
   )
-
-biofinder_cog <- baseline_df |> 
-  inner_join(biofinder_df |> filter(fmri_bl), by = "sid") 
 
 imp_df <- biofinder_cog %>%
   select(
@@ -1351,7 +1329,7 @@ ave_imp[, ] <- 0
 for(i in seq_along(imp_list)) {
   ave_imp <- ave_imp + imp_list[[i]] |> column_to_rownames("sid") |> select(all_of(cog_vars))
 }
-ave_imp <- ave_imp/30
+ave_imp <- ave_imp/20
 ave_imp <- ave_imp |> rownames_to_column("sid")
 
 
@@ -1398,7 +1376,7 @@ cog_mat_cu <- ave_imp |>
   column_to_rownames("sid")
 
 
-cog_fac <- psych::omega(cog_mat_cu, nfactors = 4)
+cog_fac <- psych::omega(cog_mat_cu, nfactors = 4, plot = FALSE)
 
 
 om_factors <- cog_fac[["scores"]]
@@ -2041,59 +2019,63 @@ tau_ab_cu_adj$tmaps |> mutate(panel = "A") |>
 # Nodal Tau
 ###########################
 
-tau <- readRDS("data/bf_src_data/regional_tau/tau_pet_schaefer_1000_r.rds")
+# Only works with real data as of now due to issues with the ID formatting of the synthetic
 
-nodal_tau <- plot_gradient_relationships(biofinder_df %>% filter(fmri_bl, !is.na(pathology_ad)), 
-                                         t_mat = tau,
-                                         gradient_data = grad_df |> filter(study== "biofinder"), 
-                                         gradients = c(1, 3),
-                                         gradient_colors = gradient_cols,
-                                         list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
-                                         empty_row_height = -0.2,
-                                         brain_title_size = 6,
-                                         axis_text_size = 5,
-                                         axis_title_size = 6,
-                                         scatter_title_vjust = 0,
-                                         base_size_ = 7,
-                                         vect = TRUE,
-                                         rasterize = TRUE,
-                                         ggrastr_dpi = 300,
-                                         add_shade = TRUE, 
-                                         shade_alpha = 0.1,
-                                         shade_size = 0.1,
-                                         r_spin_size = 0.75,
-                                         point_size = 0.05,
-                                         point_alpha = 0.3,
-                                         plot_net_legend = TRUE,
-                                         net_legend_x = 0.2,
-                                         net_legend_y = 0.01,
-                                         mod_formula = formula(paste0("~ age + sex + rsqa__MeanFD")),
-                                         covariates = c("sex", "rsqa__MeanFD"),
-                                         plt_title = "Parcelwise tau on parcelwise FCS regression",
-                                         plt_subtitle = TRUE,
-                                         rectangle = TRUE)
+if (real_data) {
+  tau <- readRDS("data/bf_src_data/regional_tau/tau_pet_schaefer_1000_r.rds")
 
-
-scaling_factor <- 1
-img_width = 88
-p_name <- "nodal_tau.pdf"
-ggsave(file.path(figure_path, p_name), nodal_tau$plot |> pad_plot(),
-       width = img_width*scaling_factor, height = img_width*0.9*scaling_factor, units = "mm", dpi = 300, device = "pdf", bg = "white")
-
-
-source_data <- nodal_tau$tmaps |> 
-  select(-n, -model_formula) |> 
-  left_join(grad_df |> filter(study %in% c("biofinder")) |> 
-              select(region, study, starts_with("gradient")))
-write_csv(source_data, file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), ".csv")))
-
+  
+  nodal_tau <- plot_gradient_relationships(biofinder_df %>% filter(fmri_bl, !is.na(pathology_ad)), 
+                                           t_mat = tau,
+                                           gradient_data = grad_df |> filter(study== "biofinder"), 
+                                           gradients = c(1, 3),
+                                           gradient_colors = gradient_cols,
+                                           list_of_parcel_data = list(nodal_affinity = fc_measures_bf$affinity),
+                                           empty_row_height = -0.2,
+                                           brain_title_size = 6,
+                                           axis_text_size = 5,
+                                           axis_title_size = 6,
+                                           scatter_title_vjust = 0,
+                                           base_size_ = 7,
+                                           vect = TRUE,
+                                           rasterize = TRUE,
+                                           ggrastr_dpi = 300,
+                                           add_shade = TRUE, 
+                                           shade_alpha = 0.1,
+                                           shade_size = 0.1,
+                                           r_spin_size = 0.75,
+                                           point_size = 0.05,
+                                           point_alpha = 0.3,
+                                           plot_net_legend = TRUE,
+                                           net_legend_x = 0.2,
+                                           net_legend_y = 0.01,
+                                           mod_formula = formula(paste0("~ age + sex + rsqa__MeanFD")),
+                                           covariates = c("sex", "rsqa__MeanFD"),
+                                           plt_title = "Parcelwise tau on parcelwise FCS regression",
+                                           plt_subtitle = TRUE,
+                                           rectangle = TRUE)
+  
+  
+  scaling_factor <- 1
+  img_width = 88
+  p_name <- "nodal_tau.pdf"
+  ggsave(file.path(figure_path, p_name), nodal_tau$plot |> pad_plot(),
+         width = img_width*scaling_factor, height = img_width*0.9*scaling_factor, units = "mm", dpi = 300, device = "pdf", bg = "white")
+  
+  
+  source_data <- nodal_tau$tmaps |> 
+    select(-n, -model_formula) |> 
+    left_join(grad_df |> filter(study %in% c("biofinder")) |> 
+                select(region, study, starts_with("gradient")))
+  write_csv(source_data, file.path(source_figure_path, paste0(tools::file_path_sans_ext(p_name), ".csv")))
+}
 
 
 ###########################
 # Atrophy + vascular
 ###########################
 
-new_data <- read_delim("stuff_for_revisions/jonathan__20250926_104238.csv")
+new_data <- read_delim(file.path(data_dir, "atrophy_vascular.csv"))
 
 x <- new_data |> 
   mutate(mri_date = as.Date(str_extract(csv_ct_composites__index, "(?<=__).*"), format = "%Y%m%d")) |> 
@@ -2940,6 +2922,7 @@ biof_path_plot <- biof_path_data |>
             nudge_y = 0.5, size = 5) +
   labs(x = "Pathology score", y = "Scaled value")+
   ggsci::scale_color_nejm(name = "Pathology", labels = legend_labs) +
+  theme_bw(base_size = 12) +
   theme(legend.position = "bottom",
         legend.margin = margin(-4, 20, 0, 0),
         legend.box.margin = margin(-4, 20, 0, 0),
@@ -2961,6 +2944,7 @@ dens <- biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |>
     # legend.text = element_text(hjust = 0.5, vjust = 1, #angle = 90
     #                            )
   ))) +
+  theme_bw(base_size = 12) +
   theme(legend.position = "bottom", 
         legend.margin = margin(-4, 0, 0, 0),
         legend.box.margin = margin(-4, 0, 0, 0))
@@ -2971,10 +2955,10 @@ path_plot <- biof_path_plot + dens + plot_layout(axis_titles = "collect")
 #   theme(text = element_text(size = 15))
 
 img_width <- 180
-p_name <- "path_plot_bf.pdf"
+p_name <- "path_plot_bf.svg"
 scale_factor = 1
-ggsave(file.path(figure_path, p_name), path_plot |> pad_plot(),
-       width = img_width*scale_factor, height = img_width/2.4*scale_factor, device = "pdf", units = "mm", bg = "transparent")
+ggsave(file.path(supplementary_figure_path, p_name), path_plot |> pad_plot(),
+       width = img_width*scale_factor, height = img_width/2.4*scale_factor, device = "svg", units = "mm", bg = "transparent")
 
 biofinder_df |> filter(fmri_bl, !is.na(age), !is.na(pathology_ad)) |> 
   mutate(Diagnosis = ifelse(diagnosis == "Normal", "CN", diagnosis) |> factor(levels = c("CN", "SCD", "MCI", "AD")) ) |> 
