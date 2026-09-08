@@ -13,19 +13,11 @@ paper/*
 !paper/custom_ref_new.docx
 !paper/references.docx
 
-# Keep directories (must re-include parent dirs too)
+# Keep the Quarto extensions required to render the manuscript
 !paper/_extensions/
-!paper/figures/
 
-# Keep everything inside these dirs
+# Keep everything inside the extensions directory
 !paper/_extensions/**
-!paper/figures/**
-
-# Ignore everything in suppfig_original except paper/suppfig_original/jpg
-paper/suppfig_original/*
-!paper/suppfig_original/
-!paper/suppfig_original/jpg/
-!paper/suppfig_original/jpg/**
 
 
 data/*
