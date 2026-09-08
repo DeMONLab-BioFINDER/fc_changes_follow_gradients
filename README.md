@@ -167,7 +167,7 @@ The code in `main.R` runs the following major steps:
 If you encounter any issues, please open an issue on GitHub, and we'll assist you as quickly as possible.
 
 The non-container version of this code has only been tested locally on ubuntu 22.04. If you have dependency troubles I recommend
-the containerized version. 
+the containerized version.
 
 The code is not as well documented as I would have wanted at this time, so please raise an issue or contact me directly for further inquiries.
 
